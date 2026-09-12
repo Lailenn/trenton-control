@@ -52,13 +52,12 @@ window.InvoiceArchive = function (app) {
     if (!record.pdfBlob) return app.edit(record);
     viewerId = record.id;
     $("#pdfDialog").dataset.kind = "invoice";
+    $("#pdfDialog").dataset.recordId = record.id;
     if ($("#pdfDialogEdit")) $("#pdfDialogEdit").hidden = false;
     $("#pdfDialogFrame").title = "PDF de la invoice";
     $("#pdfDialogTitle").textContent = record.address;
     $("#pdfDialogInfo").textContent = `${record.invoiceNumber} · ${dateLabel(C.issuedDate(record))} · ${money(record.amount)} · ${stageName(record.stage)}`;
     $("#pdfDialogFrame").src = app.pdfUrl(record);
-    $("#pdfDialogDownload").href = app.pdfUrl(record);
-    $("#pdfDialogDownload").download = C.fileName(record);
     $("#pdfDialog").showModal();
   }
 
@@ -203,7 +202,7 @@ window.InvoiceArchive = function (app) {
       await app.reload();
       busy = false; closeImport(); app.render();
       app.toast(`${records.length} invoices guardadas con sus PDFs.`);
-    } catch (error) { $("#importError").textContent = "No se guardó la carga. Puede faltar espacio en este navegador. Descarga un respaldo y vuelve a intentar."; }
+    } catch (error) { $("#importError").textContent = error.message || "No se guardó la carga. Revisa la conexión o el espacio de este navegador y vuelve a intentar."; }
     finally { busy = false; updateReview(); }
   }
 
@@ -225,7 +224,7 @@ window.InvoiceArchive = function (app) {
       });
       zip.file("trenton-respaldo.json", JSON.stringify({format: "trenton-control-backup", version: 1, exportedAt: new Date().toISOString(), records: metadata}, null, 2));
       const blob = await zip.generateAsync({type: "blob", compression: "STORE"});
-      app.download(blob, `Trenton-respaldo-${new Date().toISOString().slice(0, 10)}.zip`);
+      await app.download(blob, `Trenton-respaldo-${new Date().toISOString().slice(0, 10)}.zip`);
       app.toast("Respaldo descargado. Puedes restaurarlo desde Subir invoices anteriores.");
     } catch (error) { app.toast(error.message || "No se pudo generar el respaldo."); }
     finally { $("#backupInvoicesButton").disabled = false; }
@@ -235,7 +234,7 @@ window.InvoiceArchive = function (app) {
     try {
       if (app.ensurePdf) await app.ensurePdf(record);
       if (!record.pdfBlob) return app.toast("No hay PDF para descargar.");
-      app.download(record.pdfBlob, C.fileName(record));
+      await app.download(record.pdfBlob, C.fileName(record), { share: true });
     } catch (error) {
       app.toast(error.message || "No se pudo descargar el PDF.");
     }

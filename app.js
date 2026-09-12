@@ -55,14 +55,26 @@
     fillAddressHistory();
   }
 
-  function download(blob, name) {
-    if (!blob) return;
-    const file = blob instanceof Blob ? blob : new Blob([blob], {type: "application/pdf"});
-    if (navigator.msSaveOrOpenBlob) { navigator.msSaveOrOpenBlob(file, name); return; }
-    const url = URL.createObjectURL(file), a = document.createElement("a");
+  async function download(blob, name, options = {}) {
+    if (!blob) {
+      showToast("No hay PDF para descargar.");
+      return;
+    }
+    try {
+      const result = await (root.TrentonFiles?.saveBlob || saveBlobFallback)(blob, name, options);
+      if (result === "cancelled") showToast("Descarga cancelada.");
+    } catch (error) {
+      showToast(error.message || "No se pudo descargar el PDF.");
+    }
+  }
+
+  async function saveBlobFallback(blob, name) {
+    const url = URL.createObjectURL(blob instanceof Blob ? blob : new Blob([blob], {type: "application/pdf"}));
+    const a = document.createElement("a");
     a.href = url; a.download = name || "invoice.pdf"; a.rel = "noopener"; a.style.display = "none";
     document.body.append(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return "download";
   }
 
   async function removeRecord(record) {
@@ -225,7 +237,15 @@
     $("#saveButton").disabled = true;
     try {
       record.amount = Core.cents(data.amount) / 100;
-      if (selectedPdf) { record.invoiceData = null; record.source = "imported"; record.pdfHash = await PDFs.hash(selectedPdf); record.pdfPath = null; }
+      if (selectedPdf) {
+        record.pdfBlob = selectedPdf.type && selectedPdf.type !== "application/pdf"
+          ? new Blob([selectedPdf], { type: "application/pdf" })
+          : selectedPdf;
+        record.invoiceData = null;
+        record.source = "imported";
+        record.pdfHash = await PDFs.hash(record.pdfBlob);
+        record.pdfPath = null;
+      }
       else if (record.invoiceData && !record.pdfBlob) {
         const snapshot = {...record.invoiceData, invoiceNumber: record.invoiceNumber, issuedDate: record.issuedDate, workAddress: record.address, description: record.description};
         if (Core.cents(Number(snapshot.qty) * Number(snapshot.price)) !== Core.cents(record.amount)) {
@@ -389,6 +409,7 @@
     const menu = $("#mobileMenu");
     menu?.setAttribute("aria-expanded", String(open));
     menu?.setAttribute("aria-label", open ? "Cerrar menú" : "Abrir menú");
+    $("#dockMore")?.classList.toggle("is-active", Boolean(open));
   }
 
   function showView(view) {
@@ -534,19 +555,21 @@
     $("#saveGeneratedInvoiceButton").textContent = "Generando PDF…";
     try {
       await attachGeneratedPdf(record, data);
-      download(record.pdfBlob, record.pdfName);
       try {
         await saveRecord(record);
         builderRecordId = record.id;
         replaceInMemory(record);
         render();
+        if (alsoDownload) await download(record.pdfBlob, record.pdfName, { share: true });
+        else await download(record.pdfBlob, record.pdfName);
         if (!alsoDownload) navClick("archive");
         showToast(previous
-          ? "PDF a color descargado. La invoice también se actualizó en la nube."
-          : "PDF a color descargado. La invoice quedó guardada en la nube.");
+          ? "Invoice actualizada. El PDF quedó en la nube y se descargó."
+          : "Invoice guardada. El PDF quedó en la nube y se descargó.");
       } catch (cloudError) {
         console.error(cloudError);
-        showToast("El PDF se descargó, pero no se pudo guardar en la nube: " + (cloudError.message || "revisa la conexión."));
+        await download(record.pdfBlob, record.pdfName);
+        showToast("El PDF se generó, pero no se pudo guardar en la nube: " + (cloudError.message || "revisa la conexión."));
       }
     } catch (error) {
       console.error(error);
@@ -559,6 +582,7 @@
     document.querySelectorAll(".dock-item[data-dock]").forEach(item => {
       item.classList.toggle("is-active", item.dataset.dock === view);
     });
+    if (view) $("#dockMore")?.classList.remove("is-active");
   }
 
   function navClick(stage) {
@@ -655,12 +679,34 @@
     ensurePdf: Cloud.ensureHoursPdf,
     openHours: () => navClick("hours")
   });
-  window.TrentonControl = { toast: showToast, records: () => records, hoursArchive };
+  window.TrentonControl = { toast: showToast, records: () => records, hoursArchive, download };
   document.querySelectorAll("[data-archive]").forEach(button => button.addEventListener("click", () => navClick(button.dataset.archive === "all" ? "archive" : button.dataset.archive)));
   $("#editGeneratedInvoiceButton").addEventListener("click", editGeneratedInvoice);
   $("#newInvoiceButton").addEventListener("click", () => { if (builderRecordId) resetInvoiceBuilder(); navClick("invoice"); });
   $("#dockNewInvoice")?.addEventListener("click", () => { if (builderRecordId) resetInvoiceBuilder(); navClick("invoice"); });
-  $("#dockMore")?.addEventListener("click", () => setSidebarOpen(true));
+  $("#dockMore")?.addEventListener("click", () => setSidebarOpen(!$("#sidebar").classList.contains("open")));
+  $("#pdfDialogDownload")?.addEventListener("click", async event => {
+    event.preventDefault();
+    const kind = $("#pdfDialog")?.dataset.kind;
+    const id = $("#pdfDialog")?.dataset.recordId;
+    try {
+      if (kind === "hours") {
+        const record = window.HoursApp?.reports?.().find(item => item.id === id);
+        if (!record) return showToast("No se encontró el PDF de horas.");
+        await Cloud.ensureHoursPdf(record);
+        if (!record.pdfBlob) return showToast("No hay PDF de horas para descargar.");
+        await download(record.pdfBlob, record.pdfName || "horas.pdf", { share: true });
+        return;
+      }
+      const record = records.find(item => item.id === id);
+      if (!record) return showToast("No se encontró el PDF.");
+      await Cloud.ensureInvoicePdf(record);
+      if (!record.pdfBlob) return showToast("No hay PDF para descargar.");
+      await download(record.pdfBlob, Core.fileName(record), { share: true });
+    } catch (error) {
+      showToast(error.message || "No se pudo descargar el PDF.");
+    }
+  });
   document.querySelectorAll(".dock-item[data-dock]").forEach(item => item.addEventListener("click", () => navClick(item.dataset.dock)));
   $("#alertsButton")?.addEventListener("click", () => showToast("No hay avisos nuevos."));
   $("#openArchiveButton").addEventListener("click", () => navClick("archive"));

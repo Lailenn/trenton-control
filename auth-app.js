@@ -305,6 +305,56 @@
     return data;
   }
 
+  let loggingOut = false;
+
+  function closeMobileMenu() {
+    const sidebar = $("#sidebar");
+    sidebar?.classList.remove("open");
+    $("#sidebarScrim")?.classList.remove("visible");
+    document.body.classList.remove("sidebar-lock");
+    const menu = $("#mobileMenu");
+    menu?.setAttribute("aria-expanded", "false");
+    menu?.setAttribute("aria-label", "Abrir menú");
+  }
+
+  async function logoutNow() {
+    if (loggingOut) return;
+    loggingOut = true;
+    const buttons = document.querySelectorAll(".js-logout");
+    setBusy(buttons, true);
+    closeMobileMenu();
+    showApp(false);
+    setGate(root.TrentonConfig.ready() ? "login" : "config");
+    root.CloudDB?.setUser?.(null);
+    try {
+      const auth = authClient();
+      if (auth?.signOut) {
+        await Promise.race([
+          auth.signOut({ scope: "local" }),
+          new Promise(resolve => setTimeout(resolve, 1200))
+        ]).catch(() => {});
+        auth.signOut({ scope: "global" }).catch(() => {});
+      }
+    } catch (_error) {
+      /* already back on the login screen */
+    } finally {
+      loggingOut = false;
+      setBusy(buttons, false);
+    }
+  }
+
+  function bindLogoutButtons() {
+    document.querySelectorAll(".js-logout").forEach(button => {
+      const fire = event => {
+        event.preventDefault();
+        event.stopPropagation();
+        logoutNow();
+      };
+      button.addEventListener("click", fire);
+      button.addEventListener("touchend", fire, { passive: false });
+    });
+  }
+
   function watchAuth(onReady, onLogout) {
     if (watching || !root.TrentonConfig.ready()) return;
     watching = true;
@@ -410,10 +460,7 @@
       });
     });
 
-    document.querySelectorAll(".js-logout").forEach(button => button.addEventListener("click", async () => {
-      if (root.TrentonConfig.ready()) await root.TrentonSupabase.client.auth.signOut();
-    }));
-
+    bindLogoutButtons();
     watchAuth(onReady, onLogout);
   }
 

@@ -77,4 +77,38 @@
       return { invoices, hours };
     }
   };
+
+  function asNamedFile(blob, name) {
+    const fileName = name || "documento.pdf";
+    const zip = /\.zip$/i.test(fileName);
+    const type = zip ? "application/zip" : (blob.type && blob.type !== "application/octet-stream" ? blob.type : "application/pdf");
+    return blob instanceof File ? blob : new File([blob], fileName, { type });
+  }
+
+  async function saveBlob(blob, name, options = {}) {
+    if (!blob) throw new Error("No hay archivo para descargar.");
+    const file = asNamedFile(blob, name);
+    const wantShare = options.share === true;
+    if (wantShare && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: file.name });
+        return "shared";
+      } catch (error) {
+        if (error.name === "AbortError") return "cancelled";
+      }
+    }
+    const url = URL.createObjectURL(file);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = file.name;
+    link.rel = "noopener";
+    link.style.display = "none";
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return "download";
+  }
+
+  root.TrentonFiles = { saveBlob, asNamedFile };
 })(typeof globalThis !== "undefined" ? globalThis : this);

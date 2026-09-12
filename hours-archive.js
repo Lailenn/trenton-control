@@ -34,8 +34,12 @@ window.HoursArchive = function (app) {
   }
   function pdfUrl(record) {
     if (!record.pdfBlob) return "";
-    if (!pdfUrls.has(record.id)) pdfUrls.set(record.id, URL.createObjectURL(record.pdfBlob));
-    return pdfUrls.get(record.id);
+    const cached = pdfUrls.get(record.id);
+    if (cached?.blob === record.pdfBlob) return cached.url;
+    if (cached?.url) URL.revokeObjectURL(cached.url);
+    const url = URL.createObjectURL(record.pdfBlob);
+    pdfUrls.set(record.id, { blob: record.pdfBlob, url });
+    return url;
   }
 
   function render() {
@@ -83,13 +87,12 @@ window.HoursArchive = function (app) {
     if (!record.pdfBlob) return app.toast("Este reporte todavía no tiene PDF.");
     const stats = totals(record);
     $("#pdfDialog").dataset.kind = "hours";
+    $("#pdfDialog").dataset.recordId = record.id;
     if ($("#pdfDialogEdit")) $("#pdfDialogEdit").hidden = true;
     $("#pdfDialogTitle").textContent = record.jobAddress || "Horas trabajadas";
     $("#pdfDialogInfo").textContent = `${dateLabel(reportDate(record))} · ${formatHours(stats.hours)} HRS · ${money(stats.pay)}`;
     $("#pdfDialogFrame").src = pdfUrl(record);
     $("#pdfDialogFrame").title = "PDF de horas trabajadas";
-    $("#pdfDialogDownload").href = pdfUrl(record);
-    $("#pdfDialogDownload").download = fileName(record);
     $("#pdfDialog").showModal();
   }
 
@@ -97,7 +100,7 @@ window.HoursArchive = function (app) {
     try {
       if (app.ensurePdf) await app.ensurePdf(record);
       if (!record.pdfBlob) return app.toast("No hay PDF de horas para descargar.");
-      app.download(record.pdfBlob, fileName(record));
+      await app.download(record.pdfBlob, fileName(record), { share: true });
     } catch (error) {
       app.toast(error.message || "No se pudo descargar el PDF de horas.");
     }
@@ -121,7 +124,7 @@ window.HoursArchive = function (app) {
       });
       zip.file("trenton-horas-respaldo.json", JSON.stringify({format: "trenton-hours-backup", version: 1, exportedAt: new Date().toISOString(), records: metadata}, null, 2));
       const blob = await zip.generateAsync({type: "blob", compression: "STORE"});
-      app.download(blob, `Trenton-horas-${new Date().toISOString().slice(0, 10)}.zip`);
+      await app.download(blob, `Trenton-horas-${new Date().toISOString().slice(0, 10)}.zip`);
       app.toast("Respaldo de horas descargado. No uses este ZIP en Invoices / PDFs.");
     } catch (error) { app.toast(error.message || "No se pudo generar el respaldo de horas."); }
     finally { $("#backupHoursButton").disabled = false; }

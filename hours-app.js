@@ -133,14 +133,22 @@
     const address = String(data.jobAddress || "reporte").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 85) || "reporte";
     return `${address}_horas_${data.reportDate || "sin-fecha"}.pdf`;
   };
-  function download(blob, name) {
-    if (!blob) return;
+  function download(blob, name, options = {}) {
+    if (!blob) {
+      if ($("#hoursError")) $("#hoursError").textContent = "No hay PDF para descargar.";
+      return Promise.resolve();
+    }
+    if (root.TrentonFiles?.saveBlob) {
+      return root.TrentonFiles.saveBlob(blob, name, options).catch(error => {
+        $("#hoursError").textContent = error.message || "No se pudo descargar el PDF de horas.";
+      });
+    }
     const file = blob instanceof Blob ? blob : new Blob([blob], {type: "application/pdf"});
-    if (navigator.msSaveOrOpenBlob) { navigator.msSaveOrOpenBlob(file, name); return; }
     const url = URL.createObjectURL(file), link = document.createElement("a");
     link.href = url; link.download = name || "horas.pdf"; link.rel = "noopener"; link.style.display = "none";
     document.body.append(link); link.click(); link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return Promise.resolve();
   }
 
   function showWhatsAppResult(parsed, applied) {
@@ -183,15 +191,19 @@
       record.pdfBlob = await HoursPDF.generate({...record, recordId: record.id}, await logoBytes());
       record.pdfHash = await HoursPDF.hash(record.pdfBlob);
       record.pdfName = fileName(record);
-      download(record.pdfBlob, record.pdfName);
       try {
         await root.CloudDB.saveHours(record); await load(); renderHistory();
         window.TrentonControl?.hoursArchive?.render?.();
-        $("#hoursError").textContent = "PDF a color descargado. El reporte también quedó guardado en Horas de trabajo / PDFs.";
-        if (root.TrentonControl?.toast) root.TrentonControl.toast("Reporte de horas guardado en la nube");
+        if (downloadAfter) await download(record.pdfBlob, record.pdfName, { share: true });
+        else await download(record.pdfBlob, record.pdfName);
+        $("#hoursError").textContent = downloadAfter
+          ? "PDF guardado en la nube y descargado. También queda en Horas de trabajo / PDFs."
+          : "Reporte y PDF guardados en la nube. Si no se bajó al teléfono, ábrelo en Horas de trabajo / PDFs.";
+        if (root.TrentonControl?.toast) root.TrentonControl.toast("Reporte de horas guardado");
       } catch (cloudError) {
         console.error(cloudError);
-        $("#hoursError").textContent = "El PDF se descargó, pero no se pudo guardar en la nube: " + (cloudError.message || "revisa la conexión.");
+        await download(record.pdfBlob, record.pdfName, { share: true });
+        $("#hoursError").textContent = "El PDF se generó, pero no se pudo guardar en la nube: " + (cloudError.message || "revisa la conexión.");
       }
     } catch (error) { console.error(error); $("#hoursError").textContent = error.message || "No se pudo generar el PDF de horas."; }
     finally { saving = false; $("#saveHoursButton").disabled = false; $("#downloadHoursButton").disabled = false; }
@@ -217,7 +229,8 @@
     if (!record) return;
     try {
       await root.CloudDB.ensureHoursPdf(record);
-      if (record.pdfBlob) download(record.pdfBlob, record.pdfName);
+      if (record.pdfBlob) await download(record.pdfBlob, record.pdfName || fileName(record), { share: true });
+      else $("#hoursError").textContent = "No hay PDF de horas para descargar.";
     } catch (error) { $("#hoursError").textContent = error.message || "No se pudo descargar el PDF."; }
   });
   window.addEventListener("resize", fitPreview);

@@ -21,11 +21,29 @@
     return path;
   }
 
+  function asPdfBlob(data) {
+    if (!data) return null;
+    if (data.type === "application/pdf") return data;
+    return new Blob([data], { type: "application/pdf" });
+  }
+
   async function download(bucket, path) {
     if (!path) return null;
     const { data, error } = await sb().storage.from(bucket).download(path);
     if (error) throw new Error(error.message || "No se pudo descargar el archivo.");
-    return data;
+    return bucket.includes("pdf") ? asPdfBlob(data) : data;
+  }
+
+  async function cacheBlob(kind, id, hash, blob) {
+    try { await root.LocalCache.put(kind, id, hash, blob); }
+    catch (error) { console.warn("No se pudo guardar el PDF en este teléfono.", error); }
+  }
+
+  async function persistPdf(kind, bucket, record) {
+    if (!record.pdfBlob) return;
+    record.pdfPath = record.pdfPath || `${ownerId()}/${record.id}.pdf`;
+    await cacheBlob(kind, record.id, record.pdfHash, record.pdfBlob);
+    await upload(bucket, record.pdfPath, record.pdfBlob, "application/pdf");
   }
 
   function invoiceRow(record) {
@@ -108,8 +126,8 @@
     if (!record.pdfPath) return null;
     const blob = await download("invoice-pdfs", record.pdfPath);
     if (blob) {
-      record.pdfBlob = blob;
-      await root.LocalCache.put("invoice", record.id, record.pdfHash, blob);
+      record.pdfBlob = asPdfBlob(blob);
+      await cacheBlob("invoice", record.id, record.pdfHash, record.pdfBlob);
     }
     return record.pdfBlob;
   }
@@ -118,14 +136,7 @@
     const C = Core();
     const duplicate = duplicateOf(record, existing.filter(item => item.id !== record.id && !item.deletedAt));
     if (duplicate) throw new Error("Esta invoice ya está guardada: " + duplicate.invoiceNumber + ", " + duplicate.address + ". Edita el registro existente.");
-    if (record.pdfBlob && !record.pdfPath) {
-      record.pdfPath = `${ownerId()}/${record.id}.pdf`;
-      await upload("invoice-pdfs", record.pdfPath, record.pdfBlob, "application/pdf");
-      await root.LocalCache.put("invoice", record.id, record.pdfHash, record.pdfBlob);
-    } else if (record.pdfBlob) {
-      await upload("invoice-pdfs", record.pdfPath, record.pdfBlob, "application/pdf");
-      await root.LocalCache.put("invoice", record.id, record.pdfHash, record.pdfBlob);
-    }
+    await persistPdf("invoice", "invoice-pdfs", record);
     record.pdfName = record.pdfName || C.fileName(record);
     const { error } = await sb().from("invoices").upsert(invoiceRow(record));
     fail(error, "No se pudo guardar la invoice.");
@@ -205,18 +216,14 @@
     if (!record.pdfPath) return null;
     const blob = await download("hours-pdfs", record.pdfPath);
     if (blob) {
-      record.pdfBlob = blob;
-      await root.LocalCache.put("hours", record.id, record.pdfHash, blob);
+      record.pdfBlob = asPdfBlob(blob);
+      await cacheBlob("hours", record.id, record.pdfHash, record.pdfBlob);
     }
     return record.pdfBlob;
   }
 
   async function saveHours(record) {
-    if (record.pdfBlob) {
-      record.pdfPath = record.pdfPath || `${ownerId()}/${record.id}.pdf`;
-      await upload("hours-pdfs", record.pdfPath, record.pdfBlob, "application/pdf");
-      await root.LocalCache.put("hours", record.id, record.pdfHash, record.pdfBlob);
-    }
+    await persistPdf("hours", "hours-pdfs", record);
     const report = {
       id: record.id,
       owner_id: ownerId(),
