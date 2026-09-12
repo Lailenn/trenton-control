@@ -4,12 +4,19 @@
   const lib = () => root.PDFLib || (typeof require === "function" ? require("pdf-lib") : null);
   const WIN = {0x20AC:1, 0x201A:1, 0x192:1, 0x201E:1, 0x2026:1, 0x2020:1, 0x2021:1, 0x2C6:1, 0x2030:1, 0x160:1, 0x2039:1, 0x152:1, 0x17D:1, 0x2018:1, 0x2019:1, 0x201C:1, 0x201D:1, 0x2022:1, 0x2013:1, 0x2014:1, 0x2DC:1, 0x2122:1, 0x161:1, 0x203A:1, 0x153:1, 0x17E:1, 0x178:1};
   const SWAP = {"\u00a0":" ","\u202f":" ","\u2009":" ","\u2011":"-","\u2013":"-","\u2014":"-","\u2015":"-","\u2018":"'","\u2019":"'","\u201c":'"',"\u201d":'"',"\u2026":"...","\u2022":"-","\u00b7":"-","\u2212":"-","\u00d7":"x","\u00f7":"/","¿":"?","¡":"!"};
-  const pdfSafe = value => [...String(value ?? "").replace(/[\u2010-\u2014]/g, "-").replace(/\t/g, "    ").normalize("NFC")].map(ch => {
+  const pdfSafe = value => [...String(value ?? "").replace(/[\u2010-\u2014]/g, "-").replace(/\t/g, "    ").replace(/\r\n/g, "\n").normalize("NFC")].map(ch => {
     if (SWAP[ch]) return SWAP[ch];
     const code = ch.codePointAt(0);
     if (code === 10 || code === 13 || (code >= 32 && code <= 126) || (code >= 160 && code <= 255) || WIN[code]) return ch;
     const folded = ch.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    return folded && folded !== ch ? pdfSafe(folded) : " ";
+    if (folded && folded !== ch) {
+      return [...folded].map(part => {
+        const partCode = part.codePointAt(0);
+        if ((partCode >= 32 && partCode <= 126) || SWAP[part]) return SWAP[part] || part;
+        return " ";
+      }).join("");
+    }
+    return " ";
   }).join("");
   const dateValue = value => {
     const date = new Date(`${value}T12:00:00`);
@@ -17,10 +24,11 @@
   };
   const dayName = value => pdfSafe(dateValue(value)?.toLocaleDateString("en-US", {weekday: "long"}) || value || "");
   const fullDate = value => pdfSafe(dateValue(value)?.toLocaleDateString("en-US", {weekday: "long", month: "long", day: "numeric", year: "numeric"}) || value || "");
-  const hoursLabel = value => `${Number(value || 0).toLocaleString("en-US", {maximumFractionDigits: 2}).replace(/\u00a0|\u202f/g, "")} HRS`;
+  const hoursLabel = value => `${(Number(value) || 0).toFixed(2)} HRS`;
   const money = value => {
     const number = Number(value) || 0;
-    return `$${number.toLocaleString("en-US", {minimumFractionDigits: Number.isInteger(number) ? 0 : 2, maximumFractionDigits: 2}).replace(/\u00a0|\u202f/g, "")}`;
+    const decimals = Number.isInteger(number) ? 0 : 2;
+    return `$${number.toFixed(decimals)}`;
   };
   const timeLabel = value => {
     const match = String(value || "").match(/^(\d{1,2}):(\d{2})$/);
@@ -117,7 +125,10 @@
     const text = (value, x, top, size = 10, font = regular, color = ink) => {
       const label = pdfSafe(value);
       try { page.drawText(label, {x, y: pageH - top - size, size, font, color}); }
-      catch (_) { page.drawText(label.normalize("NFD").replace(/[^\x20-\x7e]/g, " "), {x, y: pageH - top - size, size, font, color}); }
+      catch (_) {
+        try { page.drawText(label.replace(/[^\x20-\x7e\n]/g, " "), {x, y: pageH - top - size, size, font, color}); }
+        catch (__) { /* si un glifo no entra, no tumba todo el PDF */ }
+      }
     };
     const centered = (value, top, size = 10, font = regular, color = ink) => { const label = pdfSafe(value); text(label, (pageW - measure(font, label, size)) / 2, top, size, font, color); };
     const line = (x1, y1, x2, y2, thickness = .65, color = lineColor) => page.drawLine({start: {x: x1, y: pageH - y1}, end: {x: x2, y: pageH - y2}, thickness, color});
@@ -151,16 +162,33 @@
     };
     header();
     const columns = [100, 115, 85, 85, 70, 73];
+    const pageLimit = 710;
+    const maxRowsFit = () => Math.max(0, Math.floor((pageLimit - cursor - 28 - 27) / 27));
+    const pagedTable = (cols, headers, allRows, totalRow, peachFirst = false, gapAfter = 44) => {
+      let start = 0;
+      if (!allRows.length) {
+        if (maxRowsFit() < 1) header();
+        cursor = table(cursor, cols, headers, [], totalRow, peachFirst) + gapAfter;
+        return;
+      }
+      while (start < allRows.length) {
+        let room = maxRowsFit();
+        if (room < 1) { header(); room = Math.max(1, maxRowsFit()); }
+        const chunk = allRows.slice(start, start + room);
+        start += chunk.length;
+        const last = start >= allRows.length;
+        const footer = last ? totalRow : ["(cont.)", ...cols.slice(1).map(() => "")];
+        cursor = table(cursor, cols, headers, chunk, footer, peachFirst) + (last ? gapAfter : 16);
+        if (!last) header();
+      }
+    };
     for (const [employee, rows] of groups) {
       const tableRows = rows.map(row => [dayName(row.date), employee, timeLabel(row.timeIn), timeLabel(row.timeOut), `${row.lunch} MIN`, hoursLabel(row.hours)]);
       const employeeTotal = rows.reduce((sum, row) => sum + row.hours, 0);
-      if (cursor + 28 + tableRows.length * 27 + 27 > 710) header();
-      cursor = table(cursor, columns, ["DATE", "EMPLOYEE", "TIME IN", "TIME OUT", "LUNCH", "TOTAL HOURS"], tableRows, ["TOTAL", "", "", "", "", hoursLabel(employeeTotal)]) + 44;
+      pagedTable(columns, ["DATE", "EMPLOYEE", "TIME IN", "TIME OUT", "LUNCH", "TOTAL HOURS"], tableRows, ["TOTAL", "", "", "", "", hoursLabel(employeeTotal)]);
     }
     const summaryRows = summary.map(row => [row.employee, hoursLabel(row.totalHours), row.rate == null ? "VARIES" : `${money(row.rate)}/HR`, money(row.pay)]);
-    const summaryHeight = 28 + summaryRows.length * 27 + 27;
-    if (cursor + summaryHeight + 95 > 750) header();
-    cursor = table(cursor, [180, 130, 140, 82], ["EMPLOYEE", "TOTAL HOURS", "HOURLY RATE", "TOTAL PAY"], summaryRows, ["TOTAL", hoursLabel(totalHours), "", money(totalPay)], true) + 57;
+    pagedTable([180, 130, 140, 82], ["EMPLOYEE", "TOTAL HOURS", "HOURLY RATE", "TOTAL PAY"], summaryRows, ["TOTAL", hoursLabel(totalHours), "", money(totalPay)], true, 57);
     text("Description:", left, cursor, 11, bold, teal);
     cursor += 22;
     wrap(data.description || "", regular, 10, width).forEach(lineText => {
@@ -170,7 +198,9 @@
     });
     doc.setTitle(pdfSafe(`Work hours - ${data.jobAddress || "Arrento Carpentry"}`));
     doc.setAuthor("Arrento Carpentry LLC");
-    doc.setSubject("TrentonControl/hours-v1:" + JSON.stringify({id: data.recordId || "", jobAddress: data.jobAddress || "", reportDate: data.reportDate || "", totalHours, totalPay}));
+    try {
+      doc.setSubject(pdfSafe("TrentonControl/hours-v1:" + JSON.stringify({id: data.recordId || "", jobAddress: data.jobAddress || "", reportDate: data.reportDate || "", totalHours, totalPay})));
+    } catch (_) { /* el asunto interno no debe tumbar el PDF */ }
     doc.setCreator("Trenton Control");
     return new Blob([await doc.save()], {type: "application/pdf"});
   }

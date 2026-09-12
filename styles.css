@@ -1893,11 +1893,15 @@ body {
   display: grid;
   place-items: center;
   overflow: visible;
+  background: transparent;
 }
 .login-mascot {
   position: relative;
   width: min(100%, 420px);
   margin: -18px -10px -8px auto;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 .login-mascot img {
   display: block;
@@ -1905,9 +1909,11 @@ body {
   height: auto;
   max-height: 360px;
   object-fit: contain;
-  background: none;
+  background: transparent;
   border: 0;
-  filter: drop-shadow(0 18px 28px rgba(90, 130, 200, .16));
+  border-radius: 0;
+  box-shadow: none;
+  outline: 0;
 }
 .login-config {
   margin: 8px 0 16px;

@@ -10,7 +10,14 @@
       const code = ch.codePointAt(0);
       if (code === 10 || code === 13 || (code >= 32 && code <= 126) || (code >= 160 && code <= 255) || WIN[code]) return ch;
       const folded = ch.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      return folded && folded !== ch ? pdfSafe(folded) : " ";
+      if (folded && folded !== ch) {
+        return [...folded].map(part => {
+          const partCode = part.codePointAt(0);
+          if ((partCode >= 32 && partCode <= 126) || SWAP[part]) return SWAP[part] || part;
+          return " ";
+        }).join("");
+      }
+      return " ";
     }).join("");
   }
   let reader;
@@ -79,7 +86,10 @@
     function draw(value, x, y, size = 16, font = regular, color = ink) {
       const text = pdfSafe(value);
       try { page.drawText(text, {x: x * s, y: (height - y - size) * s, size: size * s, font, color}); }
-      catch (_) { page.drawText(text.normalize("NFD").replace(/[^\x20-\x7e]/g, " "), {x: x * s, y: (height - y - size) * s, size: size * s, font, color}); }
+      catch (_) {
+        try { page.drawText(text.replace(/[^\x20-\x7e\n]/g, " "), {x: x * s, y: (height - y - size) * s, size: size * s, font, color}); }
+        catch (__) { /* si un glifo no entra, no tumba todo el PDF */ }
+      }
     }
     function rightText(value, x, y, size = 16, font = regular, color = ink) {
       draw(value, x - measure(font, value, size), y, size, font, color);
@@ -152,7 +162,9 @@
     }
     doc.setTitle(pdfSafe((data.workAddress || data.billAddress || "Invoice") + " - " + data.invoiceNumber));
     doc.setAuthor(pdfSafe(data.fromName || "Ruben Perla"));
-    doc.setSubject("TrentonControl/v1:" + JSON.stringify({id: data.recordId || "", address: data.workAddress || data.billAddress, invoiceNumber: data.invoiceNumber, issuedDate: date, amount: total}));
+    try {
+      doc.setSubject(pdfSafe("TrentonControl/v1:" + JSON.stringify({id: data.recordId || "", address: data.workAddress || data.billAddress, invoiceNumber: data.invoiceNumber, issuedDate: date, amount: total})));
+    } catch (_) { /* el asunto interno no debe tumbar el PDF */ }
     doc.setCreator("Trenton Control");
     return new Blob([await doc.save()], {type: "application/pdf"});
   }
