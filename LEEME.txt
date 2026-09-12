@@ -7,11 +7,16 @@ SQL: pega supabase/schema.sql en SQL Editor (tablas, RLS, buckets).
 Crea el usuario de Lilian en Authentication. En URL configuration permite
 http://127.0.0.1:5500. Nunca uses la service_role en la página.
 
+CONEXIÓN (una sola vez, en el código)
+En config.js van Project URL y anon public (Settings → API).
+Eso viaja con la carpeta: otra PC, celular u otro navegador solo pide
+correo y contraseña de Lilian. La anon key es pública a propósito.
+Nunca pongas la service_role. Lo que protege los PDFs es el login + RLS.
+
 AL ENTRAR
 1. Abre index.html con Live Server.
-2. Pega Project URL y anon key. Guarda conexión.
-3. Entra con el correo y contraseña de Lilian.
-4. Si este navegador ya tenía invoices, la app ofrece subirlas a la nube.
+2. Entra con el correo y contraseña de Lilian.
+3. Si este navegador ya tenía invoices, la app ofrece subirlas a la nube.
 
 Los PDFs se guardan en Supabase Storage y también en la caché de este
 navegador. Subir invoices anteriores ahora las manda a la nube.
@@ -121,8 +126,6 @@ revisa los datos y guarda. Se omiten las invoices que ya estén guardadas.
 Puedes respaldar hasta 500 registros o 200 MB en un ZIP. Los PDFs también
 se pueden descargar individualmente. Conserva copias de tus respaldos.
 
-Los datos y PDFs quedan guardados en ESTE navegador. No se sincronizan
-solos con otra computadora. Borrar los datos del sitio, usar otro perfil
-u otra dirección puede dejar de mostrar tus registros. El respaldo permite
-llevarlos a otro navegador y recuperarlos. Los archivos se procesan en tu
-computadora; la lectura de PDFs no requiere enviar tus facturas a un servicio.
+Los PDFs y registros viven en Supabase (nube). Este navegador solo guarda
+una caché para abrirlos más rápido. En otra computadora entra con el mismo
+correo: ves lo mismo. Conserva copias de tus respaldos ZIP por si acaso.

@@ -16,6 +16,8 @@
   const $ = selector => document.querySelector(selector);
   let watching = false;
   let booting = false;
+  let quoteIndex = new Date().getDate() % PHRASES.length;
+  let quoteTimer;
 
   function phraseFor(date = new Date()) {
     return PHRASES[date.getDate() % PHRASES.length];
@@ -27,9 +29,27 @@
     return `${hello}, Lilian.`;
   }
 
+  function setQuote(element, text) {
+    if (!element) return;
+    element.classList.remove("quote-swap");
+    void element.offsetWidth;
+    element.textContent = text;
+    element.classList.add("quote-swap");
+  }
+
+  function replayWelcome() {
+    const hero = document.querySelector(".hero-welcome");
+    if (!hero || document.body.classList.contains("is-authenticated") === false) return;
+    hero.classList.remove("welcome-play");
+    void hero.offsetWidth;
+    hero.classList.add("welcome-play");
+    setQuote($("#heroQuote"), PHRASES[quoteIndex % PHRASES.length]);
+  }
+
   function setGate(mode) {
     $("#authConfigPanel")?.classList.toggle("hidden", mode !== "config");
     $("#authLoginPanel")?.classList.toggle("hidden", mode !== "login");
+    $("#authGate")?.setAttribute("data-mode", mode);
   }
 
   function showApp(show) {
@@ -37,12 +57,22 @@
     $("#appShell")?.classList.toggle("app-locked", !show);
     if ($("#appShell")) $("#appShell").hidden = !show;
     document.body.classList.toggle("is-authenticated", show);
+    if (show) {
+      $("#authGate")?.classList.remove("auth-play");
+      requestAnimationFrame(() => replayWelcome());
+    } else {
+      $("#authGate")?.classList.add("auth-play");
+    }
   }
 
-  function fillConfigForm() {
-    const config = root.TrentonConfig.get();
-    if ($("#supabaseUrl")) $("#supabaseUrl").value = config.url;
-    if ($("#supabaseAnon")) $("#supabaseAnon").value = config.anonKey;
+  function cycleQuotes() {
+    clearInterval(quoteTimer);
+    quoteTimer = setInterval(() => {
+      quoteIndex = (quoteIndex + 1) % PHRASES.length;
+      const text = PHRASES[quoteIndex];
+      if (!$("#authGate")?.classList.contains("hidden")) setQuote($("#authWelcomeQuote"), text);
+      if (document.body.classList.contains("is-authenticated")) setQuote($("#heroQuote"), text);
+    }, 5200);
   }
 
   function watchAuth(onReady, onLogout) {
@@ -59,8 +89,8 @@
       }
       showApp(true);
       if ($("#welcomeGreeting")) $("#welcomeGreeting").textContent = greeting();
-      if ($("#heroQuote")) $("#heroQuote").textContent = phraseFor();
-      if ($("#authWelcomeQuote")) $("#authWelcomeQuote").textContent = phraseFor();
+      setQuote($("#heroQuote"), PHRASES[quoteIndex % PHRASES.length]);
+      setQuote($("#authWelcomeQuote"), PHRASES[quoteIndex % PHRASES.length]);
       if (booting) return;
       booting = true;
       try { await onReady?.(user); } finally { booting = false; }
@@ -68,32 +98,16 @@
   }
 
   async function start({ onReady, onLogout }) {
-    fillConfigForm();
     showApp(false);
     setGate(root.TrentonConfig.ready() ? "login" : "config");
+    cycleQuotes();
 
-    $("#saveSupabaseConfig")?.addEventListener("click", () => {
-      root.TrentonConfig.set($("#supabaseUrl").value, $("#supabaseAnon").value);
-      root.TrentonSupabase.reset();
-      watching = false;
-      if (!root.TrentonConfig.ready()) {
-        $("#authError").textContent = "Revisa la URL (https://xxxx.supabase.co) y la anon key.";
-        return;
-      }
-      $("#authError").textContent = "Proyecto conectado. Entra con el correo de Lilian.";
-      setGate("login");
-      watchAuth(onReady, onLogout);
-    });
-    $("#editSupabaseConfig")?.addEventListener("click", () => {
-      fillConfigForm();
-      setGate("config");
-    });
     $("#loginForm")?.addEventListener("submit", async event => {
       event.preventDefault();
       $("#authError").textContent = "";
       $("#loginButton").disabled = true;
       try {
-        if (!root.TrentonConfig.ready()) throw new Error("Primero guarda la URL y la anon key del proyecto.");
+        if (!root.TrentonConfig.ready()) throw new Error("Esta copia de la app aún no tiene la conexión a la nube.");
         watchAuth(onReady, onLogout);
         const { error } = await root.TrentonSupabase.client.auth.signInWithPassword({
           email: $("#loginEmail").value.trim(),
@@ -113,5 +127,5 @@
     watchAuth(onReady, onLogout);
   }
 
-  root.AuthApp = { start, greeting, phrase: phraseFor, phrases: PHRASES };
+  root.AuthApp = { start, greeting, phrase: phraseFor, phrases: PHRASES, replayWelcome };
 })(typeof globalThis !== "undefined" ? globalThis : this);

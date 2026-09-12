@@ -9,29 +9,35 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=nube-v2" />
+    <link rel="stylesheet" href="styles.css?v=nube-v3" />
   </head>
   <body>
-    <div id="authGate" class="auth-gate">
+    <div id="authGate" class="auth-gate auth-play" data-mode="login">
+      <div class="auth-fx" aria-hidden="true">
+        <span class="auth-orb o1"></span>
+        <span class="auth-orb o2"></span>
+        <span class="auth-orb o3"></span>
+        <span class="auth-spark s1"></span>
+        <span class="auth-spark s2"></span>
+        <span class="auth-spark s3"></span>
+        <span class="auth-spark s4"></span>
+      </div>
       <section class="auth-card">
         <div class="auth-brand"><div class="brand-mark"><span>RP</span></div><div><strong>Ruben Perla 2026</strong><small>Control de trabajos</small></div></div>
+        <p class="auth-kicker">Bienvenida del día</p>
         <p class="auth-welcome" id="authWelcomeQuote">Eres la verdura del caldo.</p>
-        <div id="authConfigPanel">
-          <h1>Conectar Supabase</h1>
-          <p>Pega la URL del proyecto <strong>trenton-control</strong> y la anon public key. Nunca uses la service_role.</p>
-          <label class="field"><span>Project URL</span><input id="supabaseUrl" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off"></label>
-          <label class="field"><span>Anon key</span><textarea id="supabaseAnon" rows="3" placeholder="eyJhbGciOi..." autocomplete="off"></textarea></label>
-          <button class="button button-primary" type="button" id="saveSupabaseConfig">Guardar conexión</button>
+        <div id="authConfigPanel" class="hidden">
+          <h1>Falta conectar la nube</h1>
+          <p>Esta copia todavía no tiene la conexión del proyecto. Quien mantiene la app debe completar <code>config.js</code> con la URL y la anon public key. Lilian no tiene que pegar claves.</p>
         </div>
         <div id="authLoginPanel" class="hidden">
           <h1>Hola, Lilian</h1>
-          <p>Entra para ver invoices, horas y PDFs en la nube y en este navegador.</p>
+          <p>Entra con tu correo y contraseña. En otra PC, celular u otro navegador es lo mismo: no se pegan URLs ni claves.</p>
           <form id="loginForm">
             <label class="field"><span>Correo</span><input id="loginEmail" type="email" required autocomplete="username"></label>
             <label class="field"><span>Contraseña</span><input id="loginPassword" type="password" required autocomplete="current-password"></label>
             <button class="button button-primary" id="loginButton" type="submit">Entrar</button>
           </form>
-          <button class="button button-ghost" type="button" id="editSupabaseConfig">Cambiar proyecto</button>
         </div>
         <p class="form-error" id="authError" role="alert"></p>
       </section>
@@ -70,6 +76,15 @@
         <main class="main-content">
           <section class="page-view" id="boardView">
           <section class="hero hero-welcome">
+            <div class="welcome-fx" aria-hidden="true">
+              <span class="welcome-orb a"></span>
+              <span class="welcome-orb b"></span>
+              <span class="welcome-orb c"></span>
+              <span class="welcome-dot d1"></span>
+              <span class="welcome-dot d2"></span>
+              <span class="welcome-dot d3"></span>
+              <span class="welcome-dot d4"></span>
+            </div>
             <div class="hero-copy-block">
               <p class="eyebrow">Panel de seguimiento <span class="hero-status-dot" aria-hidden="true"></span></p>
               <p class="welcome-greeting" id="welcomeGreeting" aria-live="polite">Buenos días, Lilian.</p>
@@ -114,12 +129,19 @@
                   <div class="whatsapp-actions"><p id="hoursWhatsAppHelp">Detecta dirección, fecha, empleados, entrada, salida, almuerzo, horas y tarifa. Usa horario de 24 horas.</p><button class="button button-primary" id="parseHoursWhatsAppButton" type="button">Desglosar horas</button></div>
                   <div id="hoursWhatsAppResult" class="whatsapp-result hidden" role="status" aria-live="polite"></div>
                 </section>
-                <section class="translator-panel" data-translator="hours" data-target="hoursDescription" data-langpair="es|en">
-                  <div class="translator-heading"><div><p class="eyebrow">Traductor</p><h2>Español ↔ inglés</h2></div><span class="whatsapp-badge">Texto → texto</span></div>
-                  <p>Pega un texto, tradúcelo y colócalo en la descripción cuando te cuadre.</p>
-                  <div class="translator-pairs"><button type="button" class="button button-ghost is-active" data-pair="es|en">Español → Inglés</button><button type="button" class="button button-ghost" data-pair="en|es">Inglés → Español</button><button type="button" class="button button-ghost" data-translator-swap>Intercambiar</button></div>
-                  <div class="translator-grid"><label>Original<textarea data-translator-source rows="5" maxlength="8000" placeholder="Pega aquí el texto a traducir"></textarea></label><label>Traducción<textarea data-translator-output rows="5" maxlength="8000" readonly></textarea></label></div>
-                  <div class="translator-actions"><p data-translator-status>Tú decides qué copiar al formulario.</p><div><button type="button" class="button button-primary" data-translator-go>Traducir</button><button type="button" class="button button-ghost" data-translator-copy>Copiar</button><button type="button" class="button button-ghost" data-translator-apply>Usar en descripción</button></div></div>
+                <section class="translator-panel" data-translator="hours" data-target="hoursDescription" data-langpair="es|en" data-dir="es-en">
+                  <div class="translator-heading"><div><p class="eyebrow">Traductor</p><h2 data-translator-title>Español → Inglés</h2></div><span class="whatsapp-badge" data-translator-badge>ES → EN</span></div>
+                  <p data-translator-hint>Pega el texto en español. El resultado saldrá en inglés para la descripción del reporte de horas.</p>
+                  <div class="translator-switch" role="group" aria-label="Dirección de traducción">
+                    <button type="button" class="translator-dir is-active" data-pair="es|en" aria-pressed="true"><strong>Español → Inglés</strong><small>De español a inglés</small></button>
+                    <button type="button" class="translator-swap" data-translator-swap aria-label="Invertir idiomas">⇄</button>
+                    <button type="button" class="translator-dir" data-pair="en|es" aria-pressed="false"><strong>Inglés → Español</strong><small>De inglés a español</small></button>
+                  </div>
+                  <div class="translator-grid">
+                    <label><span data-translator-source-label>Texto en español</span><textarea data-translator-source rows="5" maxlength="8000" placeholder="Escribe o pega aquí en español…"></textarea></label>
+                    <label><span data-translator-output-label>Traducción al inglés</span><textarea data-translator-output rows="5" maxlength="8000" readonly placeholder="Aquí aparecerá el inglés…"></textarea></label>
+                  </div>
+                  <div class="translator-actions"><p data-translator-status>Dirección activa: de español a inglés.</p><div><button type="button" class="button button-primary" data-translator-go>Traducir al inglés</button><button type="button" class="button button-ghost" data-translator-copy>Copiar</button><button type="button" class="button button-ghost" data-translator-apply>Usar en descripción</button></div></div>
                 </section>
                 <div class="hours-fields">
                   <label class="field full"><span>Dirección del trabajo <em>*</em></span><input id="hoursJobAddress" type="text" list="addressHistory" placeholder="Ej. 4406 Woodfield Rd, Kensington, MD 20895" required></label>
@@ -195,12 +217,19 @@
               <div class="whatsapp-actions"><p id="whatsappHelp">Un trabajo por mensaje. Podrás corregir los campos antes de guardar.</p><button class="button button-primary" id="fillInvoiceFromTextButton" type="button">Completar invoice</button></div>
               <div id="whatsappResult" class="whatsapp-result hidden" role="status" aria-live="polite"></div>
             </section>
-            <section class="translator-panel" data-translator="invoice" data-target="builderDescription" data-langpair="es|en">
-              <div class="translator-heading"><div><p class="eyebrow">Traductor</p><h2>Español ↔ inglés</h2></div><span class="whatsapp-badge">Texto → texto</span></div>
-              <p>Pega el texto, tradúcelo y úsalo en la descripción de la invoice cuando te cuadre.</p>
-              <div class="translator-pairs"><button type="button" class="button button-ghost is-active" data-pair="es|en">Español → Inglés</button><button type="button" class="button button-ghost" data-pair="en|es">Inglés → Español</button><button type="button" class="button button-ghost" data-translator-swap>Intercambiar</button></div>
-              <div class="translator-grid"><label>Original<textarea data-translator-source rows="5" maxlength="8000" placeholder="Pega aquí el texto a traducir"></textarea></label><label>Traducción<textarea data-translator-output rows="5" maxlength="8000" readonly></textarea></label></div>
-              <div class="translator-actions"><p data-translator-status>Tú decides qué copiar al formulario.</p><div><button type="button" class="button button-primary" data-translator-go>Traducir</button><button type="button" class="button button-ghost" data-translator-copy>Copiar</button><button type="button" class="button button-ghost" data-translator-apply>Usar en descripción</button></div></div>
+            <section class="translator-panel" data-translator="invoice" data-target="builderDescription" data-langpair="es|en" data-dir="es-en">
+              <div class="translator-heading"><div><p class="eyebrow">Traductor</p><h2 data-translator-title>Español → Inglés</h2></div><span class="whatsapp-badge" data-translator-badge>ES → EN</span></div>
+              <p data-translator-hint>Pega el texto en español. El resultado saldrá en inglés para la descripción de la invoice.</p>
+              <div class="translator-switch" role="group" aria-label="Dirección de traducción">
+                <button type="button" class="translator-dir is-active" data-pair="es|en" aria-pressed="true"><strong>Español → Inglés</strong><small>De español a inglés</small></button>
+                <button type="button" class="translator-swap" data-translator-swap aria-label="Invertir idiomas">⇄</button>
+                <button type="button" class="translator-dir" data-pair="en|es" aria-pressed="false"><strong>Inglés → Español</strong><small>De inglés a español</small></button>
+              </div>
+              <div class="translator-grid">
+                <label><span data-translator-source-label>Texto en español</span><textarea data-translator-source rows="5" maxlength="8000" placeholder="Escribe o pega aquí en español…"></textarea></label>
+                <label><span data-translator-output-label>Traducción al inglés</span><textarea data-translator-output rows="5" maxlength="8000" readonly placeholder="Aquí aparecerá el inglés…"></textarea></label>
+              </div>
+              <div class="translator-actions"><p data-translator-status>Dirección activa: de español a inglés.</p><div><button type="button" class="button button-primary" data-translator-go>Traducir al inglés</button><button type="button" class="button button-ghost" data-translator-copy>Copiar</button><button type="button" class="button button-ghost" data-translator-apply>Usar en descripción</button></div></div>
             </section>
             <div class="invoice-builder">
               <section class="invoice-form-panel">
@@ -351,7 +380,7 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <datalist id="addressHistory"></datalist>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-    <script src="config.js" defer></script>
+    <script src="config.js?v=5" defer></script>
     <script src="supabase-client.js" defer></script>
     <script src="local-cache.js" defer></script>
     <script src="vendor/pdf-lib.min.js" defer></script>
@@ -364,8 +393,8 @@
     <script src="hours-pdf.js?v=4" defer></script>
     <script src="hours-whatsapp.js?v=2" defer></script>
     <script src="hours-app.js?v=4" defer></script>
-    <script src="translator.js?v=1" defer></script>
-    <script src="auth-app.js?v=2" defer></script>
-    <script src="app.js?v=nube-v1" defer></script>
+    <script src="translator.js?v=3" defer></script>
+    <script src="auth-app.js?v=4" defer></script>
+    <script src="app.js?v=nube-v4" defer></script>
   </body>
 </html>

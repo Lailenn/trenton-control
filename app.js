@@ -1,8 +1,7 @@
-const WhatsAppInvoiceParser = window.WhatsAppInvoiceParser;
-
 (() => {
   "use strict";
   if (typeof document === "undefined" || typeof window === "undefined") return;
+  const WhatsAppInvoiceParser = window.WhatsAppInvoiceParser;
 
   const MAX_PDF_BYTES = 15 * 1024 * 1024;
   const Core = window.InvoiceCore, PDFs = window.InvoicePDF, Cloud = window.CloudDB;
@@ -71,9 +70,7 @@ const WhatsAppInvoiceParser = window.WhatsAppInvoiceParser;
 
   function updateWelcome() {
     const greetingElement = $("#welcomeGreeting");
-    const quoteElement = $("#heroQuote");
     if (greetingElement) greetingElement.textContent = window.AuthApp?.greeting() || "Buenos días, Lilian.";
-    if (quoteElement) quoteElement.textContent = window.AuthApp?.phrase() || "Eres la verdura del caldo.";
   }
 
   function showToast(message) {
@@ -390,6 +387,7 @@ const WhatsAppInvoiceParser = window.WhatsAppInvoiceParser;
     $("#hoursView").classList.toggle("hidden", view !== "hours");
     setSidebarOpen(false);
     replayViewAnimation(view);
+    if (view === "board") window.AuthApp?.replayWelcome?.();
     if (view === "invoice") updateInvoicePreview();
     if (view === "hours") window.HoursApp?.open();
   }
