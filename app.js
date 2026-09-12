@@ -1,230 +1,11 @@
-// Reads one pasted message. It does not connect to WhatsApp or save an invoice.
-const WhatsAppInvoiceParser = (() => {
-  const fold = (text) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  const dateValue = (date = new Date()) => [
-    date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")
-  ].join("-");
-
-  function cleanLines(raw) {
-    return String(raw || "").replace(/\r\n?/g, "\n")
-      .replace(/[\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g, "")
-      .replace(/\u00a0/g, " ").split("\n").map((line) => line
-        .replace(/^\s*\[(?=[^\]]*\d{1,2}:\d{2})[^\]]{1,100}\]\s*[^:\n]{1,100}:\s*/, "")
-        .replace(/^\s*\d{1,2}[/.]\d{1,2}[/.]\d{2,4},?\s+\d{1,2}:\d{2}(?:\s*[ap]\.?\s*m\.?)?\s*-\s*[^:\n]{1,100}:\s*/i, "")
-        .replace(/(?:^|\s+)\d{1,2}:\d{2}\s*[ap]\.?\s*m\.?\s*(?:[✓✔]+)?\s*$/i, "")
-        .trim().replace(/^[*_\x60]+|[*_\x60]+$/g, "").trim())
-      .filter((line) => line && !/^[-—–_=•\s]+$/.test(line));
-  }
-
-  function numberValue(text) {
-    let value = String(text).trim().replace(/(?:USD|US\$|d[oó]lares?)/gi, "")
-      .replace(/\$/g, "").replace(/\s/g, "").trim();
-    if (!/^\d+(?:[.,]\d+)*$/.test(value)) return null;
-    const comma = value.lastIndexOf(",");
-    const dot = value.lastIndexOf(".");
-    if (comma >= 0 && dot >= 0) {
-      const decimal = comma > dot ? "," : ".";
-      const thousands = decimal === "," ? "." : ",";
-      const parts = value.split(decimal);
-      const grouped = thousands === "," ? /^\d{1,3}(?:,\d{3})+$/ : /^\d{1,3}(?:\.\d{3})+$/;
-      if (parts.length !== 2 || !/^\d{1,2}$/.test(parts[1]) || !grouped.test(parts[0])) return null;
-      value = parts[0].split(thousands).join("") + "." + parts[1];
-    } else if (comma >= 0 || dot >= 0) {
-      if (/^\d{1,3}(?:,\d{3})+$/.test(value) || /^\d{1,3}(?:\.\d{3})+$/.test(value)) {
-        value = value.replace(/[.,]/g, "");
-      } else if (/^\d+[.,]\d{1,2}$/.test(value)) {
-        value = value.replace(",", ".");
-      } else return null;
-    }
-    const amount = Number(value);
-    return Number.isFinite(amount) && amount <= 1e10 ? amount : null;
-  }
-
-  function moneyLineValue(line) {
-    const value = String(line || "").trim();
-    if (!/^(?:(?:US\$|USD|\$)\s*)?\d{1,3}(?:[,.\s]\d{3})+(?:[.,]\d{1,2})?\s*(?:USD|d[oó]lares?)?$/i.test(value)) return null;
-    return numberValue(value);
-  }
-
-  function exactDate(year, month, day) {
-    const date = new Date(year, month - 1, day);
-    return year >= 1900 && year <= 2200 && date.getFullYear() === year &&
-      date.getMonth() === month - 1 && date.getDate() === day ? dateValue(date) : null;
-  }
-
-  function readDate(value, now) {
-    const clean = fold(value).replace(/[.!]$/, "").trim();
-    if (/^(?:con\s+)?fecha\s+de\s+hoy$|^hoy$|^today$|^today['’]s date$/.test(clean)) return dateValue(now);
-    let match = clean.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-    if (match) return exactDate(Number(match[1]), Number(match[2]), Number(match[3]));
-    match = clean.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
-    if (match) return exactDate(Number(match[3]), Number(match[2]), Number(match[1]));
-    const months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-    match = clean.match(/^(\d{1,2})\s+(?:de\s+)?([a-z]+)\s+(?:de\s+)?(\d{4})$/);
-    if (match && months.includes(match[2])) return exactDate(Number(match[3]), months.indexOf(match[2]) + 1, Number(match[1]));
-    return null;
-  }
-
-  function parse(raw, now = new Date()) {
-    const lines = cleanLines(raw);
-    const candidates = new Map();
-    const description = [];
-    const notes = [];
-    const review = [];
-    const rejected = new Set();
-    let continuation = "description";
-    const add = (key, value) => {
-      if (value === "" || value == null) return;
-      const list = candidates.get(key) || [];
-      list.push(value);
-      candidates.set(key, list);
-    };
-    const addNumber = (key, value, label) => {
-      const number = numberValue(value);
-      if (number == null) {
-        rejected.add(key);
-        review.push("Revisa " + label + ": no pude leer “" + value + "” como un solo número.");
-      } else add(key, number);
-    };
-
-    for (let index = 0; index < lines.length; index++) {
-      const line = lines[index];
-      const normalized = fold(line);
-      let match;
-      const following = (value) => value.trim() || (lines[++index] || "").trim();
-
-      match = line.match(/^(?:nota|note|observaciones|condiciones de pago)\s*:\s*(.*)$/i);
-      if (match) { notes.push(match[1]); continuation = "note"; continue; }
-      match = line.match(/^(?:descripci[oó]n(?: del trabajo)?|description|trabajo)\s*:\s*(.*)$/i);
-      if (match) { description.push(match[1]); continuation = "description"; continue; }
-
-      // Ignore greetings and the sender label if copied with the message.
-      if (/^(?:hola|buenos dias|buenas tardes|buenas noches|gracias)[!.,\s]*$|^ruben perla:?$/i.test(normalized)) continue;
-
-      match = line.match(/^(?:compa[nñ][ií]a|empresa|cliente|bill to)\s*:\s*(.*)$/i);
-      if (match) {
-        const value = following(match[1]);
-        add("billName", /\btrento(?:n)?\b/i.test(value) ? "Trenton Builders LLC" : value);
-        continue;
-      }
-      if (/\btrento(?:n)?\b/i.test(line) && /^(?:para\b|trento(?:n)?\b|la (?:misma )?compania\b)/.test(normalized)) {
-        add("billName", "Trenton Builders LLC"); continue;
-      }
-
-      match = line.match(/^(?:direcci[oó]n(?: del (?:trabajo|cliente))?|address|ubicaci[oó]n)\s*:\s*(.*)$/i);
-      if (match) { add("billAddress", following(match[1])); continue; }
-      if (/^\d{1,6}[a-z]?(?:[-/]\d+)?\s+.+\b(?:st(?:reet)?|ave(?:nue)?|rd|road|dr(?:ive)?|ct|court|blvd|boulevard|ln|lane|way|pl|place|pkwy|parkway|ter|terrace|cir|circle)\.?(?:\s|,|$)/i.test(line)) {
-        let address = line;
-        // A city/state/ZIP on the following line belongs to the same address.
-        if (lines[index + 1] && /^[A-Za-z .'-]+,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?$/i.test(lines[index + 1])) address += ", " + lines[++index];
-        add("billAddress", address); continue;
-      }
-
-      match = line.match(/^(?:n[uú]mero de (?:invoice|factura)|invoice(?:\s*(?:no\.?|number|n[.º°]+))?|factura(?:\s*(?:no\.?|n[.º°]+))?)\s*(?::|#|=)\s*(.*)$/i);
-      if (match) {
-        const value = following(match[1]).replace(/^#/, "");
-        if (/^[A-Za-z0-9][A-Za-z0-9._/-]{0,39}$/.test(value)) add("invoiceNumber", "#" + value);
-        else review.push("Revisa el número de invoice.");
-        continue;
-      }
-      match = line.match(/^(?:(?:estimated\s+and\s+)?approved\s+by|estimated\s+and\s+approved\s+by|(?:estimado\s+y\s+)?aprobado\s+por)\s+.+$/i);
-      if (match) { add("approval", line.toUpperCase()); continue; }
-      match = line.match(/^(?:aprobaci[oó]n|approval)\s*:\s*(.*)$/i);
-      if (match) { add("approval", following(match[1]).toUpperCase()); continue; }
-
-      match = line.match(/^(?:fecha(?: de emisi[oó]n)?|issued(?: date)?|date)\s*:\s*(.*)$/i);
-      if (match || /^(?:con\s+)?fecha\s+de\s+hoy[.!]?$|^con fecha\s+/i.test(line)) {
-        const value = match ? following(match[1]) : line.replace(/^con fecha\s+(?!de hoy)/i, "");
-        const date = readDate(value, now);
-        if (date) {
-          add("issuedDate", date);
-          if (/^\d{1,2}[/-]\d{1,2}[/-]\d{4}$/.test(value)) review.push("La fecha numérica se leyó como día/mes/año.");
-        } else { rejected.add("issuedDate"); review.push("Revisa la fecha: “" + value + "” no es una fecha válida reconocida."); }
-        continue;
-      }
-
-      match = line.match(/^(?:cantidad|qty|quantity)\s*:\s*(.*)$/i);
-      if (match) { addNumber("qty", following(match[1]), "la cantidad"); continue; }
-      match = line.match(/^(?:precio (?:por unidad|unitario)|unit price)\s*:\s*(.*)$/i);
-      if (match) { addNumber("price", following(match[1]), "el precio por unidad"); continue; }
-      match = line.match(/^(?:price\s+for\s+(?:materials?|materiales?)\s+and\s+(?:labor|labour|mano\s+de\s+obra)|precio\s+(?:por|de|para) materiales?\s+y\s+mano\s+de\s+obra|grand\s+total|total(?:\s+(?:amount|due|a\s+pagar))?|monto(?:\s+total)?|importe|precio(?:\s+total)?|amount(?:\s+(?:due|a\s+pagar))?|costo(?:\s+total)?|balance\s+due)\b\s*(?::|=)?\s*(.*)$/i);
-      if (match) { addNumber("total", following(match[1]), "el monto total"); continue; }
-      if (/^(?:US\$|USD|\$)\s*[\d.,\s]+(?:\s*USD)?$/i.test(line) || /^(?:\d{1,3}(?:[,.\s]\d{3})+|\d+[.,]\d{2})\s*(?:USD|US\$|d[oó]lares?)$/i.test(line)) {
-        addNumber("total", line, "el monto total"); continue;
-      }
-      const standaloneMoney = moneyLineValue(line);
-      if (standaloneMoney != null && standaloneMoney >= 100) {
-        add("total", standaloneMoney); continue;
-      }
-
-      match = normalized.match(/^(?:(?:anticipo(?: requerido)?|deposito|deposit)\s*:?\s*(\d+(?:[.,]\d{1,2})?)\s*%|(\d+(?:[.,]\d{1,2})?)\s*%\s+(?:de\s+)?anticipo)[.!]?$/);
-      if (match) {
-        const percent = numberValue(match[1] || match[2]);
-        if (percent != null && percent <= 100) add("deposit", percent);
-        else { rejected.add("deposit"); review.push("El anticipo debe estar entre 0% y 100%."); }
-        continue;
-      }
-      if (/^(?:anticipo|deposito|deposit)\b/.test(normalized)) {
-        notes.push(line); rejected.add("deposit");
-        review.push("El anticipo se conservó como nota; revisa si es un monto o un porcentaje."); continue;
-      }
-      if (/^(?:horas?|hours?|tarifa|rate)\b/.test(normalized) || /^[\d$.,:\s]+$/.test(line)) {
-        review.push("Línea para revisar manualmente: “" + line + "”."); continue;
-      }
-      (continuation === "note" ? notes : description).push(line);
-    }
-
-    const fields = {};
-    const conflicts = [];
-    for (const [key, values] of candidates) {
-      const unique = [...new Map(values.map((value) => [String(value).toLowerCase(), value])).values()];
-      if (unique.length > 1) conflicts.push(key);
-      else if (!rejected.has(key)) fields[key] = unique[0];
-    }
-    if (description.some(Boolean)) fields.description = description.filter(Boolean).join("\n");
-    if (notes.some(Boolean)) fields.note = notes.filter(Boolean).join("\n");
-    if (conflicts.length) return { fields: {}, review: [], error: "Hay datos distintos para un mismo campo. Pega solo un trabajo y un monto final, o corrige las líneas repetidas." };
-
-    // A lump-sum total must not be multiplied by a quantity from another invoice.
-    let detectedTotal = fields.total;
-    if (fields.total != null) {
-      if (fields.qty != null && fields.price != null && Math.abs(Math.round(fields.qty * fields.price * 100) - Math.round(fields.total * 100)) > 0) {
-        delete fields.total; delete fields.qty; delete fields.price;
-        detectedTotal = undefined;
-        review.push("Cantidad × precio no coincide con el total. Completa esos campos manualmente.");
-      } else if (fields.qty != null && fields.price != null) {
-        delete fields.total;
-      } else {
-        fields.qty = 1; fields.price = fields.total; delete fields.total;
-        review.push("El monto total se cargó como un trabajo completo: cantidad 1.");
-      }
-    } else if (fields.price != null && fields.qty == null) {
-      delete fields.price;
-      review.push("Hay un precio por unidad, pero falta la cantidad. Revisa ambos campos.");
-    } else if (fields.qty != null && fields.price == null) {
-      delete fields.qty;
-      review.push("Hay una cantidad, pero falta un precio reconocido. Revisa ambos campos.");
-    }
-    if (rejected.has("total") || rejected.has("price") || rejected.has("qty")) {
-      delete fields.qty; delete fields.price;
-      detectedTotal = undefined;
-    }
-    return { fields, detectedTotal, review, error: lines.length ? "" : "Pega primero el texto del mensaje." };
-  }
-  return { parse, dateValue };
-})();
-
-if (typeof module !== "undefined" && module.exports) module.exports = WhatsAppInvoiceParser;
+const WhatsAppInvoiceParser = window.WhatsAppInvoiceParser;
 
 (() => {
   "use strict";
   if (typeof document === "undefined" || typeof window === "undefined") return;
 
-  const DB_NAME = "trenton-control-db";
-  const DB_VERSION = 2;
-  const STORE = "invoices";
   const MAX_PDF_BYTES = 15 * 1024 * 1024;
-  const Core = window.InvoiceCore, PDFs = window.InvoicePDF;
+  const Core = window.InvoiceCore, PDFs = window.InvoicePDF, Cloud = window.CloudDB;
   const stages = [
     { id: "created", title: "Factura creada", subtitle: "PDF listo para seguimiento", className: "column-created" },
     { id: "working", title: "En trabajo", subtitle: "Rubén está trabajando", className: "column-working" },
@@ -236,8 +17,8 @@ if (typeof module !== "undefined" && module.exports) module.exports = WhatsAppIn
   const money = (value) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(Number(value) || 0);
   const esc = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#039;", '"': "&quot;" }[char]));
   const makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  let db;
   let records = [];
+  let ready = false;
   let editingId = null;
   let selectedPdf = null;
   let draggedId = null;
@@ -247,68 +28,26 @@ if (typeof module !== "undefined" && module.exports) module.exports = WhatsAppIn
   let logoDataUrl = DEFAULT_LOGO_URL;
   const pdfUrls = new Map();
 
-  function openDatabase() {
-    return new Promise((resolve, reject) => {
-      if (!window.indexedDB) return reject(new Error("IndexedDB no disponible"));
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
-      request.onupgradeneeded = () => {
-        const database = request.result;
-        if (!database.objectStoreNames.contains(STORE)) database.createObjectStore(STORE, {keyPath: "id"});
-        if (!database.objectStoreNames.contains("hoursReports")) database.createObjectStore("hoursReports", {keyPath: "id"});
-      };
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error || new Error("No se pudo abrir el almacenamiento"));
-    });
-  }
-
-  function storeRequest(mode, action) {
-    return new Promise((resolve, reject) => {
-      try {
-        const tx = db.transaction(STORE, mode);
-        const request = action(tx.objectStore(STORE));
-        tx.oncomplete = () => resolve(request.result);
-        tx.onabort = () => reject(tx.error || new Error("No se completó el guardado"));
-        tx.onerror = () => reject(tx.error || request.error);
-      } catch (error) { reject(error); }
-    });
-  }
-
   async function loadRecords() {
-    records = (await storeRequest("readonly", (store) => store.getAll())) || [];
-    records.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+    records = await Cloud.listInvoices();
+    fillAddressHistory();
   }
 
   async function saveRecord(record) {
-    await saveMany([record]);
-    updateSaved("Guardado localmente");
+    await Cloud.saveInvoice(record, records);
+    updateSaved("En la nube y en este navegador");
   }
 
-  function saveMany(incoming) {
-    return new Promise((resolve, reject) => {
-      if (!db) return reject(new Error("El almacenamiento no está disponible."));
-      const tx = db.transaction(STORE, "readwrite"), store = tx.objectStore(STORE);
-      let reason;
-      tx.oncomplete = resolve;
-      tx.onabort = () => reject(reason || tx.error || new Error("No se guardó la operación."));
-      tx.onerror = () => reject(tx.error || new Error("No se pudo guardar."));
-      const request = store.getAll();
-      request.onsuccess = () => {
-        const seen = request.result.filter(r => !incoming.some(n => n.id === r.id));
-        for (const r of incoming) {
-          const duplicate = seen.find(old => (Core.logicalKey(r) && Core.logicalKey(r) === Core.logicalKey(old)) ||
-            (r.pdfHash && r.pdfHash === old.pdfHash) || (r.sourceId && (r.sourceId === old.id || r.sourceId === old.sourceId)));
-          if (duplicate) { reason = new Error("Esta invoice ya está guardada: " + duplicate.invoiceNumber + ", " + duplicate.address + ". Edita el registro existente."); tx.abort(); return; }
-          seen.push(r);
-        }
-        incoming.forEach(r => store.put(r));
-      };
-    });
+  async function saveMany(incoming) {
+    await Cloud.saveMany(incoming, records);
+    updateSaved("En la nube y en este navegador");
   }
 
   function replaceInMemory(record) {
     if (pdfUrls.has(record.id)) { URL.revokeObjectURL(pdfUrls.get(record.id)); pdfUrls.delete(record.id); }
     if (records.some(r => r.id === record.id)) records = records.map(r => r.id === record.id ? record : r);
     else records.unshift(record);
+    fillAddressHistory();
   }
 
   function download(blob, name) {
@@ -317,25 +56,24 @@ if (typeof module !== "undefined" && module.exports) module.exports = WhatsAppIn
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
 
-  async function removeRecord(recordId) { await storeRequest("readwrite", (store) => store.delete(recordId)); }
+  async function removeRecord(record) {
+    await Cloud.softDeleteInvoice(record);
+  }
 
   function updateSaved(text) { $("#savedIndicator").innerHTML = `<i></i> ${esc(text)}`; }
 
+  function fillAddressHistory() {
+    const list = $("#addressHistory");
+    if (!list) return;
+    const addresses = [...new Set(records.map(record => record.address).filter(Boolean))];
+    list.innerHTML = addresses.map(address => `<option value="${esc(address)}"></option>`).join("");
+  }
+
   function updateWelcome() {
-    const now = new Date();
-    const hour = now.getHours();
-    const greeting = hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches";
     const greetingElement = $("#welcomeGreeting");
     const quoteElement = $("#heroQuote");
-    if (greetingElement) greetingElement.textContent = `${greeting}, Lilian.`;
-    if (quoteElement) {
-      const phrases = [
-        "Cada trabajo organizado hoy construye un mañana más grande.",
-        "El orden de hoy convierte cada esfuerzo en progreso.",
-        "Paso a paso, cada invoice se transforma en crecimiento."
-      ];
-      quoteElement.textContent = phrases[now.getDate() % phrases.length];
-    }
+    if (greetingElement) greetingElement.textContent = window.AuthApp?.greeting() || "Buenos días, Lilian.";
+    if (quoteElement) quoteElement.textContent = window.AuthApp?.phrase() || "Eres la verdura del caldo.";
   }
 
   function showToast(message) {
@@ -368,12 +106,20 @@ if (typeof module !== "undefined" && module.exports) module.exports = WhatsAppIn
   }
 
   function cardTemplate(record) {
-    const file = record.pdfBlob && record.pdfName ? `<a class="pdf-link" href="${pdfUrl(record)}" target="_blank" rel="noopener" title="Abrir ${esc(record.pdfName)}">▣ ${esc(record.pdfName)}</a>` : `<span class="no-pdf">Sin PDF adjunto</span>`;
+    const file = record.pdfBlob && record.pdfName
+      ? `<a class="pdf-link" href="${pdfUrl(record)}" target="_blank" rel="noopener" title="Abrir ${esc(record.pdfName)}">▣ ${esc(record.pdfName)}</a>`
+      : record.pdfPath
+        ? `<button class="pdf-link pdf-link-button" type="button" data-action="open-pdf" data-id="${esc(record.id)}">▣ PDF en la nube</button>`
+        : `<span class="no-pdf">Sin PDF adjunto</span>`;
+    const photos = (record.checkPhotos || []).length;
+    const checks = photos ? `<span class="check-badge">${photos} foto${photos === 1 ? "" : "s"} de cheque</span>` : "";
+    const cloud = `<span class="sync-dot ${record.pdfPath || record.cloud ? "is-cloud" : "is-local"}" title="${record.pdfPath ? "Guardado en la nube" : "Pendiente de nube"}"></span>`;
     return `<article class="invoice-card" draggable="true" data-id="${esc(record.id)}" tabindex="0">
-      <div class="card-top"><span class="card-invoice">${esc(record.invoiceNumber || "SIN NÚMERO")}</span><button class="card-menu" type="button" data-action="menu" data-id="${esc(record.id)}" aria-label="Editar invoice">•••</button></div>
+      <div class="card-top"><span class="card-invoice">${cloud}${esc(record.invoiceNumber || "SIN NÚMERO")}</span><button class="card-menu" type="button" data-action="menu" data-id="${esc(record.id)}" aria-label="Editar invoice">•••</button></div>
       <h4 class="card-address">${esc(record.address)}</h4>
       <p class="card-description" title="${esc(record.description)}">${esc(record.description || "Sin descripción")}</p>
       <div class="card-details"><span class="card-amount">${money(record.amount)}</span><span class="card-hours">${Number(record.hours || 0)} h trabajadas</span></div>
+      ${checks}
       <div class="card-footer"><span>${file}</span><span class="card-actions"><button class="mini-action" type="button" data-action="back" data-id="${esc(record.id)}" aria-label="Mover a fase anterior">‹</button><button class="mini-action" type="button" data-action="next" data-id="${esc(record.id)}" aria-label="Mover a fase siguiente">›</button><button class="mini-action delete" type="button" data-action="delete" data-id="${esc(record.id)}" aria-label="Eliminar invoice">×</button></span></div>
     </article>`;
   }
@@ -388,6 +134,40 @@ if (typeof module !== "undefined" && module.exports) module.exports = WhatsAppIn
   }
 
   function render() { updateWelcome(); updateStats(); renderBoard(); archive?.render(); window.HoursApp?.render(); }
+
+  function replayViewAnimation(view) {
+    const node = $(`#${view}View`);
+    if (!node || node.classList.contains("hidden")) return;
+    node.classList.remove("page-enter");
+    void node.offsetWidth;
+    node.classList.add("page-enter");
+  }
+
+  async function renderCheckPhotos(record) {
+    const grid = $("#checkPhotoGrid");
+    const panel = $("#checkEvidence");
+    if (!grid || !panel) return;
+    const show = Boolean(record) && (record.stage === "waiting" || record.stage === "paid" || (record.checkPhotos || []).length);
+    panel.classList.toggle("hidden", !show && !record);
+    if (!record) { grid.innerHTML = ""; return; }
+    panel.classList.remove("hidden");
+    const photos = record.checkPhotos || [];
+    if (!photos.length) {
+      grid.innerHTML = `<p class="check-empty">Todavía no hay fotos. Si ya llegó el cheque, adjúntalo aquí.</p>`;
+      return;
+    }
+    const cards = [];
+    for (const photo of photos) {
+      try {
+        const blob = await Cloud.ensureCheckPhoto(photo);
+        const url = URL.createObjectURL(blob);
+        cards.push(`<figure class="check-thumb"><img src="${url}" alt="${esc(photo.file_name || "Cheque")}"><button type="button" class="mini-action delete" data-check-id="${esc(photo.id)}" aria-label="Quitar foto">×</button></figure>`);
+      } catch (_) {
+        cards.push(`<figure class="check-thumb"><span>No se pudo abrir</span></figure>`);
+      }
+    }
+    grid.innerHTML = cards.join("");
+  }
 
   function openModal(stage = "created", record = null) {
     editingId = record?.id || null;
@@ -410,6 +190,7 @@ if (typeof module !== "undefined" && module.exports) module.exports = WhatsAppIn
       $("#hours").value = record.hours ?? "";
       $("#description").value = record.description || "";
     }
+    renderCheckPhotos(record);
     $("#modalBackdrop").classList.remove("hidden");
     setTimeout(() => $("#address").focus(), 50);
   }
@@ -429,14 +210,17 @@ if (typeof module !== "undefined" && module.exports) module.exports = WhatsAppIn
     if (selectedPdf && selectedPdf.size > MAX_PDF_BYTES) { $("#formError").textContent = "El PDF supera el límite de 15 MB."; return; }
     if (selectedPdf && selectedPdf.type !== "application/pdf" && !selectedPdf.name.toLowerCase().endsWith(".pdf")) { $("#formError").textContent = "Solo puedes subir archivos PDF."; return; }
     const previous = editingId ? records.find((record) => record.id === editingId) : null;
-    if (!selectedPdf && !previous?.pdfBlob && !previous?.invoiceData) { $("#formError").textContent = "Adjunta el PDF. Para crear una factura desde cero, usa Crear invoice."; return; }
+    if (!selectedPdf && !previous?.pdfBlob && !previous?.pdfPath && !previous?.invoiceData) { $("#formError").textContent = "Adjunta el PDF. Para crear una factura desde cero, usa Crear invoice."; return; }
+    if (data.stage === "paid" && !(previous?.checkPhotos || []).length) {
+      if (!confirm("¿Ya adjuntaste la foto del cheque? Puedes guardar pagada ahora y subirla después.")) return;
+    }
     const wasEditing = Boolean(editingId);
     const record = { ...(previous || {}), ...data, id: editingId || makeId(), pdfBlob: selectedPdf || previous?.pdfBlob || null, pdfName: selectedPdf?.name || previous?.pdfName || "", updatedAt: new Date().toISOString(), paidAt: data.stage === "paid" ? (previous?.paidAt || new Date().toISOString()) : null };
     $("#saveButton").disabled = true;
     try {
       record.amount = Core.cents(data.amount) / 100;
-      if (selectedPdf) { record.invoiceData = null; record.source = "imported"; record.pdfHash = await PDFs.hash(selectedPdf); }
-      else if (record.invoiceData) {
+      if (selectedPdf) { record.invoiceData = null; record.source = "imported"; record.pdfHash = await PDFs.hash(selectedPdf); record.pdfPath = null; }
+      else if (record.invoiceData && !record.pdfBlob) {
         const snapshot = {...record.invoiceData, invoiceNumber: record.invoiceNumber, issuedDate: record.issuedDate, workAddress: record.address, description: record.description};
         if (Core.cents(Number(snapshot.qty) * Number(snapshot.price)) !== Core.cents(record.amount)) {
           snapshot.qty = 1; snapshot.price = record.amount;
@@ -447,19 +231,22 @@ if (typeof module !== "undefined" && module.exports) module.exports = WhatsAppIn
       record.pdfName = Core.fileName(record);
       await saveRecord(record);
       replaceInMemory(record);
-      closeModal(); render(); showToast(wasEditing ? "Invoice actualizada" : "Invoice guardada");
-    } catch (error) { console.error(error); $("#formError").textContent = error.message || "No se pudo guardar. Intenta de nuevo en este navegador."; }
+      closeModal(); render(); showToast(wasEditing ? "Invoice actualizada en la nube" : "Invoice guardada en la nube y en este navegador");
+    } catch (error) { console.error(error); $("#formError").textContent = error.message || "No se pudo guardar. Revisa la conexión e intenta de nuevo."; }
     finally { $("#saveButton").disabled = false; }
   }
 
   async function moveRecord(recordId, stage) {
     const previous = records.find((item) => item.id === recordId);
     if (!previous || previous.stage === stage) return;
+    if (stage === "paid" && !(previous.checkPhotos || []).length) {
+      if (!confirm("¿Ya adjuntaste la foto del cheque? Puedes marcarla pagada ahora y subir la evidencia después.")) return;
+    }
     const record = {...previous};
     record.stage = stage;
     record.updatedAt = new Date().toISOString();
     record.paidAt = stage === "paid" ? (record.paidAt || new Date().toISOString()) : null;
-    try { await saveRecord(record); replaceInMemory(record); render(); showToast(`Movida a “${stages.find((item) => item.id === stage).title}”`); } catch (error) { console.error(error); showToast("No se pudo mover la invoice"); }
+    try { await saveRecord(record); replaceInMemory(record); render(); showToast(`Movida a “${stages.find((item) => item.id === stage).title}”`); } catch (error) { console.error(error); showToast(error.message || "No se pudo mover la invoice"); }
   }
 
   function wireBoardEvents() {
@@ -474,14 +261,29 @@ if (typeof module !== "undefined" && module.exports) module.exports = WhatsAppIn
     });
   }
 
+  async function openStoredPdf(record) {
+    await Cloud.ensureInvoicePdf(record);
+    replaceInMemory(record);
+    const url = pdfUrl(record);
+    if (url) window.open(url, "_blank", "noopener");
+  }
+
   async function handleBoardClick(event) {
     const button = event.target.closest("button[data-action]");
     if (!button) return;
     const action = button.dataset.action;
     if (action === "add") openModal(button.dataset.stage);
     if (action === "menu") { const record = records.find((item) => item.id === button.dataset.id); if (record) openModal(record.stage, record); }
+    if (action === "open-pdf") { const record = records.find((item) => item.id === button.dataset.id); if (record) await openStoredPdf(record); }
     if (action === "next" || action === "back") { const record = records.find((item) => item.id === button.dataset.id); const index = stages.findIndex((stage) => stage.id === record?.stage); const next = index + (action === "next" ? 1 : -1); if (record && next >= 0 && next < stages.length) await moveRecord(record.id, stages[next].id); }
-    if (action === "delete") { const record = records.find((item) => item.id === button.dataset.id); if (!record || !confirm(`¿Eliminar la invoice ${record.invoiceNumber} de ${record.address}?`)) return; await removeRecord(record.id); if (pdfUrls.has(record.id)) { URL.revokeObjectURL(pdfUrls.get(record.id)); pdfUrls.delete(record.id); } records = records.filter((item) => item.id !== record.id); render(); showToast("Invoice eliminada"); }
+    if (action === "delete") {
+      const record = records.find((item) => item.id === button.dataset.id);
+      if (!record || !confirm(`¿Eliminar la invoice ${record.invoiceNumber} de ${record.address}? Se ocultará, no se borra del historial de la nube.`)) return;
+      await removeRecord(record);
+      if (pdfUrls.has(record.id)) { URL.revokeObjectURL(pdfUrls.get(record.id)); pdfUrls.delete(record.id); }
+      records = records.filter((item) => item.id !== record.id);
+      render(); showToast("Invoice archivada (eliminación suave)");
+    }
   }
 
   async function selectPdf(file) {
@@ -587,6 +389,7 @@ if (typeof module !== "undefined" && module.exports) module.exports = WhatsAppIn
     $("#archiveView").classList.toggle("hidden", view !== "archive");
     $("#hoursView").classList.toggle("hidden", view !== "hours");
     setSidebarOpen(false);
+    replayViewAnimation(view);
     if (view === "invoice") updateInvoicePreview();
     if (view === "hours") window.HoursApp?.open();
   }
@@ -645,10 +448,9 @@ if (typeof module !== "undefined" && module.exports) module.exports = WhatsAppIn
     result.innerHTML += "<p>Comprueba también la nota de pago. La invoice se guarda cuando pulses “Guardar invoice y PDF”.</p>";
   }
 
-  function resetInvoiceBuilder() {
+  async function resetInvoiceBuilder() {
     builderRecordId = null;
-    const next = records.reduce((max, r) => /^#?\d+$/.test(r.invoiceNumber || "") ? Math.max(max, Number(r.invoiceNumber.replace("#", ""))) : max, 0) + 1;
-    $("#builderInvoiceNumber").value = "#" + String(next).padStart(3, "0");
+    $("#builderInvoiceNumber").value = await Cloud.nextInvoiceNumber(records);
     $("#builderIssuedDate").value = WhatsAppInvoiceParser.dateValue();
     $("#builderApproval").value = "ESTIMATED AND APPROVED BY DIEGO";
     $("#builderFromName").value = "Ruben Perla";
@@ -695,6 +497,7 @@ if (typeof module !== "undefined" && module.exports) module.exports = WhatsAppIn
     record.invoiceData = snapshot;
     record.source = "generated";
     record.issuedDate = snapshot.issuedDate;
+    record.pdfPath = null;
   }
 
   async function saveGeneratedInvoice(alsoDownload = false) {
@@ -706,7 +509,7 @@ if (typeof module !== "undefined" && module.exports) module.exports = WhatsAppIn
     const record = {...(previous || {}), id: previous?.id || makeId(), address: data.workAddress, invoiceNumber: data.invoiceNumber, issuedDate: data.issuedDate, amount: Core.cents(amount) / 100, hours: previous?.hours || 0, description: data.description, stage: previous?.stage || "created", updatedAt: new Date().toISOString(), paidAt: previous?.paidAt || null};
     savingBuilder = true;
     $("#saveGeneratedInvoiceButton").disabled = true; $("#printInvoiceButton").disabled = true;
-    $("#saveGeneratedInvoiceButton").textContent = "Guardando PDF…";
+    $("#saveGeneratedInvoiceButton").textContent = "Guardando en la nube…";
     try {
       await attachGeneratedPdf(record, data);
       await saveRecord(record);
@@ -715,7 +518,7 @@ if (typeof module !== "undefined" && module.exports) module.exports = WhatsAppIn
       render();
       if (alsoDownload) download(record.pdfBlob, record.pdfName);
       else navClick("archive");
-      showToast(previous ? "Invoice y PDF actualizados." : "Invoice y PDF guardados por dirección.");
+      showToast(previous ? "Invoice y PDF actualizados en la nube." : "Invoice y PDF guardados en la nube y en este navegador.");
     } catch (error) { console.error(error); showToast(error.message || "No se pudo guardar la invoice y su PDF."); }
     finally { savingBuilder = false; $("#saveGeneratedInvoiceButton").disabled = false; $("#printInvoiceButton").disabled = false; $("#saveGeneratedInvoiceButton").textContent = "Guardar invoice y PDF"; }
   }
@@ -756,7 +559,7 @@ if (typeof module !== "undefined" && module.exports) module.exports = WhatsAppIn
         } catch (error) { console.error("No se pudo preparar el PDF de", previous.invoiceNumber, error); }
         continue;
       }
-      if (!previous.invoiceData || previous.pdfBlob) continue;
+      if (!previous.invoiceData || previous.pdfBlob || previous.pdfPath) continue;
       const date = Core.issuedDate(previous);
       if (!date) continue;
       try {
@@ -769,8 +572,37 @@ if (typeof module !== "undefined" && module.exports) module.exports = WhatsAppIn
     if (changed) render();
   }
 
-  archive = window.InvoiceArchive({records: () => records, saveMany, reload: loadRecords, render, pdfUrl, showView, edit: r => openModal(r.stage, r), stages, esc, money, makeId, download, toast: showToast});
-  window.TrentonControl = {toast: showToast};
+  async function migrateLegacy() {
+    if (localStorage.getItem("trenton.migrated-local") === "1") return;
+    const legacy = await window.LegacyLocal.readAll();
+    if (!legacy.invoices.length && !legacy.hours.length) {
+      localStorage.setItem("trenton.migrated-local", "1");
+      return;
+    }
+    if (!confirm(`Hay ${legacy.invoices.length} invoices y ${legacy.hours.length} reportes en este navegador. ¿Subirlos ahora a la nube?`)) return;
+    try {
+      if (legacy.invoices.length) await Cloud.saveMany(legacy.invoices, records);
+      for (const report of legacy.hours) await Cloud.saveHours(report);
+      localStorage.setItem("trenton.migrated-local", "1");
+      await loadRecords();
+      showToast("Datos de este navegador subidos a la nube.");
+    } catch (error) {
+      showToast(error.message || "No se pudieron subir todos los datos locales.");
+    }
+  }
+
+  archive = window.InvoiceArchive({
+    records: () => records,
+    saveMany,
+    reload: loadRecords,
+    render,
+    pdfUrl,
+    showView,
+    edit: r => openModal(r.stage, r),
+    stages, esc, money, makeId, download, toast: showToast,
+    ensurePdf: Cloud.ensureInvoicePdf
+  });
+  window.TrentonControl = { toast: showToast, records: () => records };
   document.querySelectorAll("[data-archive]").forEach(button => button.addEventListener("click", () => navClick(button.dataset.archive === "all" ? "archive" : button.dataset.archive)));
   $("#editGeneratedInvoiceButton").addEventListener("click", editGeneratedInvoice);
   $("#newInvoiceButton").addEventListener("click", () => { if (builderRecordId) resetInvoiceBuilder(); navClick("invoice"); });
@@ -793,7 +625,7 @@ if (typeof module !== "undefined" && module.exports) module.exports = WhatsAppIn
   document.addEventListener("keydown", (event) => { if (event.key === "Escape") setSidebarOpen(false); });
   updateWelcome();
   setInterval(updateWelcome, 60000);
-  $("#resetInvoiceButton").addEventListener("click", resetInvoiceBuilder);
+  $("#resetInvoiceButton").addEventListener("click", () => resetInvoiceBuilder());
   window.addEventListener("resize", fitInvoicePreview);
   window.addEventListener("afterprint", fitInvoicePreview);
   $("#paperLogo").addEventListener("load", fitInvoicePreview, true);
@@ -817,12 +649,72 @@ if (typeof module !== "undefined" && module.exports) module.exports = WhatsAppIn
     reader.readAsDataURL(file);
   });
   document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !$("#modalBackdrop").classList.contains("hidden")) closeModal(); });
+  $("#stage")?.addEventListener("change", () => {
+    const record = editingId ? records.find(item => item.id === editingId) : { stage: $("#stage").value, checkPhotos: [] };
+    if (record) renderCheckPhotos({ ...record, stage: $("#stage").value });
+  });
+  $("#addCheckPhotoButton")?.addEventListener("click", () => $("#checkPhotoFile")?.click());
+  $("#checkPhotoFile")?.addEventListener("change", async event => {
+    const files = Array.from(event.target.files || []);
+    const record = records.find(item => item.id === editingId);
+    if (!record) { showToast("Guarda primero la invoice y luego adjunta el cheque."); event.target.value = ""; return; }
+    try {
+      for (const file of files) {
+        const photo = await Cloud.addCheckPhoto(record.id, file);
+        record.checkPhotos = [photo, ...(record.checkPhotos || [])];
+      }
+      replaceInMemory(record);
+      await renderCheckPhotos(record);
+      render();
+      showToast("Foto del cheque guardada en la nube.");
+    } catch (error) { $("#formError").textContent = error.message || "No se pudo subir la foto."; }
+    event.target.value = "";
+  });
+  $("#checkPhotoGrid")?.addEventListener("click", async event => {
+    const button = event.target.closest("[data-check-id]");
+    if (!button) return;
+    const record = records.find(item => item.id === editingId);
+    const photo = record?.checkPhotos?.find(item => item.id === button.dataset.checkId);
+    if (!photo || !confirm("¿Quitar esta foto del cheque?")) return;
+    await Cloud.removeCheckPhoto(photo);
+    record.checkPhotos = record.checkPhotos.filter(item => item.id !== photo.id);
+    replaceInMemory(record);
+    await renderCheckPhotos(record);
+    render();
+  });
 
-  (async () => {
+  window.TranslatorApp?.bindAll();
+
+  async function boot() {
     const controls = ["saveGeneratedInvoiceButton", "printInvoiceButton", "saveButton", "importInvoicesButton"];
-    controls.forEach(id => $("#" + id).disabled = true);
-    try { db = await openDatabase(); await loadRecords(); resetInvoiceBuilder(); updateSaved("Guardado localmente"); render(); await recoverExistingPdfs(); }
-    catch (error) { console.error(error); updateSaved("Almacenamiento no disponible"); render(); showToast("Este navegador no permite guardar registros localmente"); }
-    finally { controls.forEach(id => $("#" + id).disabled = !db); }
-  })();
+    controls.forEach(id => { if ($("#" + id)) $("#" + id).disabled = true; });
+    try {
+      await window.LocalCache.open();
+      await loadRecords();
+      await migrateLegacy();
+      await resetInvoiceBuilder();
+      updateSaved("En la nube y en este navegador");
+      render();
+      await recoverExistingPdfs();
+      await window.HoursApp?.boot?.();
+      ready = true;
+    } catch (error) {
+      console.error(error);
+      updateSaved("Nube no disponible");
+      render();
+      showToast(error.message || "No se pudieron cargar los registros de Supabase.");
+    } finally {
+      controls.forEach(id => { if ($("#" + id)) $("#" + id).disabled = false; });
+    }
+  }
+
+  window.AuthApp.start({
+    onReady: boot,
+    onLogout() {
+      records = [];
+      ready = false;
+      window.HoursApp?.resetSession?.();
+      render();
+    }
+  });
 })();

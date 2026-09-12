@@ -1,7 +1,6 @@
 /* Work-hours form, preview, local storage and PDF download. */
 (function (root) {
   "use strict";
-  const DB_NAME = "trenton-control-db", DB_VERSION = 2, STORE = "hoursReports";
   const $ = selector => document.querySelector(selector);
   const esc = value => String(value ?? "").replace(/[&<>'"]/g, char => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#039;", '"': "&quot;"}[char]));
   const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
@@ -13,7 +12,7 @@
     {date: "2026-08-26", employee: "Josué Zúñiga", timeIn: "07:00", timeOut: "18:30", lunch: 30, rate: 30, scheduleAuto: true},
     {date: "2026-08-26", employee: "Pablo Matamoros", timeIn: "07:00", timeOut: "18:30", lunch: 30, rate: 30, scheduleAuto: true}
   ];
-  let db, reports = [], entries = [], saving = false;
+  let reports = [], entries = [], saving = false;
 
   function addHoursToClock(time, hours, lunchMinutes) {
     const match = String(time || "07:00").match(/^(\d{1,2}):(\d{2})$/);
@@ -22,32 +21,12 @@
     return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
   }
 
-  function openDatabase() {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
-      request.onupgradeneeded = () => {
-        const database = request.result;
-        if (!database.objectStoreNames.contains("invoices")) database.createObjectStore("invoices", {keyPath: "id"});
-        if (!database.objectStoreNames.contains(STORE)) database.createObjectStore(STORE, {keyPath: "id"});
-      };
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error || new Error("No se pudo abrir el almacenamiento."));
-    });
+  async function load() {
+    reports = await root.CloudDB.listHours();
   }
-  function transact(mode, action) {
-    return new Promise((resolve, reject) => {
-      try {
-        const tx = db.transaction(STORE, mode), request = action(tx.objectStore(STORE));
-        tx.oncomplete = () => resolve(request?.result);
-        tx.onerror = () => reject(tx.error || request?.error || new Error("No se completó el guardado."));
-        tx.onabort = () => reject(tx.error || new Error("No se completó el guardado."));
-      } catch (error) { reject(error); }
-    });
-  }
-  async function load() { reports = await transact("readonly", store => store.getAll()) || []; reports.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt))); }
-  async function ensureDb() { if (!db) { db = await openDatabase(); await load(); } return db; }
 
   function reset() {
+    $("#hoursJobAddress").setAttribute("list", "addressHistory");
     $("#hoursJobAddress").value = "4406 Woodfield Rd, Kensington, MD 20895";
     $("#hoursReportDate").value = "2026-08-26";
     $("#hoursDefaultRate").value = "30";
@@ -177,10 +156,10 @@
     const record = {id: makeId(), jobAddress, reportDate, description, defaultRate, entries: entries.map(entry => ({...entry, rate: Number(entry.rate ?? defaultRate) || 0, hours: HoursPDF.calcHours(entry)})), updatedAt: new Date().toISOString()};
     try {
       record.pdfBlob = await HoursPDF.generate({...record, recordId: record.id}, await logoBytes()); record.pdfHash = await HoursPDF.hash(record.pdfBlob); record.pdfName = fileName(record);
-      await transact("readwrite", store => store.put(record)); await load(); renderHistory();
+      await root.CloudDB.saveHours(record); await load(); renderHistory();
       if (downloadAfter) download(record.pdfBlob, record.pdfName);
-      $("#hoursError").textContent = "Reporte guardado correctamente.";
-      if (root.TrentonControl?.toast) root.TrentonControl.toast("Reporte de horas guardado");
+      $("#hoursError").textContent = "Reporte guardado en la nube y en este navegador.";
+      if (root.TrentonControl?.toast) root.TrentonControl.toast("Reporte de horas guardado en la nube");
     } catch (error) { console.error(error); $("#hoursError").textContent = error.message || "No se pudo guardar el reporte."; }
     finally { saving = false; $("#saveHoursButton").disabled = false; $("#downloadHoursButton").disabled = false; }
   }
@@ -189,8 +168,9 @@
     $("#hoursHistoryGrid").innerHTML = reports.length ? reports.map(record => `<article class="hours-history-card"><div><strong>${esc(record.jobAddress)}</strong><span>${esc(dateText(record.reportDate))}</span></div><b>${esc(formatHours(record.entries.reduce((sum, entry) => sum + Number(entry.hours || 0), 0)))} HRS · ${esc(money(record.entries.reduce((sum, entry) => sum + Number(entry.hours || 0) * Number(entry.rate || 0), 0)))}</b><button class="button button-ghost" type="button" data-hours-download="${esc(record.id)}">Descargar PDF</button></article>`).join("") : '<div class="hours-empty-history">Todavía no hay reportes guardados.</div>';
   }
 
-  async function open() { try { await ensureDb(); renderHistory(); } catch (error) { $("#hoursError").textContent = "No se pudo abrir el almacenamiento de horas."; } renderPreview(); }
-  function render() { if (db) renderHistory(); renderPreview(); }
+  async function open() { try { await load(); renderHistory(); } catch (error) { $("#hoursError").textContent = error.message || "No se pudo abrir el almacenamiento de horas."; } renderPreview(); }
+  async function boot() { await load(); renderHistory(); }
+  function render() { renderHistory(); renderPreview(); }
   $("#hoursEntries").addEventListener("input", event => { const field = event.target.dataset.hoursField; if (field) updateEntry(Number(event.target.dataset.index), field, event.target.value); });
   $("#hoursEntries").addEventListener("click", event => { const button = event.target.closest("[data-hours-action=remove]"); if (!button || entries.length === 1) return; entries.splice(Number(button.dataset.index), 1); renderEntries(); renderPreview(); });
   $("#addHoursEntryButton").addEventListener("click", () => { entries.push({date: $("#hoursReportDate").value || today(), employee: "", timeIn: "07:00", timeOut: "15:30", lunch: 30, rate: Number($("#hoursDefaultRate").value) || 30, scheduleAuto: true}); renderEntries(); renderPreview(); });
@@ -198,8 +178,17 @@
   $("#parseHoursWhatsAppButton").addEventListener("click", parseHoursWhatsAppText);
   $("#hoursWhatsAppText").addEventListener("paste", () => setTimeout(parseHoursWhatsAppText, 80));
   $("#saveHoursButton").addEventListener("click", () => save(false)); $("#downloadHoursButton").addEventListener("click", () => save(true)); $("#resetHoursButton").addEventListener("click", reset);
-  $("#hoursHistoryGrid").addEventListener("click", event => { const button = event.target.closest("[data-hours-download]"); if (!button) return; const record = reports.find(item => item.id === button.dataset.hoursDownload); if (record?.pdfBlob) download(record.pdfBlob, record.pdfName); });
+  $("#hoursHistoryGrid").addEventListener("click", async event => {
+    const button = event.target.closest("[data-hours-download]"); if (!button) return;
+    const record = reports.find(item => item.id === button.dataset.hoursDownload);
+    if (!record) return;
+    try {
+      await root.CloudDB.ensureHoursPdf(record);
+      if (record.pdfBlob) download(record.pdfBlob, record.pdfName);
+    } catch (error) { $("#hoursError").textContent = error.message || "No se pudo descargar el PDF."; }
+  });
   window.addEventListener("resize", fitPreview);
+  function resetSession() { reports = []; renderHistory(); }
   reset();
-  root.HoursApp = {open, render};
+  root.HoursApp = {open, render, boot, resetSession};
 })(typeof globalThis !== "undefined" ? globalThis : this);

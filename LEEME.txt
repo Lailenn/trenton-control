@@ -1,4 +1,26 @@
-TRENTON CONTROL — INVOICES Y ARCHIVO DE PDFs
+TRENTON CONTROL — INVOICES, HORAS Y NUBE SUPABASE
+
+PROYECTO SUPABASE
+Nombre del proyecto: trenton-control
+Base interna: postgres
+SQL: pega supabase/schema.sql en SQL Editor (tablas, RLS, buckets).
+Crea el usuario de Lilian en Authentication. En URL configuration permite
+http://127.0.0.1:5500. Nunca uses la service_role en la página.
+
+AL ENTRAR
+1. Abre index.html con Live Server.
+2. Pega Project URL y anon key. Guarda conexión.
+3. Entra con el correo y contraseña de Lilian.
+4. Si este navegador ya tenía invoices, la app ofrece subirlas a la nube.
+
+Los PDFs se guardan en Supabase Storage y también en la caché de este
+navegador. Subir invoices anteriores ahora las manda a la nube.
+
+FOTOS DE CHEQUE
+En Esperando cheque o Pagado puedes adjuntar fotos del cheque.
+
+TRADUCTOR
+En Crear invoice y Horas trabajadas hay un recuadro español ↔ inglés.
 
 ACTUALIZAR EN VISUAL STUDIO CODE
 1. Extrae el ZIP actualizado y abre la carpeta nueva. Debe mostrar el apartado

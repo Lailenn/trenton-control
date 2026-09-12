@@ -1,4 +1,4 @@
-/* PDF archive, reviewed imports and portable backups. All files stay in this browser. */
+/* PDF archive, cloud import, backups. Blobs are cached locally after download. */
 window.InvoiceArchive = function (app) {
   "use strict";
   const C = window.InvoiceCore, PDF = window.InvoicePDF;
@@ -30,11 +30,11 @@ window.InvoiceArchive = function (app) {
     $("#archiveYearHelp").textContent = "Total por fecha de emisión, con cada invoice contada una vez. Los anticipos dentro del PDF no se suman de nuevo. Pagadas y pendientes son montos de invoices completas." + (undated ? ` Hay ${undated} sin fecha; completa sus datos para incluirlas en un año.` : "");
     $("#archiveGrid").innerHTML = visible.length ? visible.map(r => `<article class="archive-card">
       <div class="archive-card-top"><span class="stage-tag stage-${validStage(r.stage)}">${stageName(r.stage)}</span><span>${esc(r.invoiceNumber || "Sin número")}</span></div>
-      <button class="archive-address" type="button" data-record="${esc(r.id)}" data-task="${r.pdfBlob ? "view" : "edit"}">${esc(r.address || "Sin dirección")}</button>
-      <p class="archive-date">${dateLabel(C.issuedDate(r))} · ${r.pdfBlob ? "PDF guardado" : "Falta adjuntar el PDF"}</p>
+      <button class="archive-address" type="button" data-record="${esc(r.id)}" data-task="${r.pdfBlob || r.pdfPath ? "view" : "edit"}">${esc(r.address || "Sin dirección")}</button>
+      <p class="archive-date">${dateLabel(C.issuedDate(r))} · ${r.pdfBlob || r.pdfPath ? "PDF guardado" : "Falta adjuntar el PDF"}</p>
       <strong class="archive-amount">${money(r.amount)}</strong>
       <p class="archive-file">${esc(r.pdfName || "Puedes agregar el PDF desde Editar datos.")}</p>
-      <div class="archive-card-actions">${r.pdfBlob ? `<button type="button" class="button button-primary" data-record="${esc(r.id)}" data-task="view">Ver PDF</button><a class="button button-ghost" href="${app.pdfUrl(r)}" download="${esc(C.fileName(r))}">Descargar</a>` : ""}<button type="button" class="button button-ghost" data-record="${esc(r.id)}" data-task="edit">Editar datos</button></div>
+      <div class="archive-card-actions">${r.pdfBlob || r.pdfPath ? `<button type="button" class="button button-primary" data-record="${esc(r.id)}" data-task="view">Ver PDF</button>${r.pdfBlob ? `<a class="button button-ghost" href="${app.pdfUrl(r)}" download="${esc(C.fileName(r))}">Descargar</a>` : `<button type="button" class="button button-ghost" data-record="${esc(r.id)}" data-task="view">Descargar</button>`}` : ""}<button type="button" class="button button-ghost" data-record="${esc(r.id)}" data-task="edit">Editar datos</button></div>
     </article>`).join("") : '<div class="archive-empty"><span>▤</span><h2>No hay invoices en esta selección</h2><p>Prueba otro año o categoría, crea una invoice o sube tus PDFs anteriores.</p></div>';
   }
 
@@ -45,7 +45,10 @@ window.InvoiceArchive = function (app) {
     app.showView("archive"); render();
   }
 
-  function view(record) {
+  async function view(record) {
+    if (app.ensurePdf) {
+      try { await app.ensurePdf(record); } catch (error) { return app.toast(error.message || "No se pudo abrir el PDF."); }
+    }
     if (!record.pdfBlob) return app.edit(record);
     viewerId = record.id;
     $("#pdfDialogTitle").textContent = record.address;
@@ -208,6 +211,7 @@ window.InvoiceArchive = function (app) {
     try {
       const zip = new JSZip(), metadata = [];
       let bytes = 0;
+      for (const r of records) { if (app.ensurePdf) await app.ensurePdf(r); }
       records.forEach((r, i) => {
         bytes += r.pdfBlob?.size || 0;
         if (bytes > MAX_BATCH || records.length > MAX_COUNT) throw new Error("El respaldo supera 500 invoices o 200 MB. Descarga los PDFs individualmente desde el archivo.");

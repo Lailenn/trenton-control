@@ -29,9 +29,11 @@
     return d.getFullYear() === +m[1] && d.getMonth() === +m[2] - 1 && d.getDate() === +m[3] ? value : "";
   }
   const issuedDate = r => isoDate(r.issuedDate || r.invoiceData?.issuedDate);
+  const addressNorm = value => fold(value).replace(/[^a-z0-9]/g, "");
+  const numberNorm = value => fold(value).replace(/^#/, "").trim().replace(/^0+(?=\d+$)/, "");
   function logicalKey(r) {
-    const address = fold(r.address || r.workAddress).replace(/[^a-z0-9]/g, "");
-    const number = fold(r.invoiceNumber).replace(/^#/, "").trim().replace(/^0+(?=\d+$)/, "");
+    const address = addressNorm(r.address || r.workAddress);
+    const number = numberNorm(r.invoiceNumber);
     const date = issuedDate(r);
     return address && number && date ? [number, address, date].join("|") : "";
   }
@@ -99,5 +101,5 @@
     if (!fields.issuedDate) warnings.push("Completa la fecha de emisión para incluirla en el año correcto.");
     return {fields, warnings};
   }
-  return {amount, cents, isoDate, issuedDate, logicalKey, select, summarize, fileName, extract};
+  return {amount, cents, isoDate, issuedDate, addressNorm, numberNorm, logicalKey, select, summarize, fileName, extract};
 });

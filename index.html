@@ -9,10 +9,34 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=archivo-pdfs-v15" />
+    <link rel="stylesheet" href="styles.css?v=nube-v2" />
   </head>
   <body>
-    <div class="app-shell">
+    <div id="authGate" class="auth-gate">
+      <section class="auth-card">
+        <div class="auth-brand"><div class="brand-mark"><span>RP</span></div><div><strong>Ruben Perla 2026</strong><small>Control de trabajos</small></div></div>
+        <p class="auth-welcome" id="authWelcomeQuote">Eres la verdura del caldo.</p>
+        <div id="authConfigPanel">
+          <h1>Conectar Supabase</h1>
+          <p>Pega la URL del proyecto <strong>trenton-control</strong> y la anon public key. Nunca uses la service_role.</p>
+          <label class="field"><span>Project URL</span><input id="supabaseUrl" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off"></label>
+          <label class="field"><span>Anon key</span><textarea id="supabaseAnon" rows="3" placeholder="eyJhbGciOi..." autocomplete="off"></textarea></label>
+          <button class="button button-primary" type="button" id="saveSupabaseConfig">Guardar conexión</button>
+        </div>
+        <div id="authLoginPanel" class="hidden">
+          <h1>Hola, Lilian</h1>
+          <p>Entra para ver invoices, horas y PDFs en la nube y en este navegador.</p>
+          <form id="loginForm">
+            <label class="field"><span>Correo</span><input id="loginEmail" type="email" required autocomplete="username"></label>
+            <label class="field"><span>Contraseña</span><input id="loginPassword" type="password" required autocomplete="current-password"></label>
+            <button class="button button-primary" id="loginButton" type="submit">Entrar</button>
+          </form>
+          <button class="button button-ghost" type="button" id="editSupabaseConfig">Cambiar proyecto</button>
+        </div>
+        <p class="form-error" id="authError" role="alert"></p>
+      </section>
+    </div>
+    <div class="app-shell app-locked" id="appShell" hidden>
       <aside class="sidebar" id="sidebar">
         <div class="brand-block">
           <div class="brand-mark"><span>RP</span></div>
@@ -32,7 +56,7 @@
         </nav>
         <div class="sidebar-spacer"></div>
         <div class="sidebar-note"><span class="note-icon">i</span><div><strong>Tu control diario</strong><p>Una tarjeta por invoice y dirección.</p></div></div>
-        <div class="sidebar-footer"><span>Secretaría</span><strong>Lilian Perla</strong></div>
+        <div class="sidebar-footer"><span>Secretaría</span><strong>Lilian Perla</strong><button class="button button-ghost logout-button" type="button" id="logoutButton">Salir</button></div>
       </aside>
       <div class="sidebar-scrim" id="sidebarScrim" aria-hidden="true"></div>
 
@@ -40,7 +64,7 @@
         <header class="topbar">
           <button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir menú" aria-expanded="false">☰</button>
           <div class="crumbs"><span>Trenton Builders LLC</span><b>/</b><strong>Control de invoices</strong></div>
-          <div class="topbar-right"><span class="version-badge">Archivo PDF activo</span><span class="saved-indicator" id="savedIndicator"><i></i> Guardado localmente</span><button class="avatar" type="button" title="Lilian Perla">LP</button></div>
+          <div class="topbar-right"><span class="version-badge">Nube + local</span><span class="saved-indicator" id="savedIndicator"><i></i> En la nube y en este navegador</span><button class="avatar" type="button" title="Lilian Perla">LP</button></div>
         </header>
 
         <main class="main-content">
@@ -51,7 +75,7 @@
               <p class="welcome-greeting" id="welcomeGreeting" aria-live="polite">Buenos días, Lilian.</p>
               <h1>Todo el trabajo de Ruben Perla,<br /><span>en un solo lugar.</span></h1>
               <p class="hero-copy">Crea, organiza y da seguimiento a cada invoice, hora y PDF sin perder nada.</p>
-              <p class="hero-quote" id="heroQuote">Cada trabajo organizado hoy construye un mañana más grande.</p>
+              <p class="hero-quote" id="heroQuote">Eres la verdura del caldo.</p>
               <div class="hero-tip"><span class="hero-tip-icon" aria-hidden="true">✦</span><span><strong>Tu centro de control</strong><small>Registra, revisa y avanza cada trabajo desde aquí.</small></span></div>
             </div>
             <div class="hero-actions hero-actions-enhanced"><button class="button button-primary button-large" id="newInvoiceButton" type="button" title="Crear una nueva invoice"><span>＋</span> Nueva invoice</button><button class="button button-ghost button-large" id="openArchiveButton" type="button" title="Abrir todos los PDFs">▤ Ver todos los PDFs</button></div>
@@ -90,8 +114,15 @@
                   <div class="whatsapp-actions"><p id="hoursWhatsAppHelp">Detecta dirección, fecha, empleados, entrada, salida, almuerzo, horas y tarifa. Usa horario de 24 horas.</p><button class="button button-primary" id="parseHoursWhatsAppButton" type="button">Desglosar horas</button></div>
                   <div id="hoursWhatsAppResult" class="whatsapp-result hidden" role="status" aria-live="polite"></div>
                 </section>
+                <section class="translator-panel" data-translator="hours" data-target="hoursDescription" data-langpair="es|en">
+                  <div class="translator-heading"><div><p class="eyebrow">Traductor</p><h2>Español ↔ inglés</h2></div><span class="whatsapp-badge">Texto → texto</span></div>
+                  <p>Pega un texto, tradúcelo y colócalo en la descripción cuando te cuadre.</p>
+                  <div class="translator-pairs"><button type="button" class="button button-ghost is-active" data-pair="es|en">Español → Inglés</button><button type="button" class="button button-ghost" data-pair="en|es">Inglés → Español</button><button type="button" class="button button-ghost" data-translator-swap>Intercambiar</button></div>
+                  <div class="translator-grid"><label>Original<textarea data-translator-source rows="5" maxlength="8000" placeholder="Pega aquí el texto a traducir"></textarea></label><label>Traducción<textarea data-translator-output rows="5" maxlength="8000" readonly></textarea></label></div>
+                  <div class="translator-actions"><p data-translator-status>Tú decides qué copiar al formulario.</p><div><button type="button" class="button button-primary" data-translator-go>Traducir</button><button type="button" class="button button-ghost" data-translator-copy>Copiar</button><button type="button" class="button button-ghost" data-translator-apply>Usar en descripción</button></div></div>
+                </section>
                 <div class="hours-fields">
-                  <label class="field full"><span>Dirección del trabajo <em>*</em></span><input id="hoursJobAddress" type="text" placeholder="Ej. 4406 Woodfield Rd, Kensington, MD 20895" required></label>
+                  <label class="field full"><span>Dirección del trabajo <em>*</em></span><input id="hoursJobAddress" type="text" list="addressHistory" placeholder="Ej. 4406 Woodfield Rd, Kensington, MD 20895" required></label>
                   <label class="field"><span>Fecha del reporte <em>*</em></span><input id="hoursReportDate" type="date" required></label>
                   <label class="field"><span>Tarifa predeterminada (USD/h)</span><div class="money-input"><b>$</b><input id="hoursDefaultRate" type="number" min="0" step="0.01" value="30"></div></label>
                   <label class="field full"><span>Descripción</span><textarea id="hoursDescription" rows="2" placeholder="Descripción del trabajo realizado"></textarea></label>
@@ -99,7 +130,7 @@
                 <div class="hours-entry-title"><div><p class="field-group-title">Empleados y jornadas</p><small>El total se calcula con entrada, salida y almuerzo. También puedes escribir las horas directamente.</small></div><button class="button button-ghost" id="addHoursEntryButton" type="button">＋ Agregar registro</button></div>
                 <div id="hoursEntries" class="hours-entries"></div>
                 <p class="form-error" id="hoursError" role="alert"></p>
-                <div class="builder-save-row"><button class="button button-primary" id="saveHoursButton" type="button">Guardar reporte y PDF</button><p>El reporte se conserva en este navegador y puede descargarse como PDF.</p></div>
+                <div class="builder-save-row"><button class="button button-primary" id="saveHoursButton" type="button">Guardar reporte y PDF</button><p>El reporte se guarda en la nube y también queda en este navegador.</p></div>
               </section>
 
               <section class="hours-preview-panel">
@@ -164,6 +195,13 @@
               <div class="whatsapp-actions"><p id="whatsappHelp">Un trabajo por mensaje. Podrás corregir los campos antes de guardar.</p><button class="button button-primary" id="fillInvoiceFromTextButton" type="button">Completar invoice</button></div>
               <div id="whatsappResult" class="whatsapp-result hidden" role="status" aria-live="polite"></div>
             </section>
+            <section class="translator-panel" data-translator="invoice" data-target="builderDescription" data-langpair="es|en">
+              <div class="translator-heading"><div><p class="eyebrow">Traductor</p><h2>Español ↔ inglés</h2></div><span class="whatsapp-badge">Texto → texto</span></div>
+              <p>Pega el texto, tradúcelo y úsalo en la descripción de la invoice cuando te cuadre.</p>
+              <div class="translator-pairs"><button type="button" class="button button-ghost is-active" data-pair="es|en">Español → Inglés</button><button type="button" class="button button-ghost" data-pair="en|es">Inglés → Español</button><button type="button" class="button button-ghost" data-translator-swap>Intercambiar</button></div>
+              <div class="translator-grid"><label>Original<textarea data-translator-source rows="5" maxlength="8000" placeholder="Pega aquí el texto a traducir"></textarea></label><label>Traducción<textarea data-translator-output rows="5" maxlength="8000" readonly></textarea></label></div>
+              <div class="translator-actions"><p data-translator-status>Tú decides qué copiar al formulario.</p><div><button type="button" class="button button-primary" data-translator-go>Traducir</button><button type="button" class="button button-ghost" data-translator-copy>Copiar</button><button type="button" class="button button-ghost" data-translator-apply>Usar en descripción</button></div></div>
+            </section>
             <div class="invoice-builder">
               <section class="invoice-form-panel">
                 <div class="builder-panel-heading"><div><p class="eyebrow">Datos editables</p><h2>Información de la invoice</h2></div><span class="builder-step">01</span></div>
@@ -180,7 +218,7 @@
                   <label class="field"><span>Dirección del cliente</span><input id="builderBillAddress" type="text" value="1117 C St SE, Washington, DC 20003" /></label>
                   <label class="field"><span>Correo electrónico</span><input id="builderFromEmail" type="email" value="pr391665@gmail.com" /></label>
                   <label class="field"><span>Dirección de quien factura</span><input id="builderFromAddress" type="text" value="Birchview Ct Clinton MD 20735" /></label>
-                  <label class="field full"><span>Dirección del trabajo / para guardar</span><input id="builderWorkAddress" type="text" value="1117 C St SE, Washington, DC 20003" placeholder="Dirección donde se realizó el trabajo" /></label>
+                  <label class="field full"><span>Dirección del trabajo / para guardar</span><input id="builderWorkAddress" type="text" list="addressHistory" value="1117 C St SE, Washington, DC 20003" placeholder="Dirección donde se realizó el trabajo" /></label>
 
                   <div class="field-group full"><p class="field-group-title">Detalle del trabajo</p></div>
                   <label class="field full"><span>Descripción</span><textarea id="builderDescription" rows="3">Preparation and installation of stucco</textarea></label>
@@ -281,7 +319,7 @@
           <div class="modal-body">
             <div class="company-lock"><span class="lock-icon">▣</span><div><small>Compañía que solicita</small><strong>Trenton Builders LLC</strong></div><span class="locked-label">Fijo</span></div>
             <div class="form-grid">
-              <label class="field field-wide"><span>Dirección del trabajo <em>*</em></span><input id="address" type="text" required placeholder="Ej. 1117 C St SE, Washington, DC" autocomplete="street-address" /></label>
+              <label class="field field-wide"><span>Dirección del trabajo <em>*</em></span><input id="address" type="text" list="addressHistory" required placeholder="Ej. 1117 C St SE, Washington, DC" autocomplete="street-address" /></label>
               <label class="field"><span>Número de invoice <em>*</em></span><input id="invoiceNumber" type="text" required placeholder="#001" /></label>
               <label class="field"><span>Monto de la invoice <em>*</em></span><div class="money-input"><b>$</b><input id="amount" type="number" min="0" step="0.01" required placeholder="0.00" /></div></label>
               <label class="field"><span>Fecha de emisión <em>*</em></span><input id="recordIssuedDate" type="date" required /></label>
@@ -291,6 +329,13 @@
             </div>
             <div class="upload-area" id="uploadArea"><input id="pdfFile" type="file" accept="application/pdf,.pdf" hidden /><div class="upload-symbol">↑</div><div><strong>Sube el PDF de la invoice</strong><p>Arrástralo aquí o <button type="button" id="choosePdfButton">selecciona un archivo</button></p><small id="fileStatus">Formato PDF · hasta 15 MB</small></div></div>
             <p class="current-file hidden" id="currentFile"></p>
+            <section class="check-evidence hidden" id="checkEvidence">
+              <p class="field-group-title">Evidencia del cheque</p>
+              <p class="check-hint" id="checkPhotoHint">Si Trenton ya pagó, adjunta la foto del cheque. Puedes guardar pagada ahora y subirla después.</p>
+              <input id="checkPhotoFile" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden>
+              <button type="button" class="button button-ghost" id="addCheckPhotoButton">Adjuntar foto del cheque</button>
+              <div id="checkPhotoGrid" class="check-photo-grid"></div>
+            </section>
             <button type="button" class="button button-ghost hidden" id="editGeneratedInvoiceButton">Editar factura completa</button>
             <p class="form-error" id="formError" role="alert"></p>
           </div>
@@ -304,14 +349,23 @@
       <iframe id="pdfDialogFrame" title="PDF de la invoice"></iframe>
     </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <datalist id="addressHistory"></datalist>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="config.js" defer></script>
+    <script src="supabase-client.js" defer></script>
+    <script src="local-cache.js" defer></script>
     <script src="vendor/pdf-lib.min.js" defer></script>
     <script src="vendor/jszip.min.js" defer></script>
-    <script src="invoice-core.js?v=10" defer></script>
-    <script src="invoice-pdf.js?v=10" defer></script>
-    <script src="invoice-archive.js?v=10" defer></script>
-    <script src="hours-pdf.js?v=3" defer></script>
+    <script src="invoice-core.js?v=11" defer></script>
+    <script src="invoice-pdf.js?v=11" defer></script>
+    <script src="cloud-db.js?v=1" defer></script>
+    <script src="whatsapp-invoice.js?v=1" defer></script>
+    <script src="invoice-archive.js?v=11" defer></script>
+    <script src="hours-pdf.js?v=4" defer></script>
     <script src="hours-whatsapp.js?v=2" defer></script>
-    <script src="hours-app.js?v=3" defer></script>
-    <script src="app.js?v=archivo-pdfs-v13" defer></script>
+    <script src="hours-app.js?v=4" defer></script>
+    <script src="translator.js?v=1" defer></script>
+    <script src="auth-app.js?v=2" defer></script>
+    <script src="app.js?v=nube-v1" defer></script>
   </body>
 </html>

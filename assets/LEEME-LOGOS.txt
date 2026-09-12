@@ -1,0 +1,2 @@
+Coloca aquí logo-ruben.png y arrento-carpentry.png (los del repo o ZIP original).
+Sin estos archivos no se puede generar el PDF de invoices ni el de horas.
