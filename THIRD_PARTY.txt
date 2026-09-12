@@ -1,0 +1,16 @@
+Libraries bundled locally for use through Live Server:
+
+pdf-lib 1.17.1 — MIT
+https://github.com/Hopding/pdf-lib
+vendor/pdf-lib-LICENSE.txt
+
+PDF.js (pdfjs-dist) 5.6.205, compatibility build — Apache-2.0
+https://github.com/mozilla/pdf.js
+vendor/pdfjs-LICENSE.txt
+Standard font licenses: vendor/standard_fonts/LICENSE_FOXIT and LICENSE_LIBERATION.
+
+JSZip 3.10.1 — MIT or GPLv3, distributed here under MIT
+https://github.com/Stuk/jszip
+vendor/jszip-LICENSE.txt
+
+The Rubén Perla and Arrento Carpentry logos were supplied by the user.

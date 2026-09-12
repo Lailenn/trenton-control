@@ -1,0 +1,15 @@
+VERSION ACTUALIZADA — ARCHIVO DE INVOICES
+
+Si al abrir la página no ves "Archivo PDF activo" arriba, "Todos los PDFs"
+en el menú lateral y el recuadro "Archivo de invoices y resumen anual",
+abriste la carpeta anterior. Extrae este ZIP y abre el index.html de esta
+carpeta nueva con Live Server.
+
+La página actual incluye guardado del PDF, archivo por dirección, filtros,
+importación de PDFs, total por año, detección de repetidos y respaldo ZIP.
+También incluye Horas trabajadas, el logo de Arrento Carpentry LLC, cálculo
+de horas y pago, reportes por empleado y descarga del PDF con el formato
+del modelo entregado. En Horas trabajadas también puedes pegar texto de
+WhatsApp para desglosar los registros, modificar las horas totales directamente
+y descargar el PDF con la dirección del trabajo en el nombre del archivo. La
+vista y el PDF muestran la entrada y salida en formato de 24 horas.

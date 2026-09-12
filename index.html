@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="description" content="Tablero, archivo de PDFs, importación y resumen anual de invoices de Ruben Perla." />
+    <title>Ruben Perla | Control de invoices</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=archivo-pdfs-v15" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar">
+        <div class="brand-block">
+          <div class="brand-mark"><span>RP</span></div>
+          <div><strong>Ruben Perla</strong><small>Control de trabajos</small></div>
+        </div>
+        <div class="workspace-chip"><span class="workspace-dot"></span><span>Trenton Builders LLC</span><span class="workspace-chevron">⌄</span></div>
+        <p class="nav-label">Espacio de trabajo</p>
+        <nav class="main-nav" aria-label="Navegación principal">
+          <button class="nav-item active" type="button" data-nav="board"><span class="nav-icon">▦</span> Tablero <span class="nav-count" id="navTotal">0</span></button>
+          <button class="nav-item" type="button" data-nav="invoice"><span class="nav-icon">✦</span> Crear invoice</button>
+          <button class="nav-item" type="button" data-nav="hours"><span class="nav-icon">◷</span> Horas trabajadas</button>
+          <button class="nav-item" type="button" data-nav="archive"><span class="nav-icon">▤</span> Todos los PDFs</button>
+          <button class="nav-item" type="button" data-nav="created"><span class="nav-icon">＋</span> Facturas creadas</button>
+          <button class="nav-item" type="button" data-nav="working"><span class="nav-icon">◷</span> En trabajo</button>
+          <button class="nav-item" type="button" data-nav="waiting"><span class="nav-icon">⌛</span> Esperando cheque</button>
+          <button class="nav-item" type="button" data-nav="paid"><span class="nav-icon">✓</span> Pagadas</button>
+        </nav>
+        <div class="sidebar-spacer"></div>
+        <div class="sidebar-note"><span class="note-icon">i</span><div><strong>Tu control diario</strong><p>Una tarjeta por invoice y dirección.</p></div></div>
+        <div class="sidebar-footer"><span>Secretaría</span><strong>Lilian Perla</strong></div>
+      </aside>
+      <div class="sidebar-scrim" id="sidebarScrim" aria-hidden="true"></div>
+
+      <section class="main-shell">
+        <header class="topbar">
+          <button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir menú" aria-expanded="false">☰</button>
+          <div class="crumbs"><span>Trenton Builders LLC</span><b>/</b><strong>Control de invoices</strong></div>
+          <div class="topbar-right"><span class="version-badge">Archivo PDF activo</span><span class="saved-indicator" id="savedIndicator"><i></i> Guardado localmente</span><button class="avatar" type="button" title="Lilian Perla">LP</button></div>
+        </header>
+
+        <main class="main-content">
+          <section class="page-view" id="boardView">
+          <section class="hero hero-welcome">
+            <div class="hero-copy-block">
+              <p class="eyebrow">Panel de seguimiento <span class="hero-status-dot" aria-hidden="true"></span></p>
+              <p class="welcome-greeting" id="welcomeGreeting" aria-live="polite">Buenos días, Lilian.</p>
+              <h1>Todo el trabajo de Ruben Perla,<br /><span>en un solo lugar.</span></h1>
+              <p class="hero-copy">Crea, organiza y da seguimiento a cada invoice, hora y PDF sin perder nada.</p>
+              <p class="hero-quote" id="heroQuote">Cada trabajo organizado hoy construye un mañana más grande.</p>
+              <div class="hero-tip"><span class="hero-tip-icon" aria-hidden="true">✦</span><span><strong>Tu centro de control</strong><small>Registra, revisa y avanza cada trabajo desde aquí.</small></span></div>
+            </div>
+            <div class="hero-actions hero-actions-enhanced"><button class="button button-primary button-large" id="newInvoiceButton" type="button" title="Crear una nueva invoice"><span>＋</span> Nueva invoice</button><button class="button button-ghost button-large" id="openArchiveButton" type="button" title="Abrir todos los PDFs">▤ Ver todos los PDFs</button></div>
+          </section>
+
+          <section class="stats-grid" aria-label="Resumen de invoices">
+            <button type="button" data-archive="all" class="stat-card stat-all"><div class="stat-top"><span class="stat-label">Total invoices</span><span class="stat-symbol">▦</span></div><strong id="statTotal">0</strong><small>Abrir todos los PDFs</small></button>
+            <button type="button" data-archive="working" class="stat-card stat-work"><div class="stat-top"><span class="stat-label">En trabajo</span><span class="stat-symbol">◷</span></div><strong id="statWorking">0</strong><small>Rubén está trabajando</small></button>
+            <button type="button" data-archive="waiting" class="stat-card stat-wait"><div class="stat-top"><span class="stat-label">Esperando cheque</span><span class="stat-symbol">⌛</span></div><strong id="statWaiting">0</strong><small>Trabajo entregado</small></button>
+            <button type="button" data-archive="paid" class="stat-card stat-paid"><div class="stat-top"><span class="stat-label">Pagado</span><span class="stat-symbol">$</span></div><strong id="statPaid">$0</strong><small>Suma de invoices pagadas</small></button>
+          </section>
+
+          <section class="archive-callout"><div><p class="eyebrow">Nueva función</p><h2>Archivo de invoices y resumen anual</h2><p>Al guardar una factura, aquí queda su PDF. Puedes subir facturas viejas y consultar cuánto facturaste por año.</p></div><button class="button button-ghost" type="button" data-archive="all">Abrir archivo</button></section>
+
+          <section class="board-section">
+            <div class="board-toolbar">
+              <div><h2>Seguimiento de trabajos</h2><p>Arrastra cada tarjeta a la siguiente fase cuando avance.</p></div>
+              <div class="toolbar-controls"><label class="search-control"><span>⌕</span><input id="searchInput" type="search" placeholder="Buscar dirección o invoice…" aria-label="Buscar dirección o invoice" /></label><button class="filter-button" id="clearFilterButton" type="button">Limpiar</button></div>
+            </div>
+            <div class="board" id="board" aria-label="Tablero Kanban"></div>
+          </section>
+          </section>
+
+          <section class="page-view hidden hours-view" id="hoursView">
+            <div class="hours-page-heading">
+              <div><p class="eyebrow">Reporte de jornada</p><h1>Horas trabajadas</h1><p class="hero-copy">Registra los horarios de cada empleado en formato de 24 horas y genera el reporte con el formato de Arrento Carpentry LLC.</p></div>
+              <div class="hours-heading-actions"><button class="button button-ghost" id="resetHoursButton" type="button">Nuevo reporte</button><button class="button button-primary" id="downloadHoursButton" type="button">Guardar y descargar PDF</button></div>
+            </div>
+            <div class="hours-layout">
+              <section class="hours-form-panel">
+                <div class="builder-panel-heading"><div><p class="eyebrow">Datos editables</p><h2>Información del trabajo</h2></div><span class="builder-step">02</span></div>
+                <section class="whatsapp-import hours-whatsapp-import" aria-labelledby="hoursWhatsappTitle">
+                  <div class="whatsapp-heading"><div><p class="eyebrow">Desde el mensaje de Rubén</p><h2 id="hoursWhatsappTitle">Pegar texto de WhatsApp</h2></div><span class="whatsapp-badge">Texto → horas</span></div>
+                  <label for="hoursWhatsAppText">Copia el mensaje, pégalo aquí y pulsa “Desglosar horas”.</label>
+                  <textarea id="hoursWhatsAppText" rows="7" maxlength="16000" placeholder="4406 Woodfield Rd, Kensington, MD 20895\nWednesday, August 26, 2026\nJosué Zúñiga 07:00 18:30 30 MIN 11 HRS\nPablo Matamoros 07:00 18:30 30 MIN 11 HRS\n$30/HR"></textarea>
+                  <div class="whatsapp-actions"><p id="hoursWhatsAppHelp">Detecta dirección, fecha, empleados, entrada, salida, almuerzo, horas y tarifa. Usa horario de 24 horas.</p><button class="button button-primary" id="parseHoursWhatsAppButton" type="button">Desglosar horas</button></div>
+                  <div id="hoursWhatsAppResult" class="whatsapp-result hidden" role="status" aria-live="polite"></div>
+                </section>
+                <div class="hours-fields">
+                  <label class="field full"><span>Dirección del trabajo <em>*</em></span><input id="hoursJobAddress" type="text" placeholder="Ej. 4406 Woodfield Rd, Kensington, MD 20895" required></label>
+                  <label class="field"><span>Fecha del reporte <em>*</em></span><input id="hoursReportDate" type="date" required></label>
+                  <label class="field"><span>Tarifa predeterminada (USD/h)</span><div class="money-input"><b>$</b><input id="hoursDefaultRate" type="number" min="0" step="0.01" value="30"></div></label>
+                  <label class="field full"><span>Descripción</span><textarea id="hoursDescription" rows="2" placeholder="Descripción del trabajo realizado"></textarea></label>
+                </div>
+                <div class="hours-entry-title"><div><p class="field-group-title">Empleados y jornadas</p><small>El total se calcula con entrada, salida y almuerzo. También puedes escribir las horas directamente.</small></div><button class="button button-ghost" id="addHoursEntryButton" type="button">＋ Agregar registro</button></div>
+                <div id="hoursEntries" class="hours-entries"></div>
+                <p class="form-error" id="hoursError" role="alert"></p>
+                <div class="builder-save-row"><button class="button button-primary" id="saveHoursButton" type="button">Guardar reporte y PDF</button><p>El reporte se conserva en este navegador y puede descargarse como PDF.</p></div>
+              </section>
+
+              <section class="hours-preview-panel">
+                <div class="preview-toolbar"><span><i></i> Vista previa del reporte</span><small>Formato Arrento Carpentry LLC</small></div>
+                <div class="hours-preview-viewport" id="hoursPreviewViewport">
+                  <div class="hours-paper" id="hoursPaper">
+                    <img class="hours-logo" id="hoursPreviewLogo" src="assets/arrento-carpentry.png" alt="Arrento Carpentry LLC">
+                    <p class="hours-job-line">JOB: <u id="hoursPreviewAddress">Dirección del trabajo</u></p>
+                    <p class="hours-report-date" id="hoursPreviewDate">Wednesday, August 26, 2026</p>
+                    <div id="hoursPreviewTables"></div>
+                    <table class="hours-summary-table"><thead><tr><th>EMPLOYEE</th><th>TOTAL HOURS</th><th>HOURLY RATE</th><th>TOTAL PAY</th></tr></thead><tbody id="hoursSummaryRows"></tbody><tfoot id="hoursSummaryTotal"></tfoot></table>
+                    <div class="hours-description"><strong>Description:</strong><p id="hoursPreviewDescription"></p></div>
+                  </div>
+                </div>
+              </section>
+            </div>
+            <section class="hours-history"><div class="board-toolbar"><div><h2>Reportes guardados</h2><p>Abre o descarga los reportes de horas que ya generaste.</p></div></div><div id="hoursHistoryGrid" class="hours-history-grid"></div></section>
+          </section>
+
+          <section class="page-view hidden archive-view" id="archiveView">
+            <div class="archive-heading">
+              <div><p class="eyebrow">Documentos guardados por dirección</p><h1 id="archiveTitle">Todas las invoices</h1><p>Consulta tus PDFs y el total de facturas por año.</p></div>
+              <div class="archive-heading-actions">
+                <button class="button button-ghost" type="button" id="backupInvoicesButton">Descargar respaldo</button>
+                <button class="button button-primary" type="button" id="importInvoicesButton">＋ Subir invoices anteriores</button>
+                <input id="importInvoiceFiles" type="file" accept="application/pdf,.pdf,.zip" multiple hidden>
+              </div>
+            </div>
+            <div class="archive-filters">
+              <label>Año de emisión<select id="archiveYear"><option value="all">Todos los años</option></select></label>
+              <label>Categoría<select id="archiveStage"><option value="all">Todas</option><option value="created">Factura creada</option><option value="working">En trabajo</option><option value="waiting">Esperando cheque</option><option value="paid">Pagada</option></select></label>
+              <label class="archive-search">Buscar dirección o invoice<input id="archiveSearch" type="search" placeholder="Dirección, número o nombre del PDF…"></label>
+            </div>
+            <div class="archive-summary" aria-live="polite">
+              <div><span>Invoices en esta selección</span><strong id="archiveCount">0</strong></div>
+              <div><span>Total facturado</span><strong id="archiveTotal">$0.00</strong></div>
+              <div><span>Marcadas como pagadas</span><strong id="archivePaid">$0.00</strong></div>
+              <div><span>Invoices pendientes de pago</span><strong id="archivePending">$0.00</strong></div>
+            </div>
+            <p class="archive-help" id="archiveYearHelp">Se suma el total de cada invoice una sola vez, según su fecha de emisión. Los abonos mencionados dentro del PDF no se suman de nuevo.</p>
+            <section class="import-panel hidden" id="importPanel" aria-labelledby="importTitle">
+              <div class="import-heading"><div><h2 id="importTitle">Revisar invoices anteriores</h2><p id="importProgress" role="status">Selecciona los PDFs.</p></div><button type="button" class="button button-ghost" id="cancelImportButton">Cerrar importación</button></div>
+              <p>Confirma la dirección, fecha y total de cada archivo. Si el PDF es una imagen, completa los datos viendo el original.</p>
+              <label class="batch-stage">Categoría para esta carga<select id="importBatchStage"><option value="created">Factura creada</option><option value="working">En trabajo</option><option value="waiting">Esperando cheque</option><option value="paid">Pagada</option></select></label>
+              <div class="import-review-grid" id="importReviewGrid"></div>
+              <div class="import-bottom"><p id="importTotal" aria-live="polite"></p><button type="button" class="button button-primary" id="confirmImportButton" disabled>Guardar invoices seleccionadas</button></div>
+              <p id="importError" class="form-error" role="alert"></p>
+            </section>
+            <div class="archive-grid" id="archiveGrid"></div>
+            <p class="archive-help">Los PDFs se guardan en este navegador. Descarga un respaldo para conservar otra copia o llevarla a otra computadora.</p>
+          </section>
+
+          <section class="page-view hidden" id="invoiceView">
+            <div class="invoice-page-heading">
+              <div><p class="eyebrow">Generador de documentos</p><h1>Crear una invoice</h1><p class="hero-copy">Llena los campos y revisa la factura en tiempo real con el formato de Rubén.</p></div>
+              <div class="invoice-page-actions"><button class="button button-ghost" id="resetInvoiceButton" type="button">Limpiar campos</button><button class="button button-primary" id="printInvoiceButton" type="button">Guardar y descargar PDF</button></div>
+            </div>
+            <section class="whatsapp-import" aria-labelledby="whatsappTitle">
+              <div class="whatsapp-heading"><div><p class="eyebrow">Desde el mensaje de Rubén</p><h2 id="whatsappTitle">Pegar mensaje de WhatsApp</h2></div><span class="whatsapp-badge">Texto → invoice</span></div>
+              <label for="whatsappText">Copia un mensaje completo, pégalo aquí y pulsa “Completar invoice”.</label>
+              <textarea id="whatsappText" rows="7" maxlength="16000" placeholder="Para la misma compañía trento&#10;1117 C St SE, Washington, DC 20003&#10;Preparation and installation of stucco&#10;Estimated and approved by Diego&#10;Price for materials and labor: 9,200&#10;Con fecha de hoy" aria-describedby="whatsappHelp"></textarea>
+              <div class="whatsapp-actions"><p id="whatsappHelp">Un trabajo por mensaje. Podrás corregir los campos antes de guardar.</p><button class="button button-primary" id="fillInvoiceFromTextButton" type="button">Completar invoice</button></div>
+              <div id="whatsappResult" class="whatsapp-result hidden" role="status" aria-live="polite"></div>
+            </section>
+            <div class="invoice-builder">
+              <section class="invoice-form-panel">
+                <div class="builder-panel-heading"><div><p class="eyebrow">Datos editables</p><h2>Información de la invoice</h2></div><span class="builder-step">01</span></div>
+                <div class="invoice-fields">
+                  <div class="field-group full"><p class="field-group-title">Encabezado</p></div>
+                  <label class="field"><span>Número de invoice</span><input id="builderInvoiceNumber" type="text" value="#001" /></label>
+                  <label class="field"><span>Fecha de emisión</span><input id="builderIssuedDate" type="date" /></label>
+                  <label class="field full"><span>Texto superior derecho</span><input id="builderApproval" type="text" value="ESTIMATED AND APPROVED BY DIEGO" /></label>
+
+                  <div class="field-group full"><p class="field-group-title">Quién envía y quién recibe</p></div>
+                  <label class="field"><span>Nombre de quien factura</span><input id="builderFromName" type="text" value="Ruben Perla" /></label>
+                  <label class="field"><span>Empresa que paga</span><input id="builderBillName" type="text" value="Trenton Builders LLC" /></label>
+                  <label class="field"><span>Teléfono</span><input id="builderFromPhone" type="text" value="+1 (469) 650-4958" /></label>
+                  <label class="field"><span>Dirección del cliente</span><input id="builderBillAddress" type="text" value="1117 C St SE, Washington, DC 20003" /></label>
+                  <label class="field"><span>Correo electrónico</span><input id="builderFromEmail" type="email" value="pr391665@gmail.com" /></label>
+                  <label class="field"><span>Dirección de quien factura</span><input id="builderFromAddress" type="text" value="Birchview Ct Clinton MD 20735" /></label>
+                  <label class="field full"><span>Dirección del trabajo / para guardar</span><input id="builderWorkAddress" type="text" value="1117 C St SE, Washington, DC 20003" placeholder="Dirección donde se realizó el trabajo" /></label>
+
+                  <div class="field-group full"><p class="field-group-title">Detalle del trabajo</p></div>
+                  <label class="field full"><span>Descripción</span><textarea id="builderDescription" rows="3">Preparation and installation of stucco</textarea></label>
+                  <label class="field"><span>Cantidad</span><input id="builderQty" type="number" min="0" step="0.01" value="1" /></label>
+                  <label class="field"><span>Precio / total (USD)</span><div class="money-input"><b>$</b><input id="builderPrice" type="number" min="0" step="0.01" value="9200" /></div></label>
+                  <label class="field"><span>Anticipo requerido (%)</span><input id="builderDeposit" type="number" min="0" max="100" step="1" value="50" /></label>
+                  <label class="field full"><span>Nota de pago</span><textarea id="builderNote" rows="3" placeholder="Se genera automáticamente si lo dejas vacío."></textarea></label>
+                  <label class="field full logo-field"><span>Logo (opcional)</span><input id="builderLogo" type="file" accept="image/*" /><small>Se usa el logo de Rubén. Puedes cargar otro si lo necesitas.</small></label>
+                </div>
+                <div class="builder-save-row"><button class="button button-primary" id="saveGeneratedInvoiceButton" type="button">Guardar invoice y PDF</button><p>Se guarda por dirección en el tablero y en Todos los PDFs.</p></div>
+              </section>
+
+              <section class="invoice-preview-panel">
+  <div class="preview-toolbar">
+    <span><i></i> Vista previa en vivo</span>
+    <small>Formato de invoice</small>
+  </div>
+
+  <div class="invoice-preview-viewport" id="invoiceViewport">
+  <div class="invoice-paper" id="invoicePaper">
+    <div class="invoice-header">
+      <div class="invoice-brand">
+        <strong id="previewFromName">Ruben Perla</strong>
+        <div class="invoice-logo has-image" id="paperLogo">
+          <img src="assets/logo-ruben.png" alt="Logo de Ruben Perla">
+        </div>
+      </div>
+
+      <div class="invoice-meta">
+        <strong id="previewApproval">ESTIMATED AND APPROVED BY DIEGO</strong>
+        <span id="previewInvoiceNumber">#001</span>
+        <span>Issued <span id="previewIssuedDate">09/09/2026</span></span>
+      </div>
+    </div>
+
+    <div class="invoice-parties">
+      <div>
+        <div class="invoice-party-label">FROM</div>
+        <strong id="previewFromNameParty">Ruben Perla</strong>
+        <p id="previewFromPhone">+1 (469) 650-4958</p>
+        <p id="previewFromEmail">pr391665@gmail.com</p>
+        <p id="previewFromAddress">Birchview Ct Clinton MD 20735</p>
+      </div>
+      <div>
+        <div class="invoice-party-label">BILL TO</div>
+        <strong id="previewBillName">Trenton Builders LLC</strong>
+        <p id="previewBillAddress">1117 C St SE, Washington, DC 20003</p>
+      </div>
+    </div>
+
+    <table class="invoice-table">
+      <colgroup>
+        <col style="width: 57.6%">
+        <col style="width: 7.8%">
+        <col style="width: 16.4%">
+        <col style="width: 18.2%">
+      </colgroup>
+      <thead>
+        <tr>
+          <th scope="col">Description</th>
+          <th scope="col">QTY</th>
+          <th scope="col">Price, USD</th>
+          <th scope="col">Amount, USD</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td id="previewDescription">Preparation and installation of stucco</td>
+          <td><span id="previewQty" hidden></span></td>
+          <td><span id="previewPrice" hidden></span></td>
+          <td><span id="previewAmount" hidden></span></td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3">Price for materials and labor:</td>
+          <td><strong id="previewTotal">$ 9,200.00</strong></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <p class="invoice-payment-note" id="previewNote">Note: At the beginning of the project, 50% equivalent to $4,600.00 is required, and at the end of the work, the final 50% equivalent to $4,600.00 is required.</p>
+  </div>
+  </div>
+</section>
+
+            </div>
+          </section>
+        </main>
+      </section>
+    </div>
+
+    <div class="modal-backdrop hidden" id="modalBackdrop">
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-header"><div><p class="eyebrow">Registro de Trenton</p><h2 id="modalTitle">Nueva invoice</h2></div><button class="close-button" id="closeModalButton" type="button" aria-label="Cerrar">×</button></div>
+        <form id="invoiceForm" novalidate>
+          <input type="hidden" id="recordId" />
+          <div class="modal-body">
+            <div class="company-lock"><span class="lock-icon">▣</span><div><small>Compañía que solicita</small><strong>Trenton Builders LLC</strong></div><span class="locked-label">Fijo</span></div>
+            <div class="form-grid">
+              <label class="field field-wide"><span>Dirección del trabajo <em>*</em></span><input id="address" type="text" required placeholder="Ej. 1117 C St SE, Washington, DC" autocomplete="street-address" /></label>
+              <label class="field"><span>Número de invoice <em>*</em></span><input id="invoiceNumber" type="text" required placeholder="#001" /></label>
+              <label class="field"><span>Monto de la invoice <em>*</em></span><div class="money-input"><b>$</b><input id="amount" type="number" min="0" step="0.01" required placeholder="0.00" /></div></label>
+              <label class="field"><span>Fecha de emisión <em>*</em></span><input id="recordIssuedDate" type="date" required /></label>
+              <label class="field"><span>Horas trabajadas</span><input id="hours" type="number" min="0" step="0.25" placeholder="0" /></label>
+              <label class="field"><span>Fase inicial</span><select id="stage"><option value="created">Factura creada</option><option value="working">En trabajo</option><option value="waiting">Entregado / esperando cheque</option><option value="paid">Pagado</option></select></label>
+              <label class="field field-wide"><span>Descripción del trabajo</span><textarea id="description" rows="2" placeholder="Ej. Preparation and installation of stucco"></textarea></label>
+            </div>
+            <div class="upload-area" id="uploadArea"><input id="pdfFile" type="file" accept="application/pdf,.pdf" hidden /><div class="upload-symbol">↑</div><div><strong>Sube el PDF de la invoice</strong><p>Arrástralo aquí o <button type="button" id="choosePdfButton">selecciona un archivo</button></p><small id="fileStatus">Formato PDF · hasta 15 MB</small></div></div>
+            <p class="current-file hidden" id="currentFile"></p>
+            <button type="button" class="button button-ghost hidden" id="editGeneratedInvoiceButton">Editar factura completa</button>
+            <p class="form-error" id="formError" role="alert"></p>
+          </div>
+          <div class="modal-footer"><button class="button button-ghost" id="cancelButton" type="button">Cancelar</button><button class="button button-primary" type="submit" id="saveButton">Guardar invoice</button></div>
+        </form>
+      </section>
+    </div>
+    <dialog class="pdf-dialog" id="pdfDialog">
+      <div class="pdf-dialog-head"><div><h2 id="pdfDialogTitle">Invoice</h2><p id="pdfDialogInfo"></p></div><button type="button" class="close-button" id="closePdfDialog" aria-label="Cerrar PDF">×</button></div>
+      <div class="pdf-dialog-actions"><a class="button button-primary" id="pdfDialogDownload" download>Descargar PDF</a><button class="button button-ghost" type="button" id="pdfDialogEdit">Editar datos / categoría</button></div>
+      <iframe id="pdfDialogFrame" title="PDF de la invoice"></iframe>
+    </dialog>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="vendor/pdf-lib.min.js" defer></script>
+    <script src="vendor/jszip.min.js" defer></script>
+    <script src="invoice-core.js?v=10" defer></script>
+    <script src="invoice-pdf.js?v=10" defer></script>
+    <script src="invoice-archive.js?v=10" defer></script>
+    <script src="hours-pdf.js?v=3" defer></script>
+    <script src="hours-whatsapp.js?v=2" defer></script>
+    <script src="hours-app.js?v=3" defer></script>
+    <script src="app.js?v=archivo-pdfs-v13" defer></script>
+  </body>
+</html>

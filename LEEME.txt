@@ -1,0 +1,106 @@
+TRENTON CONTROL — INVOICES Y ARCHIVO DE PDFs
+
+ACTUALIZAR EN VISUAL STUDIO CODE
+1. Extrae el ZIP actualizado y abre la carpeta nueva. Debe mostrar el apartado
+   Horas trabajadas en el menú lateral.
+2. Copia TODO el contenido de trenton-control dentro de tu carpeta actual
+   del proyecto. Acepta reemplazar los archivos. Incluye assets, vendor,
+   index.html, styles.css, app.js, invoice-core.js, invoice-pdf.js,
+   invoice-archive.js, hours-pdf.js, hours-whatsapp.js, hours-app.js y la carpeta vendor.
+   Los archivos nuevos también son necesarios.
+3. Abre index.html con Open with Live Server.
+4. Si ya tenías la página abierta, pulsa Ctrl + F5.
+
+Conserva el mismo navegador y la misma dirección de Live Server,
+incluido el puerto (por ejemplo http://127.0.0.1:5500).
+localhost y 127.0.0.1 son direcciones distintas para el almacenamiento.
+No borres los datos del navegador. Los registros de la versión anterior
+se conservan al abrir la app desde la misma dirección.
+No necesitas npm ni una cuenta externa.
+
+CREAR Y GUARDAR
+- En Crear invoice, completa los campos o pega el mensaje de WhatsApp.
+- Revisa la dirección del trabajo: identifica la tarjeta y el nombre del PDF.
+  La dirección del cliente se imprime en BILL TO.
+- Guardar invoice y PDF guarda ambos y abre el archivo de invoices.
+- Guardar y descargar PDF también descarga una copia a tu computadora.
+- Volver a guardar la misma factura abierta actualiza ese registro.
+- Para una factura diferente, pulsa Nueva invoice o Limpiar campos.
+  Se propone el siguiente número disponible.
+- En Editar datos puedes cambiar la categoría y las horas. Si la invoice
+  se generó aquí, Editar factura completa abre todos sus campos.
+- Las facturas antiguas generadas en la app que aún conservan sus datos
+  se convierten en PDF al abrir esta versión. Si un registro no contiene
+  suficientes datos, aparecerá Falta adjuntar el PDF para completarlo.
+
+ABRIR LAS CATEGORÍAS
+- Total invoices y Todos los PDFs: todas las facturas, con Ver PDF,
+  Descargar y Editar datos.
+- En trabajo, Esperando cheque y Pagado: solo esa categoría.
+- El tablero conserva sus cuatro fases y puedes mover las tarjetas.
+
+SUBIR INVOICES ANTERIORES
+1. Abre Total invoices > Subir invoices anteriores.
+2. Selecciona varios archivos PDF: un archivo por invoice.
+3. El lector busca número, fecha y total. No suma todos los números del PDF
+   ni vuelve a sumar los anticipos, subtotales o saldos mencionados.
+4. Revisa el original y completa dirección del trabajo, número, fecha,
+   total (USD) y categoría. Puedes marcar toda la carga como pagada y
+   corregir individualmente cualquier excepción.
+5. Guarda las invoices seleccionadas. Los PDFs originales se conservan.
+
+El lector funciona con PDFs que contienen texto. Los PDFs escaneados o
+con texto poco claro necesitan que completes los campos manualmente;
+esta versión no incluye OCR. Los PDFs dañados o con contraseña no se
+importan. Si encuentra varios totales diferentes, solicita revisión.
+Los importes se revisan como USD. No hay conversión entre monedas.
+Los archivos repetidos se detectan por contenido, por su identificación
+original o por número + dirección + fecha. Las coincidencias se omiten;
+para corregir una invoice ya existente, usa Editar datos.
+Una misma dirección puede tener varias invoices con números distintos.
+Límites por carga: 500 invoices, 200 MB en total, 15 MB por PDF y 100 páginas
+por PDF. Puedes realizar varias cargas.
+
+HORAS TRABAJADAS
+En el menú lateral abre Horas trabajadas. Completa la dirección del trabajo,
+la fecha y cada registro de empleado. Escribe hora de entrada, salida,
+minutos de almuerzo y tarifa por hora. El programa calcula automáticamente
+las horas trabajadas y el pago de cada persona. También puedes escribir
+directamente en Horas totales (editar) si el total no coincide con la operación
+de entrada, salida y almuerzo.
+
+Para importar un mensaje, copia el texto de WhatsApp, pégalo en Pegar texto de
+WhatsApp y pulsa Desglosar horas. La app intenta llenar dirección, fecha,
+empleados, entrada, salida, almuerzo, horas y tarifa; revisa los campos antes
+de guardar. La vista y el PDF usan horario de 24 horas (por ejemplo, 07:00 y
+18:00). Si el mensaje solo dice “zuniga el jueves trabajo 10 hrs”, se propone
+07:00–18:00 con 60 minutos de almuerzo; puedes cambiar cualquier campo.
+
+El reporte usa el logo de Arrento Carpentry LLC y conserva el formato del
+modelo: una tabla por empleado, una tabla resumen con total de horas, tarifa
+y pago, y un espacio para descripción. Puedes agregar varios días y empleados,
+guardar el PDF en el navegador o descargarlo. Los reportes guardados aparecen
+debajo de la vista previa para volver a descargar sus PDFs. El nombre de cada
+PDF comienza con la dirección del trabajo y continúa con _horas y la fecha.
+
+CONSULTAR EL TOTAL DEL AÑO
+En Total invoices, selecciona Año de emisión y Categoría: Todas.
+Deja la búsqueda vacía para sumar todas las invoices de ese año.
+El resumen muestra el total facturado y los montos de invoices completas
+marcadas como pagadas o pendientes. Cada invoice se cuenta una sola vez.
+Se calcula por fecha de emisión, no por fecha de pago. Las facturas sin
+fecha quedan en Sin fecha · revisar, fuera de cualquier año específico.
+Las horas registradas no se suman al monto de la factura.
+
+RESPALDO Y RECUPERACIÓN
+Descargar respaldo crea un ZIP con todos los PDFs y sus datos/categorías.
+Para recuperarlo, usa Subir invoices anteriores, selecciona ese ZIP,
+revisa los datos y guarda. Se omiten las invoices que ya estén guardadas.
+Puedes respaldar hasta 500 registros o 200 MB en un ZIP. Los PDFs también
+se pueden descargar individualmente. Conserva copias de tus respaldos.
+
+Los datos y PDFs quedan guardados en ESTE navegador. No se sincronizan
+solos con otra computadora. Borrar los datos del sitio, usar otro perfil
+u otra dirección puede dejar de mostrar tus registros. El respaldo permite
+llevarlos a otro navegador y recuperarlos. Los archivos se procesan en tu
+computadora; la lectura de PDFs no requiere enviar tus facturas a un servicio.
