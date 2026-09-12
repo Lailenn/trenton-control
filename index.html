@@ -3,13 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0f172a" />
+    <meta name="theme-color" content="#1a1714" />
     <meta name="description" content="Tablero, archivo de PDFs, importación y resumen anual de invoices de Ruben Perla." />
     <title>Ruben Perla | Control de invoices</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=nube-v3" />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=atelier-v3" />
   </head>
   <body>
     <div id="authGate" class="auth-gate auth-play" data-mode="login">
@@ -119,40 +119,40 @@
               <div><p class="eyebrow">Reporte de jornada</p><h1>Horas trabajadas</h1><p class="hero-copy">Registra los horarios de cada empleado en formato de 24 horas y genera el reporte con el formato de Arrento Carpentry LLC.</p></div>
               <div class="hours-heading-actions"><button class="button button-ghost" id="resetHoursButton" type="button">Nuevo reporte</button><button class="button button-primary" id="downloadHoursButton" type="button">Guardar y descargar PDF</button></div>
             </div>
+            <section class="whatsapp-import hours-whatsapp-import" aria-labelledby="hoursWhatsappTitle">
+              <div class="whatsapp-heading"><div><p class="eyebrow">Desde el mensaje de Rubén</p><h2 id="hoursWhatsappTitle">Pegar texto de WhatsApp</h2></div><span class="whatsapp-badge">Texto → horas</span></div>
+              <label for="hoursWhatsAppText">Copia el mensaje, pégalo aquí y pulsa “Desglosar horas”.</label>
+              <textarea id="hoursWhatsAppText" rows="7" maxlength="16000" placeholder="4406 Woodfield Rd, Kensington, MD 20895&#10;Wednesday, August 26, 2026&#10;Josué Zúñiga 07:00 18:30 30 MIN 11 HRS&#10;Pablo Matamoros 07:00 18:30 30 MIN 11 HRS&#10;$30/HR"></textarea>
+              <div class="whatsapp-actions"><p id="hoursWhatsAppHelp">Detecta dirección, fecha, empleados, entrada, salida, almuerzo, horas y tarifa. Usa horario de 24 horas.</p><button class="button button-primary" id="parseHoursWhatsAppButton" type="button">Desglosar horas</button></div>
+              <div id="hoursWhatsAppResult" class="whatsapp-result hidden" role="status" aria-live="polite"></div>
+            </section>
+            <section class="translator-panel" data-translator="hours" data-target="hoursDescription" data-langpair="es|en" data-dir="es-en">
+              <div class="translator-heading"><div><p class="eyebrow">Traductor</p><h2 data-translator-title>Español → Inglés</h2></div><span class="whatsapp-badge" data-translator-badge>ES → EN</span></div>
+              <p data-translator-hint>Pega el texto en español. El resultado saldrá en inglés para la descripción del reporte de horas.</p>
+              <div class="translator-switch" role="group" aria-label="Dirección de traducción">
+                <button type="button" class="translator-dir is-active" data-pair="es|en" aria-pressed="true"><strong>Español → Inglés</strong><small>De español a inglés</small></button>
+                <button type="button" class="translator-swap" data-translator-swap aria-label="Invertir idiomas">⇄</button>
+                <button type="button" class="translator-dir" data-pair="en|es" aria-pressed="false"><strong>Inglés → Español</strong><small>De inglés a español</small></button>
+              </div>
+              <div class="translator-grid">
+                <label><span data-translator-source-label>Texto en español</span><textarea data-translator-source rows="5" maxlength="8000" placeholder="Escribe o pega aquí en español…"></textarea></label>
+                <label><span data-translator-output-label>Traducción al inglés</span><textarea data-translator-output rows="5" maxlength="8000" readonly placeholder="Aquí aparecerá el inglés…"></textarea></label>
+              </div>
+              <div class="translator-actions"><p data-translator-status>Dirección activa: de español a inglés.</p><div><button type="button" class="button button-primary" data-translator-go>Traducir al inglés</button><button type="button" class="button button-ghost" data-translator-copy>Copiar</button><button type="button" class="button button-ghost" data-translator-apply>Usar en descripción</button></div></div>
+            </section>
             <div class="hours-layout">
               <section class="hours-form-panel">
                 <div class="builder-panel-heading"><div><p class="eyebrow">Datos editables</p><h2>Información del trabajo</h2></div><span class="builder-step">02</span></div>
-                <section class="whatsapp-import hours-whatsapp-import" aria-labelledby="hoursWhatsappTitle">
-                  <div class="whatsapp-heading"><div><p class="eyebrow">Desde el mensaje de Rubén</p><h2 id="hoursWhatsappTitle">Pegar texto de WhatsApp</h2></div><span class="whatsapp-badge">Texto → horas</span></div>
-                  <label for="hoursWhatsAppText">Copia el mensaje, pégalo aquí y pulsa “Desglosar horas”.</label>
-                  <textarea id="hoursWhatsAppText" rows="7" maxlength="16000" placeholder="4406 Woodfield Rd, Kensington, MD 20895\nWednesday, August 26, 2026\nJosué Zúñiga 07:00 18:30 30 MIN 11 HRS\nPablo Matamoros 07:00 18:30 30 MIN 11 HRS\n$30/HR"></textarea>
-                  <div class="whatsapp-actions"><p id="hoursWhatsAppHelp">Detecta dirección, fecha, empleados, entrada, salida, almuerzo, horas y tarifa. Usa horario de 24 horas.</p><button class="button button-primary" id="parseHoursWhatsAppButton" type="button">Desglosar horas</button></div>
-                  <div id="hoursWhatsAppResult" class="whatsapp-result hidden" role="status" aria-live="polite"></div>
-                </section>
-                <section class="translator-panel" data-translator="hours" data-target="hoursDescription" data-langpair="es|en" data-dir="es-en">
-                  <div class="translator-heading"><div><p class="eyebrow">Traductor</p><h2 data-translator-title>Español → Inglés</h2></div><span class="whatsapp-badge" data-translator-badge>ES → EN</span></div>
-                  <p data-translator-hint>Pega el texto en español. El resultado saldrá en inglés para la descripción del reporte de horas.</p>
-                  <div class="translator-switch" role="group" aria-label="Dirección de traducción">
-                    <button type="button" class="translator-dir is-active" data-pair="es|en" aria-pressed="true"><strong>Español → Inglés</strong><small>De español a inglés</small></button>
-                    <button type="button" class="translator-swap" data-translator-swap aria-label="Invertir idiomas">⇄</button>
-                    <button type="button" class="translator-dir" data-pair="en|es" aria-pressed="false"><strong>Inglés → Español</strong><small>De inglés a español</small></button>
-                  </div>
-                  <div class="translator-grid">
-                    <label><span data-translator-source-label>Texto en español</span><textarea data-translator-source rows="5" maxlength="8000" placeholder="Escribe o pega aquí en español…"></textarea></label>
-                    <label><span data-translator-output-label>Traducción al inglés</span><textarea data-translator-output rows="5" maxlength="8000" readonly placeholder="Aquí aparecerá el inglés…"></textarea></label>
-                  </div>
-                  <div class="translator-actions"><p data-translator-status>Dirección activa: de español a inglés.</p><div><button type="button" class="button button-primary" data-translator-go>Traducir al inglés</button><button type="button" class="button button-ghost" data-translator-copy>Copiar</button><button type="button" class="button button-ghost" data-translator-apply>Usar en descripción</button></div></div>
-                </section>
                 <div class="hours-fields">
                   <label class="field full"><span>Dirección del trabajo <em>*</em></span><input id="hoursJobAddress" type="text" list="addressHistory" placeholder="Ej. 4406 Woodfield Rd, Kensington, MD 20895" required></label>
                   <label class="field"><span>Fecha del reporte <em>*</em></span><input id="hoursReportDate" type="date" required></label>
                   <label class="field"><span>Tarifa predeterminada (USD/h)</span><div class="money-input"><b>$</b><input id="hoursDefaultRate" type="number" min="0" step="0.01" value="30"></div></label>
-                  <label class="field full"><span>Descripción</span><textarea id="hoursDescription" rows="2" placeholder="Descripción del trabajo realizado"></textarea></label>
+                  <label class="field full"><span>Descripción</span><textarea id="hoursDescription" rows="3" placeholder="Descripción del trabajo realizado"></textarea></label>
                 </div>
                 <div class="hours-entry-title"><div><p class="field-group-title">Empleados y jornadas</p><small>El total se calcula con entrada, salida y almuerzo. También puedes escribir las horas directamente.</small></div><button class="button button-ghost" id="addHoursEntryButton" type="button">＋ Agregar registro</button></div>
                 <div id="hoursEntries" class="hours-entries"></div>
                 <p class="form-error" id="hoursError" role="alert"></p>
-                <div class="builder-save-row"><button class="button button-primary" id="saveHoursButton" type="button">Guardar reporte y PDF</button><p>El reporte se guarda en la nube y también queda en este navegador.</p></div>
+                <div class="builder-save-row"><button class="button button-primary" id="saveHoursButton" type="button">Guardar reporte y PDF</button><p>Se genera el PDF a color, se descarga solo y también queda en la nube.</p></div>
               </section>
 
               <section class="hours-preview-panel">
@@ -257,7 +257,7 @@
                   <label class="field full"><span>Nota de pago</span><textarea id="builderNote" rows="3" placeholder="Se genera automáticamente si lo dejas vacío."></textarea></label>
                   <label class="field full logo-field"><span>Logo (opcional)</span><input id="builderLogo" type="file" accept="image/*" /><small>Se usa el logo de Rubén. Puedes cargar otro si lo necesitas.</small></label>
                 </div>
-                <div class="builder-save-row"><button class="button button-primary" id="saveGeneratedInvoiceButton" type="button">Guardar invoice y PDF</button><p>Se guarda por dirección en el tablero y en Todos los PDFs.</p></div>
+                <div class="builder-save-row"><button class="button button-primary" id="saveGeneratedInvoiceButton" type="button">Guardar invoice y PDF</button><p>Se genera el PDF a color, se descarga solo y queda en el tablero y en Todos los PDFs.</p></div>
               </section>
 
               <section class="invoice-preview-panel">
@@ -386,15 +386,15 @@
     <script src="vendor/pdf-lib.min.js" defer></script>
     <script src="vendor/jszip.min.js" defer></script>
     <script src="invoice-core.js?v=11" defer></script>
-    <script src="invoice-pdf.js?v=11" defer></script>
+    <script src="invoice-pdf.js?v=12" defer></script>
     <script src="cloud-db.js?v=1" defer></script>
-    <script src="whatsapp-invoice.js?v=1" defer></script>
-    <script src="invoice-archive.js?v=11" defer></script>
-    <script src="hours-pdf.js?v=4" defer></script>
+    <script src="whatsapp-invoice.js?v=2" defer></script>
+    <script src="invoice-archive.js?v=12" defer></script>
+    <script src="hours-pdf.js?v=5" defer></script>
     <script src="hours-whatsapp.js?v=2" defer></script>
-    <script src="hours-app.js?v=4" defer></script>
-    <script src="translator.js?v=3" defer></script>
+    <script src="hours-app.js?v=6" defer></script>
+    <script src="translator.js?v=4" defer></script>
     <script src="auth-app.js?v=4" defer></script>
-    <script src="app.js?v=nube-v4" defer></script>
+    <script src="app.js?v=nube-v6" defer></script>
   </body>
 </html>

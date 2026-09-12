@@ -34,7 +34,7 @@ window.InvoiceArchive = function (app) {
       <p class="archive-date">${dateLabel(C.issuedDate(r))} · ${r.pdfBlob || r.pdfPath ? "PDF guardado" : "Falta adjuntar el PDF"}</p>
       <strong class="archive-amount">${money(r.amount)}</strong>
       <p class="archive-file">${esc(r.pdfName || "Puedes agregar el PDF desde Editar datos.")}</p>
-      <div class="archive-card-actions">${r.pdfBlob || r.pdfPath ? `<button type="button" class="button button-primary" data-record="${esc(r.id)}" data-task="view">Ver PDF</button>${r.pdfBlob ? `<a class="button button-ghost" href="${app.pdfUrl(r)}" download="${esc(C.fileName(r))}">Descargar</a>` : `<button type="button" class="button button-ghost" data-record="${esc(r.id)}" data-task="view">Descargar</button>`}` : ""}<button type="button" class="button button-ghost" data-record="${esc(r.id)}" data-task="edit">Editar datos</button></div>
+      <div class="archive-card-actions">${r.pdfBlob || r.pdfPath ? `<button type="button" class="button button-primary" data-record="${esc(r.id)}" data-task="view">Ver PDF</button><button type="button" class="button button-ghost" data-record="${esc(r.id)}" data-task="download">Descargar</button>` : ""}<button type="button" class="button button-ghost" data-record="${esc(r.id)}" data-task="edit">Editar datos</button></div>
     </article>`).join("") : '<div class="archive-empty"><span>▤</span><h2>No hay invoices en esta selección</h2><p>Prueba otro año o categoría, crea una invoice o sube tus PDFs anteriores.</p></div>';
   }
 
@@ -228,10 +228,22 @@ window.InvoiceArchive = function (app) {
     finally { $("#backupInvoicesButton").disabled = false; }
   }
 
+  async function downloadRecord(record) {
+    try {
+      if (app.ensurePdf) await app.ensurePdf(record);
+      if (!record.pdfBlob) return app.toast("No hay PDF para descargar.");
+      app.download(record.pdfBlob, C.fileName(record));
+    } catch (error) {
+      app.toast(error.message || "No se pudo descargar el PDF.");
+    }
+  }
+
   $("#archiveGrid").addEventListener("click", e => {
     const button = e.target.closest("[data-record]"); if (!button) return;
     const record = app.records().find(r => r.id === button.dataset.record); if (!record) return;
-    if (button.dataset.task === "view") view(record); else app.edit(record);
+    if (button.dataset.task === "view") view(record);
+    else if (button.dataset.task === "download") downloadRecord(record);
+    else app.edit(record);
   });
   ["archiveYear", "archiveStage"].forEach(id => $("#" + id).addEventListener("change", render));
   $("#archiveSearch").addEventListener("input", render);

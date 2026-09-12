@@ -50,8 +50,12 @@
   }
 
   function download(blob, name) {
-    const url = URL.createObjectURL(blob), a = document.createElement("a");
-    a.href = url; a.download = name; document.body.append(a); a.click(); a.remove();
+    if (!blob) return;
+    const file = blob instanceof Blob ? blob : new Blob([blob], {type: "application/pdf"});
+    if (navigator.msSaveOrOpenBlob) { navigator.msSaveOrOpenBlob(file, name); return; }
+    const url = URL.createObjectURL(file), a = document.createElement("a");
+    a.href = url; a.download = name || "invoice.pdf"; a.rel = "noopener"; a.style.display = "none";
+    document.body.append(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
 
@@ -305,6 +309,8 @@
   }
 
   function invoiceData() {
+    const split = WhatsAppInvoiceParser.splitPrice?.($("#builderDescription").value.trim()) || { text: $("#builderDescription").value.trim(), amount: null };
+    const price = Number($("#builderPrice").value) || split.amount || 0;
     return {
       invoiceNumber: $("#builderInvoiceNumber").value.trim(),
       issuedDate: $("#builderIssuedDate").value,
@@ -316,9 +322,9 @@
       workAddress: $("#builderWorkAddress").value.trim(),
       fromEmail: $("#builderFromEmail").value.trim(),
       fromAddress: $("#builderFromAddress").value.trim(),
-      description: $("#builderDescription").value.trim() || "Trabajo realizado",
+      description: split.text || "Trabajo realizado",
       qty: Number($("#builderQty").value) || 0,
-      price: Number($("#builderPrice").value) || 0,
+      price,
       deposit: Math.min(Math.max(Number($("#builderDeposit").value) || 0, 0), 100),
       note: $("#builderNote").value.trim(),
       sourceMessage: $("#whatsappText").value.trim(),
@@ -428,6 +434,12 @@
         key === "issuedDate" ? invoiceDateLabel(value) : String(value);
       applied.push({ label: key === "billAddress" ? "Dirección del cliente y del trabajo" : label, display });
     }
+    const split = WhatsAppInvoiceParser.splitPrice($("#builderDescription").value);
+    $("#builderDescription").value = split.text;
+    if (split.amount != null && !(Number($("#builderPrice").value) > 0)) {
+      $("#builderPrice").value = split.amount;
+      if (!(Number($("#builderQty").value) > 0)) $("#builderQty").value = 1;
+    }
     updateInvoicePreview();
     const missing = ["billName", "billAddress", "description", "approval", "invoiceNumber", "issuedDate", "price", "deposit"]
       .filter((key) => !Object.prototype.hasOwnProperty.call(parsed.fields, key))
@@ -475,16 +487,22 @@
 
   async function logoBytes(data) {
     const url = typeof data.logoDataUrl === "string" && /^data:image\/(png|jpeg|webp);base64,/i.test(data.logoDataUrl) ? data.logoDataUrl : DEFAULT_LOGO_URL;
-    const response = await fetch(url);
-    if (!response.ok) throw new Error("No se pudo cargar el logo. Abre index.html con Live Server y conserva la carpeta assets.");
-    const blob = await response.blob();
-    if (/image\/(png|jpeg)/i.test(blob.type)) return blob.arrayBuffer();
-    const bitmap = await createImageBitmap(blob);
-    const canvas = document.createElement("canvas"); canvas.width = bitmap.width; canvas.height = bitmap.height;
-    canvas.getContext("2d").drawImage(bitmap, 0, 0); bitmap.close();
-    const converted = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
-    if (!converted) throw new Error("No se pudo convertir el logo. Usa una imagen PNG o JPG.");
-    return converted.arrayBuffer();
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("logo");
+      const blob = await response.blob();
+      const bitmap = await createImageBitmap(blob);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, bitmap.width);
+      canvas.height = Math.max(1, bitmap.height);
+      canvas.getContext("2d").drawImage(bitmap, 0, 0);
+      bitmap.close();
+      const converted = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+      return converted ? converted.arrayBuffer() : await blob.arrayBuffer();
+    } catch (error) {
+      console.warn("No se pudo preparar el logo de la invoice", error);
+      return null;
+    }
   }
 
   async function attachGeneratedPdf(record, data) {
@@ -507,17 +525,27 @@
     const record = {...(previous || {}), id: previous?.id || makeId(), address: data.workAddress, invoiceNumber: data.invoiceNumber, issuedDate: data.issuedDate, amount: Core.cents(amount) / 100, hours: previous?.hours || 0, description: data.description, stage: previous?.stage || "created", updatedAt: new Date().toISOString(), paidAt: previous?.paidAt || null};
     savingBuilder = true;
     $("#saveGeneratedInvoiceButton").disabled = true; $("#printInvoiceButton").disabled = true;
-    $("#saveGeneratedInvoiceButton").textContent = "Guardando en la nube…";
+    $("#saveGeneratedInvoiceButton").textContent = "Generando PDF…";
     try {
       await attachGeneratedPdf(record, data);
-      await saveRecord(record);
-      builderRecordId = record.id;
-      replaceInMemory(record);
-      render();
-      if (alsoDownload) download(record.pdfBlob, record.pdfName);
-      else navClick("archive");
-      showToast(previous ? "Invoice y PDF actualizados en la nube." : "Invoice y PDF guardados en la nube y en este navegador.");
-    } catch (error) { console.error(error); showToast(error.message || "No se pudo guardar la invoice y su PDF."); }
+      download(record.pdfBlob, record.pdfName);
+      try {
+        await saveRecord(record);
+        builderRecordId = record.id;
+        replaceInMemory(record);
+        render();
+        if (!alsoDownload) navClick("archive");
+        showToast(previous
+          ? "PDF a color descargado. La invoice también se actualizó en la nube."
+          : "PDF a color descargado. La invoice quedó guardada en la nube.");
+      } catch (cloudError) {
+        console.error(cloudError);
+        showToast("El PDF se descargó, pero no se pudo guardar en la nube: " + (cloudError.message || "revisa la conexión."));
+      }
+    } catch (error) {
+      console.error(error);
+      showToast(error.message || "No se pudo generar el PDF de la invoice.");
+    }
     finally { savingBuilder = false; $("#saveGeneratedInvoiceButton").disabled = false; $("#printInvoiceButton").disabled = false; $("#saveGeneratedInvoiceButton").textContent = "Guardar invoice y PDF"; }
   }
 
@@ -638,6 +666,18 @@
   $("#whatsappText").addEventListener("paste", () => setTimeout(fillInvoiceFromText, 0));
   $("#whatsappText").addEventListener("input", () => $("#whatsappResult").classList.add("hidden"));
   ["builderInvoiceNumber", "builderIssuedDate", "builderApproval", "builderFromName", "builderBillName", "builderFromPhone", "builderBillAddress", "builderWorkAddress", "builderFromEmail", "builderFromAddress", "builderDescription", "builderQty", "builderPrice", "builderDeposit", "builderNote"].forEach((id) => $("#" + id).addEventListener("input", updateInvoicePreview));
+  $("#builderDescription").addEventListener("blur", () => {
+    const split = WhatsAppInvoiceParser.splitPrice($("#builderDescription").value);
+    const priceEmpty = !(Number($("#builderPrice").value) > 0);
+    if (split.text !== $("#builderDescription").value.trim() || (split.amount != null && priceEmpty)) {
+      $("#builderDescription").value = split.text;
+      if (split.amount != null && priceEmpty) {
+        $("#builderPrice").value = split.amount;
+        if (!(Number($("#builderQty").value) > 0)) $("#builderQty").value = 1;
+      }
+      updateInvoicePreview();
+    }
+  });
   $("#builderLogo").addEventListener("change", (event) => {
     const file = event.target.files[0];
     if (!file) return;

@@ -65,6 +65,27 @@ const WhatsAppInvoiceParser = (() => {
     return null;
   }
 
+  const PRICE_CHUNK = /(?:price\s+for\s+materials?\s+and\s+labou?r|precio\s+(?:(?:por|de|para)\s+)?materiales?\s+y\s+mano\s+de\s+obra)(?:\s+total)?\s*[:\-=]?\s*((?:US\$|USD|\$)?\s*\d[\d.,]*(?:\s*(?:USD|US\$|d[oó]lares?))?)/gi;
+  const PRICE_LABEL = /(?:^|\n)\s*(?:price\s+for\s+materials?\s+and\s+labou?r|precio\s+(?:(?:por|de|para)\s+)?materiales?\s+y\s+mano\s+de\s+obra)(?:\s+total)?\s*[:\-=]?\s*$/gim;
+
+  function splitPrice(text) {
+    let amount = null;
+    PRICE_CHUNK.lastIndex = 0;
+    PRICE_LABEL.lastIndex = 0;
+    const cleaned = String(text || "")
+      .replace(PRICE_CHUNK, (_, money) => {
+        const number = numberValue(money);
+        if (number != null) amount = number;
+        return " ";
+      })
+      .replace(PRICE_LABEL, " ")
+      .replace(/[ \t]+\n/g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .replace(/[ \t]{2,}/g, " ")
+      .trim();
+    return { text: cleaned, amount };
+  }
+
   function parse(raw, now = new Date()) {
     const lines = cleanLines(raw);
     const candidates = new Map();
@@ -169,7 +190,9 @@ const WhatsAppInvoiceParser = (() => {
       if (/^(?:horas?|hours?|tarifa|rate)\b/.test(normalized) || /^[\d$.,:\s]+$/.test(line)) {
         review.push("Línea para revisar manualmente: “" + line + "”."); continue;
       }
-      (continuation === "note" ? notes : description).push(line);
+      const split = splitPrice(line);
+      if (split.amount != null) add("total", split.amount);
+      if (split.text) (continuation === "note" ? notes : description).push(split.text);
     }
 
     const fields = {};
@@ -179,7 +202,11 @@ const WhatsAppInvoiceParser = (() => {
       if (unique.length > 1) conflicts.push(key);
       else if (!rejected.has(key)) fields[key] = unique[0];
     }
-    if (description.some(Boolean)) fields.description = description.filter(Boolean).join("\n");
+    if (description.some(Boolean)) {
+      const split = splitPrice(description.filter(Boolean).join("\n"));
+      if (split.text) fields.description = split.text;
+      if (split.amount != null && fields.total == null) fields.total = split.amount;
+    }
     if (notes.some(Boolean)) fields.note = notes.filter(Boolean).join("\n");
     if (conflicts.length) return { fields: {}, review: [], error: "Hay datos distintos para un mismo campo. Pega solo un trabajo y un monto final, o corrige las líneas repetidas." };
 
@@ -208,7 +235,7 @@ const WhatsAppInvoiceParser = (() => {
     }
     return { fields, detectedTotal, review, error: lines.length ? "" : "Pega primero el texto del mensaje." };
   }
-  return { parse, dateValue };
+  return { parse, dateValue, splitPrice };
 })();
 
 if (typeof module !== "undefined" && module.exports) module.exports = WhatsAppInvoiceParser;

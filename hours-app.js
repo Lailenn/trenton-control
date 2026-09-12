@@ -111,12 +111,37 @@
     const scale = Math.min(1, viewport.clientWidth / paper.offsetWidth); paper.style.transform = `scale(${scale})`; viewport.style.height = `${Math.ceil(paper.offsetHeight * scale)}px`;
   }
 
-  async function logoBytes() { const response = await fetch("assets/arrento-carpentry.png"); if (!response.ok) throw new Error("No se encontró el logo de Arrento."); return response.arrayBuffer(); }
+  async function logoBytes() {
+    try {
+      const response = await fetch("assets/arrento-carpentry.png");
+      if (!response.ok) return null;
+      const blob = await response.blob();
+      const bitmap = await createImageBitmap(blob);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, bitmap.width);
+      canvas.height = Math.max(1, bitmap.height);
+      canvas.getContext("2d").drawImage(bitmap, 0, 0);
+      bitmap.close();
+      const converted = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+      return converted ? converted.arrayBuffer() : await blob.arrayBuffer();
+    } catch (error) {
+      console.warn("No se pudo preparar el logo de Arrento", error);
+      return null;
+    }
+  }
   const fileName = data => {
     const address = String(data.jobAddress || "reporte").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 85) || "reporte";
     return `${address}_horas_${data.reportDate || "sin-fecha"}.pdf`;
   };
-  function download(blob, name) { const url = URL.createObjectURL(blob), link = document.createElement("a"); link.href = url; link.download = name; document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000); }
+  function download(blob, name) {
+    if (!blob) return;
+    const file = blob instanceof Blob ? blob : new Blob([blob], {type: "application/pdf"});
+    if (navigator.msSaveOrOpenBlob) { navigator.msSaveOrOpenBlob(file, name); return; }
+    const url = URL.createObjectURL(file), link = document.createElement("a");
+    link.href = url; link.download = name || "horas.pdf"; link.rel = "noopener"; link.style.display = "none";
+    document.body.append(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
 
   function showWhatsAppResult(parsed, applied) {
     const result = $("#hoursWhatsAppResult");
@@ -155,12 +180,19 @@
     saving = true; $("#saveHoursButton").disabled = true; $("#downloadHoursButton").disabled = true; $("#hoursError").textContent = "Generando PDF…";
     const record = {id: makeId(), jobAddress, reportDate, description, defaultRate, entries: entries.map(entry => ({...entry, rate: Number(entry.rate ?? defaultRate) || 0, hours: HoursPDF.calcHours(entry)})), updatedAt: new Date().toISOString()};
     try {
-      record.pdfBlob = await HoursPDF.generate({...record, recordId: record.id}, await logoBytes()); record.pdfHash = await HoursPDF.hash(record.pdfBlob); record.pdfName = fileName(record);
-      await root.CloudDB.saveHours(record); await load(); renderHistory();
-      if (downloadAfter) download(record.pdfBlob, record.pdfName);
-      $("#hoursError").textContent = "Reporte guardado en la nube y en este navegador.";
-      if (root.TrentonControl?.toast) root.TrentonControl.toast("Reporte de horas guardado en la nube");
-    } catch (error) { console.error(error); $("#hoursError").textContent = error.message || "No se pudo guardar el reporte."; }
+      record.pdfBlob = await HoursPDF.generate({...record, recordId: record.id}, await logoBytes());
+      record.pdfHash = await HoursPDF.hash(record.pdfBlob);
+      record.pdfName = fileName(record);
+      download(record.pdfBlob, record.pdfName);
+      try {
+        await root.CloudDB.saveHours(record); await load(); renderHistory();
+        $("#hoursError").textContent = "PDF a color descargado. El reporte también quedó guardado en la nube.";
+        if (root.TrentonControl?.toast) root.TrentonControl.toast("Reporte de horas guardado en la nube");
+      } catch (cloudError) {
+        console.error(cloudError);
+        $("#hoursError").textContent = "El PDF se descargó, pero no se pudo guardar en la nube: " + (cloudError.message || "revisa la conexión.");
+      }
+    } catch (error) { console.error(error); $("#hoursError").textContent = error.message || "No se pudo generar el PDF de horas."; }
     finally { saving = false; $("#saveHoursButton").disabled = false; $("#downloadHoursButton").disabled = false; }
   }
 

@@ -165,9 +165,22 @@
         if (status) status.textContent = "Traduce primero y luego pulsa Usar.";
         return;
       }
-      target.value = output.value;
+      let text = output.value;
+      if (target.id === "builderDescription" && root.WhatsAppInvoiceParser?.splitPrice) {
+        const split = root.WhatsAppInvoiceParser.splitPrice(text);
+        text = split.text;
+        if (split.amount != null && !(Number(document.getElementById("builderPrice")?.value) > 0)) {
+          const price = document.getElementById("builderPrice");
+          const qty = document.getElementById("builderQty");
+          if (price) price.value = split.amount;
+          if (qty && !(Number(qty.value) > 0)) qty.value = 1;
+        }
+      }
+      target.value = text;
       target.dispatchEvent(new Event("input", { bubbles: true }));
-      if (status) status.textContent = "Texto colocado en el formulario.";
+      if (status) status.textContent = target.id === "builderDescription"
+        ? "Descripción colocada. El precio queda al final de la factura, no dentro del texto."
+        : "Texto colocado en el formulario.";
     });
 
     rootEl.querySelectorAll("[data-pair]").forEach(button => {
