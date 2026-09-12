@@ -186,7 +186,8 @@
       download(record.pdfBlob, record.pdfName);
       try {
         await root.CloudDB.saveHours(record); await load(); renderHistory();
-        $("#hoursError").textContent = "PDF a color descargado. El reporte también quedó guardado en la nube.";
+        window.TrentonControl?.hoursArchive?.render?.();
+        $("#hoursError").textContent = "PDF a color descargado. El reporte también quedó guardado en Horas de trabajo / PDFs.";
         if (root.TrentonControl?.toast) root.TrentonControl.toast("Reporte de horas guardado en la nube");
       } catch (cloudError) {
         console.error(cloudError);
@@ -201,7 +202,7 @@
   }
 
   async function open() { try { await load(); renderHistory(); } catch (error) { $("#hoursError").textContent = error.message || "No se pudo abrir el almacenamiento de horas."; } renderPreview(); }
-  async function boot() { await load(); renderHistory(); }
+  async function boot() { await load(); renderHistory(); window.TrentonControl?.hoursArchive?.render?.(); }
   function render() { renderHistory(); renderPreview(); }
   $("#hoursEntries").addEventListener("input", event => { const field = event.target.dataset.hoursField; if (field) updateEntry(Number(event.target.dataset.index), field, event.target.value); });
   $("#hoursEntries").addEventListener("click", event => { const button = event.target.closest("[data-hours-action=remove]"); if (!button || entries.length === 1) return; entries.splice(Number(button.dataset.index), 1); renderEntries(); renderPreview(); });
@@ -220,7 +221,7 @@
     } catch (error) { $("#hoursError").textContent = error.message || "No se pudo descargar el PDF."; }
   });
   window.addEventListener("resize", fitPreview);
-  function resetSession() { reports = []; renderHistory(); }
+  function resetSession() { reports = []; renderHistory(); window.TrentonControl?.hoursArchive?.render?.(); }
   reset();
-  root.HoursApp = {open, render, boot, resetSession};
+  root.HoursApp = {open, render, boot, resetSession, reports: () => reports};
 })(typeof globalThis !== "undefined" ? globalThis : this);

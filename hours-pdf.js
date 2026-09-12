@@ -131,12 +131,12 @@
       page.drawRectangle({x: left, y: pageH - top - height, width, height: totalHeight, color: peach});
       line(left, top, left + width, top); line(left, top + headerHeight, left + width, top + headerHeight); line(left, top + height - totalHeight, left + width, top + height - totalHeight); line(left, top + height, left + width, top + height);
       let x = left; columns.forEach(w => { line(x, top, x, top + height); x += w; }); line(left + width, top, left + width, top + height);
-      x = left; headers.forEach((header, i) => { cell(header, x, top, columns[i], 9.6, bold, "left", teal); x += columns[i]; });
+      x = left; headers.forEach((header, i) => { cell(header, x, top, columns[i], 9.6, bold, "left", ink); x += columns[i]; });
       rows.forEach((row, rowIndex) => {
         if (bodyFirstColumnPeach) page.drawRectangle({x: left, y: pageH - top - headerHeight - (rowIndex + 1) * rowHeight, width: columns[0], height: rowHeight, color: peach});
-        x = left; row.forEach((value, i) => { cell(value, x, top + headerHeight + rowIndex * rowHeight, columns[i], 9.5, i === 0 ? bold : regular); x += columns[i]; });
+        x = left; row.forEach((value, i) => { cell(value, x, top + headerHeight + rowIndex * rowHeight, columns[i], 9.5, i === 0 ? bold : regular, "left", ink); x += columns[i]; });
       });
-      x = left; totalRow.forEach((value, i) => { cell(value, x, top + height - totalHeight, columns[i], 9.5, bold, "left", teal); x += columns[i]; });
+      x = left; totalRow.forEach((value, i) => { cell(value, x, top + height - totalHeight, columns[i], 9.5, bold, "left", ink); x += columns[i]; });
       return top + height;
     };
     const header = () => {

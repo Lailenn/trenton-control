@@ -7,10 +7,16 @@
   const Core = window.InvoiceCore, PDFs = window.InvoicePDF, Cloud = window.CloudDB;
   const stages = [
     { id: "created", title: "Factura creada", subtitle: "PDF listo para seguimiento", className: "column-created" },
-    { id: "working", title: "En trabajo", subtitle: "Rubén está trabajando", className: "column-working" },
-    { id: "waiting", title: "Entregado / esperando cheque", subtitle: "Trenton debe pagar", className: "column-waiting" },
+    { id: "working", title: "En trabajo", subtitle: "Ruben trabajando", className: "column-working" },
+    { id: "waiting", title: "Esperando cheque", subtitle: "Trabajo entregado", className: "column-waiting" },
     { id: "paid", title: "Pagado", subtitle: "Invoice cerrada", className: "column-paid" }
   ];
+  const stageIcons = {
+    created: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M7 3h8l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm7 1.5V9h4.5z"/></svg>',
+    working: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm1 5h-2v6l5 3 .9-1.5-3.9-2.3z"/></svg>',
+    waiting: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h12v3l-4.5 5 4.5 5v3H6v-3l4.5-5L6 5z"/></svg>',
+    paid: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm.2 5h-1.7v1.2C8.8 8.5 8 9.6 8 11c0 1.8 1.5 2.6 3.4 3 1.2.3 1.7.6 1.7 1.2 0 .6-.6 1-1.7 1s-1.8-.4-2.1-1H7.7c.3 1.6 1.7 2.7 3.4 3V19h1.7v-1.1c1.9-.3 3.1-1.5 3.1-3.2 0-1.8-1.5-2.6-3.4-3-1.2-.3-1.7-.6-1.7-1.1 0-.6.6-1 1.6-1s1.6.4 1.8 1h1.5c-.3-1.5-1.6-2.5-3.3-2.8z"/></svg>'
+  };
 
   const $ = (selector) => document.querySelector(selector);
   const money = (value) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(Number(value) || 0);
@@ -22,7 +28,7 @@
   let selectedPdf = null;
   let draggedId = null;
   let toastTimer;
-  let archive, builderRecordId = null, savingBuilder = false, readingPdf = false;
+  let archive, hoursArchive, builderRecordId = null, savingBuilder = false, readingPdf = false;
   const DEFAULT_LOGO_URL = "assets/logo-ruben.png";
   let logoDataUrl = DEFAULT_LOGO_URL;
   const pdfUrls = new Map();
@@ -74,7 +80,7 @@
 
   function updateWelcome() {
     const greetingElement = $("#welcomeGreeting");
-    if (greetingElement) greetingElement.textContent = window.AuthApp?.greeting() || "Buenos días, Lilian.";
+    if (greetingElement) greetingElement.textContent = window.AuthApp?.greeting() || "Buenos días, Lilian. 👋";
   }
 
   function showToast(message) {
@@ -106,22 +112,21 @@
     return pdfUrls.get(record.id);
   }
 
+  function cardDate(record) {
+    const iso = Core.issuedDate(record);
+    if (!iso) return "Sin fecha";
+    const date = new Date(`${iso}T12:00:00`);
+    const months = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+    return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+  }
+
   function cardTemplate(record) {
-    const file = record.pdfBlob && record.pdfName
-      ? `<a class="pdf-link" href="${pdfUrl(record)}" target="_blank" rel="noopener" title="Abrir ${esc(record.pdfName)}">▣ ${esc(record.pdfName)}</a>`
-      : record.pdfPath
-        ? `<button class="pdf-link pdf-link-button" type="button" data-action="open-pdf" data-id="${esc(record.id)}">▣ PDF en la nube</button>`
-        : `<span class="no-pdf">Sin PDF adjunto</span>`;
-    const photos = (record.checkPhotos || []).length;
-    const checks = photos ? `<span class="check-badge">${photos} foto${photos === 1 ? "" : "s"} de cheque</span>` : "";
-    const cloud = `<span class="sync-dot ${record.pdfPath || record.cloud ? "is-cloud" : "is-local"}" title="${record.pdfPath ? "Guardado en la nube" : "Pendiente de nube"}"></span>`;
+    const number = String(record.invoiceNumber || "SIN NÚMERO").startsWith("#") ? record.invoiceNumber : `#${record.invoiceNumber || "SIN NÚMERO"}`;
     return `<article class="invoice-card" draggable="true" data-id="${esc(record.id)}" tabindex="0">
-      <div class="card-top"><span class="card-invoice">${cloud}${esc(record.invoiceNumber || "SIN NÚMERO")}</span><button class="card-menu" type="button" data-action="menu" data-id="${esc(record.id)}" aria-label="Editar invoice">•••</button></div>
-      <h4 class="card-address">${esc(record.address)}</h4>
-      <p class="card-description" title="${esc(record.description)}">${esc(record.description || "Sin descripción")}</p>
-      <div class="card-details"><span class="card-amount">${money(record.amount)}</span><span class="card-hours">${Number(record.hours || 0)} h trabajadas</span></div>
-      ${checks}
-      <div class="card-footer"><span>${file}</span><span class="card-actions"><button class="mini-action" type="button" data-action="back" data-id="${esc(record.id)}" aria-label="Mover a fase anterior">‹</button><button class="mini-action" type="button" data-action="next" data-id="${esc(record.id)}" aria-label="Mover a fase siguiente">›</button><button class="mini-action delete" type="button" data-action="delete" data-id="${esc(record.id)}" aria-label="Eliminar invoice">×</button></span></div>
+      <div class="card-top"><span class="card-invoice"><i class="card-dot"></i>${esc(number)}</span><button class="card-menu" type="button" data-action="menu" data-id="${esc(record.id)}" aria-label="Editar invoice">•••</button></div>
+      <p class="card-date">${esc(cardDate(record))}</p>
+      <h4 class="card-address"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 1 7 7c0 5.25-7 13-7 13S5 14.25 5 9a7 7 0 0 1 7-7zm0 9.5A2.5 2.5 0 1 0 12 6a2.5 2.5 0 0 0 0 5.5z"/></svg>${esc(record.address)}</h4>
+      <div class="card-details"><span class="card-hours"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm1 5h-2v6l4.5 2.7.9-1.5L13 12.2z"/></svg>${Number(record.hours || 0)} hrs</span><span class="card-amount">${money(record.amount)}</span></div>
     </article>`;
   }
 
@@ -129,12 +134,12 @@
     const visible = records.filter(matchesSearch);
     $("#board").innerHTML = stages.map((stage) => {
       const items = visible.filter((record) => record.stage === stage.id);
-      return `<section class="kanban-column ${stage.className}" data-stage="${stage.id}"><header class="column-head"><div class="column-title"><span class="column-dot"></span><div><h3>${stage.title}</h3><p>${stage.subtitle}</p></div></div><span class="column-count">${items.length}</span></header><div class="column-cards">${items.length ? items.map(cardTemplate).join("") : `<div class="empty-column"><span>＋</span>Arrastra aquí una invoice</div>`}</div><button class="add-card-button" type="button" data-action="add" data-stage="${stage.id}">＋ Agregar invoice</button></section>`;
+      return `<section class="kanban-column ${stage.className}" data-stage="${stage.id}"><header class="column-head"><div class="column-title"><span class="column-icon">${stageIcons[stage.id]}</span><h3>${stage.title}</h3></div><span class="column-count">${items.length}</span></header><div class="column-cards">${items.length ? items.map(cardTemplate).join("") : `<div class="empty-column">Sin invoices en esta fase</div>`}</div><button class="add-card-button" type="button" data-action="add" data-stage="${stage.id}">+ Agregar invoice</button></section>`;
     }).join("");
     wireBoardEvents();
   }
 
-  function render() { updateWelcome(); updateStats(); renderBoard(); archive?.render(); window.HoursApp?.render(); }
+  function render() { updateWelcome(); updateStats(); renderBoard(); archive?.render(); hoursArchive?.render(); window.HoursApp?.render(); }
 
   function replayViewAnimation(view) {
     const node = $(`#${view}View`);
@@ -390,6 +395,7 @@
     $("#boardView").classList.toggle("hidden", view !== "board");
     $("#invoiceView").classList.toggle("hidden", view !== "invoice");
     $("#archiveView").classList.toggle("hidden", view !== "archive");
+    $("#hoursArchiveView")?.classList.toggle("hidden", view !== "hoursArchive");
     $("#hoursView").classList.toggle("hidden", view !== "hours");
     setSidebarOpen(false);
     replayViewAnimation(view);
@@ -549,12 +555,23 @@
     finally { savingBuilder = false; $("#saveGeneratedInvoiceButton").disabled = false; $("#printInvoiceButton").disabled = false; $("#saveGeneratedInvoiceButton").textContent = "Guardar invoice y PDF"; }
   }
 
+  function setDock(view) {
+    document.querySelectorAll(".dock-item[data-dock]").forEach(item => {
+      item.classList.toggle("is-active", item.dataset.dock === view);
+    });
+  }
+
   function navClick(stage) {
     document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.nav === stage));
-    if (stage === "invoice") { showView("invoice"); return; }
-    if (stage === "hours") { showView("hours"); return; }
-    if (stage === "board") { showView("board"); renderBoard(); return; }
+    const titles = {board: "Inicio", invoice: "Crear invoice", hours: "Horas trabajadas", archive: "Invoices / PDFs", "hours-archive": "Horas de trabajo / PDFs", created: "Facturas creadas", working: "En trabajo", waiting: "Esperando cheque", paid: "Pagadas"};
+    const label = $("#topbarSection");
+    if (label) label.textContent = titles[stage] || "Inicio";
+    if (stage === "invoice") { showView("invoice"); setDock("archive"); return; }
+    if (stage === "hours") { showView("hours"); setDock("hours"); return; }
+    if (stage === "hours-archive") { hoursArchive.open(); setDock("hours"); return; }
+    if (stage === "board") { showView("board"); renderBoard(); setDock("board"); return; }
     archive.open(stage === "archive" ? "all" : stage);
+    setDock("archive");
   }
 
   function editGeneratedInvoice() {
@@ -628,11 +645,27 @@
     stages, esc, money, makeId, download, toast: showToast,
     ensurePdf: Cloud.ensureInvoicePdf
   });
-  window.TrentonControl = { toast: showToast, records: () => records };
+  hoursArchive = window.HoursArchive({
+    records: () => window.HoursApp?.reports?.() || [],
+    showView,
+    download,
+    toast: showToast,
+    esc,
+    money,
+    ensurePdf: Cloud.ensureHoursPdf,
+    openHours: () => navClick("hours")
+  });
+  window.TrentonControl = { toast: showToast, records: () => records, hoursArchive };
   document.querySelectorAll("[data-archive]").forEach(button => button.addEventListener("click", () => navClick(button.dataset.archive === "all" ? "archive" : button.dataset.archive)));
   $("#editGeneratedInvoiceButton").addEventListener("click", editGeneratedInvoice);
   $("#newInvoiceButton").addEventListener("click", () => { if (builderRecordId) resetInvoiceBuilder(); navClick("invoice"); });
+  $("#dockNewInvoice")?.addEventListener("click", () => { if (builderRecordId) resetInvoiceBuilder(); navClick("invoice"); });
+  $("#dockMore")?.addEventListener("click", () => setSidebarOpen(true));
+  document.querySelectorAll(".dock-item[data-dock]").forEach(item => item.addEventListener("click", () => navClick(item.dataset.dock)));
+  $("#alertsButton")?.addEventListener("click", () => showToast("No hay avisos nuevos."));
   $("#openArchiveButton").addEventListener("click", () => navClick("archive"));
+  $("#openHoursArchiveButton")?.addEventListener("click", () => navClick("hours-archive"));
+  $("#openHoursArchiveFromHours")?.addEventListener("click", () => navClick("hours-archive"));
   $("#closeModalButton").addEventListener("click", closeModal);
   $("#cancelButton").addEventListener("click", closeModal);
   $("#modalBackdrop").addEventListener("click", (event) => { if (event.target === $("#modalBackdrop")) closeModal(); });

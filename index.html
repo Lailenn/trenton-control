@@ -3,112 +3,226 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#1a1714" />
+    <meta name="theme-color" content="#3b6eea" />
     <meta name="description" content="Tablero, archivo de PDFs, importación y resumen anual de invoices de Ruben Perla." />
     <title>Ruben Perla | Control de invoices</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=atelier-v3" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=passkey-v1" />
   </head>
   <body>
-    <div id="authGate" class="auth-gate auth-play" data-mode="login">
+    <div id="authGate" class="auth-gate auth-play login-screen" data-mode="login">
       <div class="auth-fx" aria-hidden="true">
-        <span class="auth-orb o1"></span>
-        <span class="auth-orb o2"></span>
-        <span class="auth-orb o3"></span>
-        <span class="auth-spark s1"></span>
-        <span class="auth-spark s2"></span>
-        <span class="auth-spark s3"></span>
-        <span class="auth-spark s4"></span>
+        <span class="login-blob b1"></span>
+        <span class="login-blob b2"></span>
+        <span class="login-blob b3"></span>
+        <span class="login-blob b4"></span>
       </div>
-      <section class="auth-card">
-        <div class="auth-brand"><div class="brand-mark"><span>RP</span></div><div><strong>Ruben Perla 2026</strong><small>Control de trabajos</small></div></div>
-        <p class="auth-kicker">Bienvenida del día</p>
-        <p class="auth-welcome" id="authWelcomeQuote">Eres la verdura del caldo.</p>
-        <div id="authConfigPanel" class="hidden">
-          <h1>Falta conectar la nube</h1>
+      <p class="login-year" aria-hidden="true">2026</p>
+      <section class="auth-card login-card">
+        <div class="login-top">
+          <div class="auth-brand">
+            <div class="brand-mark"><span>RP</span></div>
+            <div>
+              <small>Trabajando para</small>
+              <strong>Ruben Perla</strong>
+              <span>2026 · Trenton Builders LLC</span>
+            </div>
+          </div>
+          <p class="login-status"><i></i> Sistema activo</p>
+        </div>
+        <div class="login-hero">
+          <div class="login-copy">
+            <p class="login-kicker">Bienvenida</p>
+            <h1 class="login-hello"><span id="authHelloLine">Buenas tardes,</span> <em>Lilian <span aria-hidden="true">👋</span></em></h1>
+            <p class="login-lead">Ingresa a tu cuenta para continuar con tus trabajos, facturas y seguimiento.</p>
+            <p class="login-quote"><span aria-hidden="true">✦</span><q id="authWelcomeQuote">Disciplina hoy, resultados mañana.</q></p>
+          </div>
+          <div class="login-art">
+            <figure class="login-mascot">
+              <span class="mascot-ray r1" aria-hidden="true"></span>
+              <span class="mascot-ray r2" aria-hidden="true"></span>
+              <span class="mascot-ray r3" aria-hidden="true"></span>
+              <svg class="mascot-paw" viewBox="0 0 240 260" aria-hidden="true">
+                <ellipse cx="50" cy="92" rx="28" ry="44" transform="rotate(-34 50 92)"/>
+                <ellipse cx="96" cy="52" rx="31" ry="48"/>
+                <ellipse cx="144" cy="52" rx="31" ry="48"/>
+                <ellipse cx="190" cy="92" rx="28" ry="44" transform="rotate(34 190 92)"/>
+                <path d="M72 128c0-26 22-40 48-40s48 14 48 40c0 22-10 44-30 60-6 5-12 4-18-2-6 6-12 7-18 2-20-16-30-38-30-60z"/>
+              </svg>
+              <img src="assets/login-husky.png?v=2" alt="Husky siberiana de la familia, ojo café y ojo azul" width="360" height="480">
+            </figure>
+          </div>
+        </div>
+        <div id="authConfigPanel" class="login-config hidden">
+          <h2>Falta conectar la nube</h2>
           <p>Esta copia todavía no tiene la conexión del proyecto. Quien mantiene la app debe completar <code>config.js</code> con la URL y la anon public key. Lilian no tiene que pegar claves.</p>
         </div>
         <div id="authLoginPanel" class="hidden">
-          <h1>Hola, Lilian</h1>
-          <p>Entra con tu correo y contraseña. En otra PC, celular u otro navegador es lo mismo: no se pegan URLs ni claves.</p>
           <form id="loginForm">
-            <label class="field"><span>Correo</span><input id="loginEmail" type="email" required autocomplete="username"></label>
-            <label class="field"><span>Contraseña</span><input id="loginPassword" type="password" required autocomplete="current-password"></label>
-            <button class="button button-primary" id="loginButton" type="submit">Entrar</button>
+            <label class="login-field"><span>Correo</span>
+              <span class="login-input">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zm0 2.2V8l8 5 8-5v.2L12 13z"/></svg>
+                <input id="loginEmail" type="email" required autocomplete="username" placeholder="tu@correo.com">
+              </span>
+            </label>
+            <label class="login-field"><span>Contraseña</span>
+              <span class="login-input">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17 9V7a5 5 0 0 0-10 0v2H5v12h14V9zm-8-2a3 3 0 1 1 6 0v2H9zm3 7.2a1.8 1.8 0 1 1 0 3.6 1.8 1.8 0 0 1 0-3.6z"/></svg>
+                <input id="loginPassword" type="password" required autocomplete="current-password" placeholder="Ingresa tu contraseña">
+                <button type="button" class="login-eye" id="togglePassword" aria-label="Mostrar contraseña">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 5c5.5 0 9.5 4.5 10.5 7-1 2.5-5 7-10.5 7S2.5 14.5 1.5 12C2.5 9.5 6.5 5 12 5zm0 3.5A3.5 3.5 0 1 0 12 15a3.5 3.5 0 0 0 0-6.5z"/></svg>
+                </button>
+              </span>
+            </label>
+            <div class="login-row">
+              <label class="login-remember"><input type="checkbox" id="rememberMe"> Recordarme</label>
+              <button type="button" class="login-forgot" id="forgotPassword">¿Olvidaste tu contraseña?</button>
+            </div>
+            <button class="button button-primary login-submit" id="loginButton" type="submit">Iniciar sesión <span aria-hidden="true">→</span></button>
           </form>
+          <div class="login-or" aria-hidden="true"><span>o</span></div>
+          <button class="login-passkey" id="passkeyLoginButton" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17.2 10.4a5.2 5.2 0 1 0-6.9 4.9v6.2l2.5-1.5 2.4 1.5v-6.2a5.2 5.2 0 0 0 2-4.9zm-5.2-3.2a3.2 3.2 0 1 1 0 6.4 3.2 3.2 0 0 1 0-6.4zM5.5 8.2A3.5 3.5 0 0 0 2 11.7c0 1.3.7 2.4 1.8 3v2.1L5.5 16l1.7.8v-2.1a3.5 3.5 0 0 0-1.7-6.5zm13 0a3.5 3.5 0 0 0-1.7 6.5v2.1l1.7-.8 1.7.8v-2.1a3.5 3.5 0 0 0 1.8-3A3.5 3.5 0 0 0 18.5 8.2z"/></svg>
+            Entrar con huella / Windows Hello
+          </button>
+          <p class="login-passkey-hint" id="loginPasskeyHint"></p>
         </div>
         <p class="form-error" id="authError" role="alert"></p>
       </section>
     </div>
     <div class="app-shell app-locked" id="appShell" hidden>
       <aside class="sidebar" id="sidebar">
-        <div class="brand-block">
-          <div class="brand-mark"><span>RP</span></div>
-          <div><strong>Ruben Perla 2026</strong><small>Control de trabajos</small></div>
+        <div class="sidebar-head">
+          <div class="brand-block">
+            <div class="brand-mark"><span>RP</span></div>
+            <div><strong>Ruben Perla</strong><small>2026 · Trenton Builders LLC</small></div>
+          </div>
+          <button class="button button-ghost logout-button js-logout" type="button">Salir</button>
         </div>
-        <div class="workspace-chip"><span class="workspace-dot"></span><span>Trenton Builders LLC</span><span class="workspace-chevron">⌄</span></div>
-        <p class="nav-label">Espacio de trabajo</p>
-        <nav class="main-nav" aria-label="Navegación principal">
-          <button class="nav-item active" type="button" data-nav="board"><span class="nav-icon">▦</span> Tablero <span class="nav-count" id="navTotal">0</span></button>
-          <button class="nav-item" type="button" data-nav="invoice"><span class="nav-icon">✦</span> Crear invoice</button>
-          <button class="nav-item" type="button" data-nav="hours"><span class="nav-icon">◷</span> Horas trabajadas</button>
-          <button class="nav-item" type="button" data-nav="archive"><span class="nav-icon">▤</span> Todos los PDFs</button>
-          <button class="nav-item" type="button" data-nav="created"><span class="nav-icon">＋</span> Facturas creadas</button>
-          <button class="nav-item" type="button" data-nav="working"><span class="nav-icon">◷</span> En trabajo</button>
-          <button class="nav-item" type="button" data-nav="waiting"><span class="nav-icon">⌛</span> Esperando cheque</button>
-          <button class="nav-item" type="button" data-nav="paid"><span class="nav-icon">✓</span> Pagadas</button>
-        </nav>
-        <div class="sidebar-spacer"></div>
-        <div class="sidebar-note"><span class="note-icon">i</span><div><strong>Tu control diario</strong><p>Una tarjeta por invoice y dirección.</p></div></div>
-        <div class="sidebar-footer"><span>Secretaría</span><strong>Lilian Perla</strong><button class="button button-ghost logout-button" type="button" id="logoutButton">Salir</button></div>
+        <div class="sidebar-scroll">
+          <div class="workspace-chip"><span class="workspace-dot"></span><span>Trenton Builders LLC</span><span class="workspace-chevron">⌄</span></div>
+          <p class="nav-label">Espacio de trabajo</p>
+          <nav class="main-nav" aria-label="Navegación principal">
+            <button class="nav-item active" type="button" data-nav="board"><span class="nav-icon">▦</span> Inicio <span class="nav-count" id="navTotal">0</span></button>
+            <button class="nav-item" type="button" data-nav="invoice"><span class="nav-icon">✦</span> Crear invoice</button>
+            <button class="nav-item" type="button" data-nav="hours"><span class="nav-icon">◷</span> Horas trabajadas</button>
+            <button class="nav-item" type="button" data-nav="archive"><span class="nav-icon">▤</span> Invoices / PDFs</button>
+            <button class="nav-item" type="button" data-nav="hours-archive"><span class="nav-icon">◷</span> Horas de trabajo / PDFs</button>
+            <button class="nav-item" type="button" data-nav="created"><span class="nav-icon">＋</span> Facturas creadas</button>
+            <button class="nav-item" type="button" data-nav="working"><span class="nav-icon">◷</span> En trabajo</button>
+            <button class="nav-item" type="button" data-nav="waiting"><span class="nav-icon">⌛</span> Esperando cheque</button>
+            <button class="nav-item" type="button" data-nav="paid"><span class="nav-icon">✓</span> Pagadas</button>
+          </nav>
+          <div class="sidebar-note"><span class="note-icon">i</span><div><strong>Tu control diario</strong><p>Una tarjeta por invoice y dirección.</p></div></div>
+        </div>
+        <div class="sidebar-footer"><span>Secretaría</span><strong>Lilian Perla</strong><button class="button button-ghost js-register-passkey" type="button">Registrar huella</button><button class="button button-ghost logout-button js-logout" type="button" id="logoutButton">Salir</button></div>
       </aside>
       <div class="sidebar-scrim" id="sidebarScrim" aria-hidden="true"></div>
 
       <section class="main-shell">
         <header class="topbar">
-          <button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir menú" aria-expanded="false">☰</button>
-          <div class="crumbs"><span>Trenton Builders LLC</span><b>/</b><strong>Control de invoices</strong></div>
-          <div class="topbar-right"><span class="version-badge">Nube + local</span><span class="saved-indicator" id="savedIndicator"><i></i> En la nube y en este navegador</span><button class="avatar" type="button" title="Lilian Perla">LP</button></div>
+          <button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir menú" aria-expanded="false">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M4 7h16v2H4zm0 4h16v2H4zm0 4h16v2H4z"/></svg>
+          </button>
+          <div class="topbar-brand">
+            <div class="brand-mark"><span>RP</span></div>
+            <div><strong>Ruben Perla</strong><small>2026 · Trenton Builders LLC</small></div>
+          </div>
+          <div class="crumbs"><span>Trenton Builders LLC</span><b>/</b><strong id="topbarSection">Inicio</strong></div>
+          <div class="topbar-right">
+            <span class="version-badge">Nube + local</span>
+            <span class="saved-indicator" id="savedIndicator"><i></i> En la nube y en este navegador</span>
+            <button class="icon-btn" id="alertsButton" type="button" aria-label="Avisos" title="Avisos">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 22a2.2 2.2 0 0 0 2.2-2.2H9.8A2.2 2.2 0 0 0 12 22zm7-6.2V11a7 7 0 1 0-14 0v4.8L3 17.6V19h18v-1.4z"/></svg>
+            </button>
+            <button class="avatar" type="button" title="Lilian Perla">LP</button>
+          </div>
         </header>
 
         <main class="main-content">
-          <section class="page-view" id="boardView">
-          <section class="hero hero-welcome">
-            <div class="welcome-fx" aria-hidden="true">
-              <span class="welcome-orb a"></span>
-              <span class="welcome-orb b"></span>
-              <span class="welcome-orb c"></span>
-              <span class="welcome-dot d1"></span>
-              <span class="welcome-dot d2"></span>
-              <span class="welcome-dot d3"></span>
-              <span class="welcome-dot d4"></span>
-            </div>
-            <div class="hero-copy-block">
-              <p class="eyebrow">Panel de seguimiento <span class="hero-status-dot" aria-hidden="true"></span></p>
-              <p class="welcome-greeting" id="welcomeGreeting" aria-live="polite">Buenos días, Lilian.</p>
-              <h1>Todo el trabajo de Ruben Perla,<br /><span>en un solo lugar.</span></h1>
+          <section class="page-view dash-home" id="boardView">
+          <section class="hero hero-welcome dash-hero">
+            <div class="dash-hero-copy">
+              <p class="dash-kicker"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M4 5h16v3H4zm0 5h10v3H4zm0 5h16v3H4z"/></svg> PANEL DE CONTROL</p>
+              <p class="welcome-greeting" id="welcomeGreeting" aria-live="polite">Buenos días, Lilian. 👋</p>
+              <h1>Todo el trabajo de <span>Ruben Perla</span>, en un solo lugar.</h1>
               <p class="hero-copy">Crea, organiza y da seguimiento a cada invoice, hora y PDF sin perder nada.</p>
-              <p class="hero-quote" id="heroQuote">Eres la verdura del caldo.</p>
-              <div class="hero-tip"><span class="hero-tip-icon" aria-hidden="true">✦</span><span><strong>Tu centro de control</strong><small>Registra, revisa y avanza cada trabajo desde aquí.</small></span></div>
+              <p class="dash-quote" id="heroQuote">“Con vos el cheque no se pierde en el camino.”</p>
+              <div class="hero-actions hero-actions-enhanced"><button class="button button-primary button-large dash-cta" id="newInvoiceButton" type="button" title="Crear una nueva invoice"><span>+</span> Nueva invoice</button></div>
             </div>
-            <div class="hero-actions hero-actions-enhanced"><button class="button button-primary button-large" id="newInvoiceButton" type="button" title="Crear una nueva invoice"><span>＋</span> Nueva invoice</button><button class="button button-ghost button-large" id="openArchiveButton" type="button" title="Abrir todos los PDFs">▤ Ver todos los PDFs</button></div>
+            <div class="dash-hero-art" aria-hidden="true">
+              <svg viewBox="0 0 280 200" class="dash-art-svg">
+                <defs>
+                  <linearGradient id="dashPaper" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eef4ff"/></linearGradient>
+                </defs>
+                <rect x="58" y="28" width="150" height="150" rx="18" fill="#d7e6ff" transform="rotate(-8 133 103)"/>
+                <rect x="78" y="22" width="150" height="150" rx="18" fill="url(#dashPaper)" stroke="#d5e3fb" transform="rotate(7 153 97)"/>
+                <rect x="96" y="38" width="118" height="14" rx="7" fill="#c9d9f8"/>
+                <rect x="96" y="62" width="86" height="10" rx="5" fill="#e3ebfb"/>
+                <rect x="96" y="80" width="102" height="10" rx="5" fill="#e3ebfb"/>
+                <rect x="96" y="98" width="70" height="10" rx="5" fill="#e3ebfb"/>
+                <rect x="118" y="122" width="78" height="28" rx="9" fill="#3b6eea"/>
+                <text x="157" y="141" text-anchor="middle" fill="#fff" font-size="11" font-family="Plus Jakarta Sans, sans-serif" font-weight="700">INVOICE</text>
+                <rect x="188" y="108" width="54" height="40" rx="10" fill="#fff" stroke="#d5e3fb"/>
+                <rect x="198" y="128" width="8" height="12" fill="#9bb7f3"/>
+                <rect x="210" y="120" width="8" height="20" fill="#3b6eea"/>
+                <rect x="222" y="124" width="8" height="16" fill="#7ea2f0"/>
+                <circle cx="214" cy="48" r="22" fill="#3b6eea"/>
+                <path d="M204 48 l7 7 14-14" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
           </section>
 
-          <section class="stats-grid" aria-label="Resumen de invoices">
-            <button type="button" data-archive="all" class="stat-card stat-all"><div class="stat-top"><span class="stat-label">Total invoices</span><span class="stat-symbol">▦</span></div><strong id="statTotal">0</strong><small>Abrir todos los PDFs</small></button>
-            <button type="button" data-archive="working" class="stat-card stat-work"><div class="stat-top"><span class="stat-label">En trabajo</span><span class="stat-symbol">◷</span></div><strong id="statWorking">0</strong><small>Rubén está trabajando</small></button>
-            <button type="button" data-archive="waiting" class="stat-card stat-wait"><div class="stat-top"><span class="stat-label">Esperando cheque</span><span class="stat-symbol">⌛</span></div><strong id="statWaiting">0</strong><small>Trabajo entregado</small></button>
-            <button type="button" data-archive="paid" class="stat-card stat-paid"><div class="stat-top"><span class="stat-label">Pagado</span><span class="stat-symbol">$</span></div><strong id="statPaid">$0</strong><small>Suma de invoices pagadas</small></button>
+          <section class="stats-grid dash-stats" aria-label="Resumen de invoices">
+            <button type="button" data-archive="all" class="stat-card stat-all">
+              <div class="stat-top"><span class="stat-label">Total invoices</span><span class="stat-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M7 3h8l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm7 1.5V9h4.5zM8 12h8v1.6H8zm0 3.2h8v1.6H8zm0 3.2h5v1.6H8z"/></svg></span></div>
+              <strong id="statTotal">0</strong><small>Ver todos</small>
+            </button>
+            <button type="button" data-archive="working" class="stat-card stat-work">
+              <div class="stat-top"><span class="stat-label">En trabajo</span><span class="stat-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm1 5h-2v6l5 3 .9-1.5-3.9-2.3z"/></svg></span></div>
+              <strong id="statWorking">0</strong><small>Ruben trabajando</small>
+            </button>
+            <button type="button" data-archive="waiting" class="stat-card stat-wait">
+              <div class="stat-top"><span class="stat-label">Esperando cheque</span><span class="stat-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h12v3l-4.5 5 4.5 5v3H6v-3l4.5-5L6 5z"/></svg></span></div>
+              <strong id="statWaiting">0</strong><small>Trabajo entregado</small>
+            </button>
+            <button type="button" data-archive="paid" class="stat-card stat-paid">
+              <div class="stat-top"><span class="stat-label">Pagado</span><span class="stat-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm.8 5h-1.6v1.1C9.4 8.4 8.4 9.5 8.4 11c0 1.7 1.4 2.5 3.2 2.9 1.3.3 1.8.6 1.8 1.2 0 .7-.7 1.1-1.8 1.1s-1.9-.4-2.2-1.1H8c.3 1.6 1.7 2.6 3.2 2.9V19h1.6v-1.1c1.8-.3 3-1.5 3-3.1 0-1.8-1.5-2.6-3.3-3-1.2-.3-1.7-.6-1.7-1.2 0-.6.6-1 1.6-1s1.7.4 1.9 1h1.4c-.3-1.5-1.5-2.5-3.1-2.8z"/></svg></span></div>
+              <strong id="statPaid">$0</strong><small>Suma de invoices</small>
+            </button>
           </section>
 
-          <section class="archive-callout"><div><p class="eyebrow">Nueva función</p><h2>Archivo de invoices y resumen anual</h2><p>Al guardar una factura, aquí queda su PDF. Puedes subir facturas viejas y consultar cuánto facturaste por año.</p></div><button class="button button-ghost" type="button" data-archive="all">Abrir archivo</button></section>
+          <section class="archive-callout dash-archive">
+            <div class="dash-archive-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M10 4 8.6 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8z"/></svg></div>
+            <div><h2>Archivo de invoices y resumen anual</h2><p>Al guardar una factura, aquí queda su PDF. Puedes subir facturas viejas y consultar cuánto facturaste por año.</p></div>
+            <button class="dash-link" type="button" data-archive="all" id="openArchiveButton">Abrir archivo →</button>
+          </section>
+          <section class="archive-callout dash-archive">
+            <div class="dash-archive-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm1 5h-2v6l5 3 .9-1.5-3.9-2.3z"/></svg></div>
+            <div><h2>Archivo de horas de trabajo</h2><p>Al generar un reporte de horas, su PDF queda aquí. No se mezcla con las invoices.</p></div>
+            <button class="dash-link" type="button" id="openHoursArchiveButton">Abrir horas / PDFs →</button>
+          </section>
+          <section class="archive-callout dash-archive passkey-callout" id="passkeyPanel">
+            <div class="dash-archive-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M17.2 10.4a5.2 5.2 0 1 0-6.9 4.9v6.2l2.5-1.5 2.4 1.5v-6.2a5.2 5.2 0 0 0 2-4.9zm-5.2-3.2a3.2 3.2 0 1 1 0 6.4 3.2 3.2 0 0 1 0-6.4zM5.5 8.2A3.5 3.5 0 0 0 2 11.7c0 1.3.7 2.4 1.8 3v2.1L5.5 16l1.7.8v-2.1a3.5 3.5 0 0 0-1.7-6.5zm13 0a3.5 3.5 0 0 0-1.7 6.5v2.1l1.7-.8 1.7.8v-2.1a3.5 3.5 0 0 0 1.8-3A3.5 3.5 0 0 0 18.5 8.2z"/></svg></div>
+            <div>
+              <h2>Huella / Windows Hello</h2>
+              <p id="passkeyStatus">Entra una vez con contraseña y registra este aparato. Después puedes entrar con huella, Face ID o Windows Hello.</p>
+              <p class="passkey-origin" id="passkeyOriginHint"></p>
+            </div>
+            <button class="button button-primary js-register-passkey" id="registerPasskeyButton" type="button">Registrar este aparato</button>
+          </section>
 
-          <section class="board-section">
+          <section class="board-section dash-board">
             <div class="board-toolbar">
               <div><h2>Seguimiento de trabajos</h2><p>Arrastra cada tarjeta a la siguiente fase cuando avance.</p></div>
-              <div class="toolbar-controls"><label class="search-control"><span>⌕</span><input id="searchInput" type="search" placeholder="Buscar dirección o invoice…" aria-label="Buscar dirección o invoice" /></label><button class="filter-button" id="clearFilterButton" type="button">Limpiar</button></div>
+              <div class="toolbar-controls">
+                <label class="search-control"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M10 3a7 7 0 0 1 5.5 11.3l4.1 4.1-1.4 1.4-4.1-4.1A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg><input id="searchInput" type="search" placeholder="Buscar invoice..." aria-label="Buscar dirección o invoice" /></label>
+                <button class="filter-button" id="clearFilterButton" type="button" aria-label="Limpiar búsqueda" title="Limpiar búsqueda">
+                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M4 6h16v2H4zm3 5h10v2H7zm3 5h4v2h-4z"/></svg>
+                </button>
+              </div>
             </div>
             <div class="board" id="board" aria-label="Tablero Kanban"></div>
           </section>
@@ -169,7 +283,7 @@
                 </div>
               </section>
             </div>
-            <section class="hours-history"><div class="board-toolbar"><div><h2>Reportes guardados</h2><p>Abre o descarga los reportes de horas que ya generaste.</p></div></div><div id="hoursHistoryGrid" class="hours-history-grid"></div></section>
+            <section class="hours-history"><div class="board-toolbar"><div><h2>Reportes guardados</h2><p>Los últimos reportes de este formulario. El archivo completo está en Horas de trabajo / PDFs.</p></div><button class="button button-ghost" type="button" id="openHoursArchiveFromHours">Ver archivo de horas →</button></div><div id="hoursHistoryGrid" class="hours-history-grid"></div></section>
           </section>
 
           <section class="page-view hidden archive-view" id="archiveView">
@@ -203,6 +317,28 @@
             </section>
             <div class="archive-grid" id="archiveGrid"></div>
             <p class="archive-help">Los PDFs se guardan en este navegador. Descarga un respaldo para conservar otra copia o llevarla a otra computadora.</p>
+          </section>
+
+          <section class="page-view hidden archive-view" id="hoursArchiveView">
+            <div class="archive-heading">
+              <div><p class="eyebrow">Reportes de jornada por dirección</p><h1 id="hoursArchiveTitle">Todos los reportes de horas</h1><p>Consulta los PDFs de horas trabajadas. Este archivo es independiente de Invoices / PDFs.</p></div>
+              <div class="archive-heading-actions">
+                <button class="button button-ghost" type="button" id="backupHoursButton">Descargar respaldo</button>
+                <button class="button button-primary" type="button" id="openHoursFormButton">＋ Nuevo reporte</button>
+              </div>
+            </div>
+            <div class="archive-filters hours-archive-filters">
+              <label>Año del reporte<select id="hoursArchiveYear"><option value="all">Todos los años</option></select></label>
+              <label class="archive-search">Buscar dirección o empleado<input id="hoursArchiveSearch" type="search" placeholder="Dirección, empleado o nombre del PDF…"></label>
+            </div>
+            <div class="archive-summary hours-archive-summary" aria-live="polite">
+              <div><span>Reportes en esta selección</span><strong id="hoursArchiveCount">0</strong></div>
+              <div><span>Horas totales</span><strong id="hoursArchiveHours">0 HRS</strong></div>
+              <div><span>Total a pagar</span><strong id="hoursArchivePay">$0.00</strong></div>
+            </div>
+            <p class="archive-help" id="hoursArchiveYearHelp">Cada reporte de horas cuenta una sola vez, según la fecha del trabajo. Estos PDFs no se mezclan con las invoices.</p>
+            <div class="archive-grid" id="hoursArchiveGrid"></div>
+            <p class="archive-help">Los PDFs de horas se guardan en la nube y en este navegador, aparte de las invoices.</p>
           </section>
 
           <section class="page-view hidden" id="invoiceView">
@@ -338,6 +474,25 @@
           </section>
         </main>
       </section>
+      <nav class="mobile-dock" aria-label="Navegación inferior">
+        <button type="button" class="dock-item is-active" data-dock="board">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-7H10v7H5a1 1 0 0 1-1-1z"/></svg>
+          <span>Inicio</span>
+        </button>
+        <button type="button" class="dock-item" data-dock="archive">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 3h8l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm7 1.5V9h4.5zM8 12h8v1.6H8zm0 3.2h8v1.6H8z"/></svg>
+          <span>Invoices</span>
+        </button>
+        <button type="button" class="dock-fab" id="dockNewInvoice" aria-label="Nueva invoice">+</button>
+        <button type="button" class="dock-item" data-dock="hours">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6h7v5H4zm9 0h7v5h-7zM4 13h7v5H4zm9 0h7v5h-7z"/></svg>
+          <span>Trabajos</span>
+        </button>
+        <button type="button" class="dock-item" id="dockMore">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 10.5A1.5 1.5 0 1 1 5 13.5 1.5 1.5 0 0 1 5 10.5zm7 0A1.5 1.5 0 1 1 12 13.5 1.5 1.5 0 0 1 12 10.5zm7 0A1.5 1.5 0 1 1 19 13.5 1.5 1.5 0 0 1 19 10.5z"/></svg>
+          <span>Más</span>
+        </button>
+      </nav>
     </div>
 
     <div class="modal-backdrop hidden" id="modalBackdrop">
@@ -379,9 +534,9 @@
     </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <datalist id="addressHistory"></datalist>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.0" defer></script>
     <script src="config.js?v=5" defer></script>
-    <script src="supabase-client.js" defer></script>
+    <script src="supabase-client.js?v=2" defer></script>
     <script src="local-cache.js" defer></script>
     <script src="vendor/pdf-lib.min.js" defer></script>
     <script src="vendor/jszip.min.js" defer></script>
@@ -389,12 +544,13 @@
     <script src="invoice-pdf.js?v=12" defer></script>
     <script src="cloud-db.js?v=1" defer></script>
     <script src="whatsapp-invoice.js?v=2" defer></script>
-    <script src="invoice-archive.js?v=12" defer></script>
-    <script src="hours-pdf.js?v=5" defer></script>
+    <script src="invoice-archive.js?v=13" defer></script>
+    <script src="hours-pdf.js?v=6" defer></script>
     <script src="hours-whatsapp.js?v=2" defer></script>
-    <script src="hours-app.js?v=6" defer></script>
+    <script src="hours-app.js?v=7" defer></script>
+    <script src="hours-archive.js?v=1" defer></script>
     <script src="translator.js?v=4" defer></script>
-    <script src="auth-app.js?v=4" defer></script>
-    <script src="app.js?v=nube-v6" defer></script>
+    <script src="auth-app.js?v=9" defer></script>
+    <script src="app.js?v=hours-archive-v1" defer></script>
   </body>
 </html>

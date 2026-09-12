@@ -51,6 +51,9 @@ window.InvoiceArchive = function (app) {
     }
     if (!record.pdfBlob) return app.edit(record);
     viewerId = record.id;
+    $("#pdfDialog").dataset.kind = "invoice";
+    if ($("#pdfDialogEdit")) $("#pdfDialogEdit").hidden = false;
+    $("#pdfDialogFrame").title = "PDF de la invoice";
     $("#pdfDialogTitle").textContent = record.address;
     $("#pdfDialogInfo").textContent = `${record.invoiceNumber} · ${dateLabel(C.issuedDate(record))} · ${money(record.amount)} · ${stageName(record.stage)}`;
     $("#pdfDialogFrame").src = app.pdfUrl(record);
@@ -249,7 +252,12 @@ window.InvoiceArchive = function (app) {
   $("#archiveSearch").addEventListener("input", render);
   $("#closePdfDialog").addEventListener("click", () => $("#pdfDialog").close());
   $("#pdfDialog").addEventListener("close", () => { $("#pdfDialogFrame").src = "about:blank"; });
-  $("#pdfDialogEdit").addEventListener("click", () => { $("#pdfDialog").close(); const r = app.records().find(r => r.id === viewerId); if (r) app.edit(r); });
+  $("#pdfDialogEdit").addEventListener("click", () => {
+    if ($("#pdfDialog").dataset.kind === "hours") return;
+    $("#pdfDialog").close();
+    const r = app.records().find(r => r.id === viewerId);
+    if (r) app.edit(r);
+  });
   $("#importInvoicesButton").addEventListener("click", () => { if (!busy) $("#importInvoiceFiles").click(); });
   $("#importInvoiceFiles").addEventListener("change", e => startImport(Array.from(e.target.files)));
   $("#cancelImportButton").addEventListener("click", closeImport);

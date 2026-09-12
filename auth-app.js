@@ -23,10 +23,18 @@
     return PHRASES[date.getDate() % PHRASES.length];
   }
 
-  function greeting(date = new Date()) {
+  function helloLine(date = new Date()) {
     const hour = date.getHours();
-    const hello = hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches";
-    return `${hello}, Lilian.`;
+    return hour < 12 ? "Buenos días," : hour < 19 ? "Buenas tardes," : "Buenas noches,";
+  }
+
+  function greeting(date = new Date()) {
+    return `${helloLine(date).replace(",", "")}, Lilian. 👋`;
+  }
+
+  function paintLoginHello() {
+    const line = $("#authHelloLine");
+    if (line) line.textContent = helloLine();
   }
 
   function setQuote(element, text) {
@@ -60,6 +68,7 @@
     if (show) {
       $("#authGate")?.classList.remove("auth-play");
       requestAnimationFrame(() => replayWelcome());
+      refreshPasskeyPanel();
     } else {
       $("#authGate")?.classList.add("auth-play");
     }
@@ -75,6 +84,162 @@
     }, 5200);
   }
 
+  function toast(message) {
+    if (root.TrentonControl?.toast) root.TrentonControl.toast(message);
+  }
+
+  function authClient() {
+    return root.TrentonSupabase?.client?.auth || null;
+  }
+
+  function originInfo() {
+    const hostname = location.hostname || "localhost";
+    const origin = location.origin || `${location.protocol}//${hostname}`;
+    const ipHost = hostname === "127.0.0.1" || hostname === "[::1]" || /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname);
+    const loopback = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
+    return {
+      origin,
+      rpId: hostname === "localhost" ? "localhost" : hostname,
+      port: location.port || (location.protocol === "https:" ? "443" : "80"),
+      secure: Boolean(window.isSecureContext),
+      loopback,
+      ipHost,
+      supported: typeof window.PublicKeyCredential === "function"
+    };
+  }
+
+  function dashboardHint() {
+    return "En Supabase → Authentication → Passkeys usa: Nombre “Ruben Perla”, RP ID “localhost”, Origins “http://localhost:5500”. Abre siempre http://localhost:5500 (no 127.0.0.1).";
+  }
+
+  function paintPasskeyHints() {
+    const info = originInfo();
+    const loginHint = $("#loginPasskeyHint");
+    const originHint = $("#passkeyOriginHint");
+    let text = dashboardHint();
+    if (!info.supported) text = "Este navegador no admite huella / Windows Hello. Sigue usando correo y contraseña.";
+    else if (info.ipHost) text = "Estás en una IP. Ciérrala y abre http://localhost:5500. En Supabase el RP ID debe ser localhost, no 127.0.0.1. " + dashboardHint();
+    else if (!info.secure) text = "Abre la app en https:// o en http://localhost. En una IP de red (http://192.168…) la huella no funciona. " + dashboardHint();
+    if (loginHint) loginHint.textContent = text;
+    if (originHint) originHint.textContent = text;
+  }
+
+  function passkeyMessage(error) {
+    if (!error) return "No se pudo usar la huella.";
+    const code = String(error.code || error.error_code || error.name || "");
+    const msg = String(error.message || "");
+    const blob = `${code} ${msg}`.toLowerCase();
+    if (blob.includes("passkey_disabled") || blob.includes("passkeys are not enabled")) {
+      return "Falta activar Passkeys en Supabase. Ve a Authentication → Passkeys, enciéndelo y pega el RP ID y el Origin que ves debajo del botón.";
+    }
+    if (blob.includes("webauthn_credential_not_found") || blob.includes("credential_not_found")) {
+      return "Este aparato aún no está registrado. Entra con contraseña y pulsa “Registrar este aparato”.";
+    }
+    if (blob.includes("webauthn_credential_exists")) {
+      return "Este aparato ya tenía una huella guardada. Prueba “Entrar con huella / Windows Hello”.";
+    }
+    if (blob.includes("too_many_passkeys")) {
+      return "Ya hay demasiados aparatos registrados. Borra uno en Supabase o registra solo el celular y la PC.";
+    }
+    if (blob.includes("notallowed") || blob.includes("abort") || blob.includes("timed out")) {
+      return "Se canceló la huella o Windows Hello, o este aparato no la ofreció.";
+    }
+    if (blob.includes("invalidstate")) {
+      return "Este navegador ya tiene una llave para esta cuenta. Prueba entrar con huella, o usa otro aparato.";
+    }
+    if (!window.isSecureContext) {
+      return "Abre la app en https:// o en http://localhost. Desde una IP de red no se puede usar la huella.";
+    }
+    if (typeof window.PublicKeyCredential !== "function") {
+      return "Este navegador no admite huella / Windows Hello.";
+    }
+    if (blob.includes("registerpasskey is not") || blob.includes("signinwithpasskey is not")) {
+      return "Recarga la página con Ctrl+F5. Falta la librería nueva de Supabase.";
+    }
+    return msg || "No se pudo usar la huella. Revisa el panel de Passkeys en Supabase.";
+  }
+
+  function deviceLabel() {
+    const ua = navigator.userAgent || "";
+    if (/iPhone|iPad|iPod/i.test(ua)) return "iPhone / iPad de Lilian";
+    if (/Android/i.test(ua)) return "Celular Android de Lilian";
+    if (/Windows/i.test(ua)) return "PC Windows de Lilian";
+    if (/Mac OS X|Macintosh/i.test(ua)) return "Mac de Lilian";
+    return "Aparato de Lilian";
+  }
+
+  function setBusy(buttons, busy) {
+    buttons.forEach(button => {
+      if (!button) return;
+      button.disabled = busy;
+    });
+  }
+
+  async function listPasskeys() {
+    const auth = authClient();
+    if (!auth?.passkey?.list) return [];
+    const result = await auth.passkey.list();
+    if (result?.error) throw result.error;
+    const raw = result?.data;
+    if (Array.isArray(raw)) return raw;
+    if (Array.isArray(raw?.passkeys)) return raw.passkeys;
+    return [];
+  }
+
+  async function refreshPasskeyPanel() {
+    paintPasskeyHints();
+    const status = $("#passkeyStatus");
+    const buttons = document.querySelectorAll(".js-register-passkey");
+    const info = originInfo();
+    if (!status) return;
+    if (!info.supported || !info.secure) {
+      status.textContent = info.supported
+        ? "Este aparato no puede registrar huella aquí. Abre la app en https:// o en http://localhost."
+        : "Este navegador no admite huella / Windows Hello. El correo y la contraseña siguen igual.";
+      buttons.forEach(button => { button.disabled = true; });
+      return;
+    }
+    buttons.forEach(button => { button.disabled = false; });
+    try {
+      const passkeys = await listPasskeys();
+      if (!passkeys.length) {
+        status.textContent = "Aún no hay huella en esta cuenta. Pulsa “Registrar este aparato” y confirma con el dedo, Face ID o Windows Hello.";
+        return;
+      }
+      const names = passkeys.map(item => item.friendly_name || item.friendlyName || "aparato").join(", ");
+      status.textContent = `Ya hay ${passkeys.length === 1 ? "1 aparato" : passkeys.length + " aparatos"}: ${names}. Puedes registrar también el celular o la PC.`;
+    } catch (error) {
+      status.textContent = passkeyMessage(error);
+    }
+  }
+
+  async function signInWithPasskey() {
+    const auth = authClient();
+    if (!auth) throw new Error("Esta copia de la app aún no tiene la conexión a la nube.");
+    if (typeof auth.signInWithPasskey !== "function") {
+      throw new Error("Recarga la página con Ctrl+F5. Falta la librería nueva de Supabase.");
+    }
+    const { error } = await auth.signInWithPasskey();
+    if (error) throw error;
+  }
+
+  async function registerThisDevice() {
+    const auth = authClient();
+    if (!auth) throw new Error("Esta copia de la app aún no tiene la conexión a la nube.");
+    if (typeof auth.registerPasskey !== "function") {
+      throw new Error("Recarga la página con Ctrl+F5. Falta la librería nueva de Supabase.");
+    }
+    const { data, error } = await auth.registerPasskey({ friendlyName: deviceLabel() });
+    if (error) throw error;
+    const id = data?.id;
+    if (id && auth.passkey?.update) {
+      try {
+        await auth.passkey.update({ passkeyId: id, friendlyName: deviceLabel() });
+      } catch (_ignore) { /* el nombre amistoso es opcional */ }
+    }
+    return data;
+  }
+
   function watchAuth(onReady, onLogout) {
     if (watching || !root.TrentonConfig.ready()) return;
     watching = true;
@@ -88,6 +253,7 @@
         return;
       }
       showApp(true);
+      paintLoginHello();
       if ($("#welcomeGreeting")) $("#welcomeGreeting").textContent = greeting();
       setQuote($("#heroQuote"), PHRASES[quoteIndex % PHRASES.length]);
       setQuote($("#authWelcomeQuote"), PHRASES[quoteIndex % PHRASES.length]);
@@ -100,7 +266,26 @@
   async function start({ onReady, onLogout }) {
     showApp(false);
     setGate(root.TrentonConfig.ready() ? "login" : "config");
+    paintLoginHello();
+    paintPasskeyHints();
     cycleQuotes();
+
+    const remembered = localStorage.getItem("trenton.remember-email");
+    if (remembered && $("#loginEmail")) {
+      $("#loginEmail").value = remembered;
+      if ($("#rememberMe")) $("#rememberMe").checked = true;
+    }
+
+    $("#togglePassword")?.addEventListener("click", () => {
+      const input = $("#loginPassword");
+      if (!input) return;
+      const hidden = input.type === "password";
+      input.type = hidden ? "text" : "password";
+      $("#togglePassword").setAttribute("aria-label", hidden ? "Ocultar contraseña" : "Mostrar contraseña");
+    });
+    $("#forgotPassword")?.addEventListener("click", () => {
+      $("#authError").textContent = "Pídele a quien mantiene la app que te restablezca la contraseña. Lilian no cambia claves desde aquí.";
+    });
 
     $("#loginForm")?.addEventListener("submit", async event => {
       event.preventDefault();
@@ -108,9 +293,12 @@
       $("#loginButton").disabled = true;
       try {
         if (!root.TrentonConfig.ready()) throw new Error("Esta copia de la app aún no tiene la conexión a la nube.");
+        const email = $("#loginEmail").value.trim();
+        if ($("#rememberMe")?.checked) localStorage.setItem("trenton.remember-email", email);
+        else localStorage.removeItem("trenton.remember-email");
         watchAuth(onReady, onLogout);
         const { error } = await root.TrentonSupabase.client.auth.signInWithPassword({
-          email: $("#loginEmail").value.trim(),
+          email,
           password: $("#loginPassword").value
         });
         if (error) throw error;
@@ -120,9 +308,46 @@
         $("#loginButton").disabled = false;
       }
     });
-    $("#logoutButton")?.addEventListener("click", async () => {
-      if (root.TrentonConfig.ready()) await root.TrentonSupabase.client.auth.signOut();
+
+    $("#passkeyLoginButton")?.addEventListener("click", async () => {
+      $("#authError").textContent = "";
+      const button = $("#passkeyLoginButton");
+      setBusy([button], true);
+      try {
+        if (!root.TrentonConfig.ready()) throw new Error("Esta copia de la app aún no tiene la conexión a la nube.");
+        watchAuth(onReady, onLogout);
+        await signInWithPasskey();
+      } catch (error) {
+        $("#authError").textContent = passkeyMessage(error);
+      } finally {
+        setBusy([button], false);
+      }
     });
+
+    document.querySelectorAll(".js-register-passkey").forEach(button => {
+      button.addEventListener("click", async () => {
+        const buttons = document.querySelectorAll(".js-register-passkey");
+        const status = $("#passkeyStatus");
+        setBusy(buttons, true);
+        try {
+          await registerThisDevice();
+          const done = "Aparato registrado. La próxima vez puedes entrar con huella / Windows Hello. La contraseña sigue de respaldo.";
+          if (status) status.textContent = done;
+          toast(done);
+          await refreshPasskeyPanel();
+        } catch (error) {
+          const message = passkeyMessage(error);
+          if (status) status.textContent = message;
+          toast(message);
+        } finally {
+          setBusy(buttons, false);
+        }
+      });
+    });
+
+    document.querySelectorAll(".js-logout").forEach(button => button.addEventListener("click", async () => {
+      if (root.TrentonConfig.ready()) await root.TrentonSupabase.client.auth.signOut();
+    }));
 
     watchAuth(onReady, onLogout);
   }

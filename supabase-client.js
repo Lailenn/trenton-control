@@ -8,7 +8,12 @@
     if (!root.TrentonConfig?.ready()) throw new Error("Falta la URL y la anon key del proyecto Supabase.");
     const url = config.url.replace(/\/$/, "");
     client = root.supabase.createClient(url, config.anonKey, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        experimental: { passkey: true }
+      }
     });
     return client;
   }
