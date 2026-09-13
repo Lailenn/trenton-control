@@ -387,30 +387,6 @@
       "#previewNote": note
     };
     Object.entries(values).forEach(([selector, value]) => { const element = $(selector); if (element) element.textContent = value; });
-    requestAnimationFrame(fitInvoicePreview);
-  }
-
-  let fittingPreview = false;
-  let lastPreviewKey = "";
-
-  function fitInvoicePreview() {
-    const viewport = $("#invoiceViewport");
-    const paper = $("#invoicePaper");
-    if (!viewport || !paper || fittingPreview) return;
-    if ($("#invoiceView")?.classList.contains("hidden")) return;
-    const width = viewport.clientWidth;
-    const paperWidth = paper.offsetWidth;
-    const paperHeight = paper.offsetHeight;
-    if (!width || !paperWidth || !paperHeight) return;
-    const scale = Math.min(1, width / paperWidth);
-    const height = Math.ceil(paperHeight * scale);
-    const key = width + ":" + paperWidth + ":" + paperHeight + ":" + scale.toFixed(4) + ":" + height;
-    if (key === lastPreviewKey) return;
-    fittingPreview = true;
-    lastPreviewKey = key;
-    paper.style.transform = `scale(${scale})`;
-    viewport.style.height = height + "px";
-    requestAnimationFrame(() => { fittingPreview = false; });
   }
 
   function setSidebarOpen(open) {
@@ -434,7 +410,7 @@
     setSidebarOpen(false);
     replayViewAnimation(view);
     if (view === "board") window.AuthApp?.replayWelcome?.();
-    if (view === "invoice") { lastPreviewKey = ""; updateInvoicePreview(); }
+    if (view === "invoice") updateInvoicePreview();
     if (view === "hours") window.HoursApp?.open();
   }
 
@@ -525,13 +501,23 @@
     updateInvoicePreview();
   }
 
+  function withTimeout(promise, ms, message) {
+    let timer = 0;
+    return Promise.race([
+      promise.finally(() => clearTimeout(timer)),
+      new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(message)), ms); })
+    ]);
+  }
+
   async function logoBytes(data) {
     const url = typeof data.logoDataUrl === "string" && /^data:image\/(png|jpeg|webp);base64,/i.test(data.logoDataUrl) ? data.logoDataUrl : DEFAULT_LOGO_URL;
     try {
-      const response = await fetch(url);
+      const response = await withTimeout(fetch(url), 8000, "El logo tardó demasiado.");
       if (!response.ok) throw new Error("logo");
       const blob = await response.blob();
-      const bitmap = await createImageBitmap(blob);
+      if (!blob.size) return null;
+      if (typeof createImageBitmap !== "function") return await blob.arrayBuffer();
+      const bitmap = await withTimeout(createImageBitmap(blob), 8000, "El logo no se pudo leer.");
       const canvas = document.createElement("canvas");
       canvas.width = Math.max(1, bitmap.width);
       canvas.height = Math.max(1, bitmap.height);
@@ -547,7 +533,7 @@
 
   async function attachGeneratedPdf(record, data) {
     const snapshot = {...data, recordId: record.id};
-    record.pdfBlob = await PDFs.generate(snapshot, await logoBytes(snapshot));
+    record.pdfBlob = await withTimeout(PDFs.generate(snapshot, await logoBytes(snapshot)), 20000, "La generación del PDF se detuvo. Revisa la descripción y vuelve a guardar.");
     record.pdfHash = await PDFs.hash(record.pdfBlob);
     record.pdfName = Core.fileName(record);
     record.invoiceData = snapshot;
@@ -748,9 +734,6 @@
   updateWelcome();
   setInterval(updateWelcome, 60000);
   $("#resetInvoiceButton").addEventListener("click", () => resetInvoiceBuilder());
-  window.addEventListener("resize", () => { lastPreviewKey = ""; fitInvoicePreview(); });
-  window.addEventListener("afterprint", () => { lastPreviewKey = ""; fitInvoicePreview(); });
-  $("#paperLogo").addEventListener("load", () => { lastPreviewKey = ""; fitInvoicePreview(); }, true);
   $("#printInvoiceButton").addEventListener("click", () => saveGeneratedInvoice(true));
   $("#saveGeneratedInvoiceButton").addEventListener("click", () => saveGeneratedInvoice(false));
   $("#fillInvoiceFromTextButton").addEventListener("click", fillInvoiceFromText);

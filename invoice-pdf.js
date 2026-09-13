@@ -66,23 +66,27 @@
     }
     function wrap(value, font, size, max) {
       const result = [];
+      const limit = Math.max(40, Number(max) || 40);
       for (const paragraph of pdfSafe(value).split(/\r?\n/)) {
         let line = "";
         for (const word of paragraph.split(/\s+/).filter(Boolean)) {
-          if (measure(font, (line ? line + " " : "") + word, size) <= max) line += (line ? " " : "") + word;
+          if (measure(font, (line ? line + " " : "") + word, size) <= limit) line += (line ? " " : "") + word;
           else {
             if (line) result.push(line); line = "";
             for (const char of word) {
-              if (measure(font, line + char, size) > max && line) { result.push(line); line = ""; }
+              if (line && measure(font, line + char, size) > limit) { result.push(line); line = ""; }
               line += char;
+              if (result.length > 400) return result;
             }
           }
         }
         result.push(line);
+        if (result.length > 400) return result;
       }
       return result;
     }
     let page;
+    let pageCount = 0;
     function draw(value, x, y, size = 16, font = regular, color = ink) {
       const text = pdfSafe(value);
       try { page.drawText(text, {x: x * s, y: (height - y - size) * s, size: size * s, font, color}); }
@@ -99,15 +103,18 @@
     }
     function linesAt(lines, x, y, size, font, spacing, color = ink) { lines.forEach((l, i) => draw(l, x, y + i * spacing, size, font, color)); return y + lines.length * spacing; }
     function header(parties = true) {
+      if (++pageCount > 12) throw new Error("El PDF se volvió demasiado largo. Acorta la descripción o la nota.");
       page = doc.addPage([612, 792]);
       page.drawRectangle({x: 0, y: 784, width: 612, height: 8, color: teal});
       page.drawRectangle({x: 0, y: 0, width: 612, height: 6, color: copper});
       let brandBottom = 56;
-      if (logo) {
+      if (logo && logo.width > 1 && logo.height > 1) {
         const factor = Math.min(156 / logo.width, 76 / logo.height);
         const logoH = logo.height * factor;
-        page.drawImage(logo, {x: 62 * s, y: (height - 56 - logoH) * s, width: logo.width * factor * s, height: logoH * s});
-        brandBottom = 56 + logoH + 10;
+        if (Number.isFinite(factor) && Number.isFinite(logoH) && logoH > 0) {
+          page.drawImage(logo, {x: 62 * s, y: (height - 56 - logoH) * s, width: logo.width * factor * s, height: logoH * s});
+          brandBottom = 56 + logoH + 10;
+        }
       }
       const approval = wrap(data.approval || "", bold, 14, 420);
       approval.forEach((l, i) => rightText(l, right, 69 + i * 18, 14, bold, copper));
