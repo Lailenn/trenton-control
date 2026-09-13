@@ -108,7 +108,6 @@
     function header(parties = true) {
       if (++pageCount > 8) throw new Error("El PDF se volvió demasiado largo. Acorta la descripción o la nota.");
       page = doc.addPage([612, 792]);
-      page.drawRectangle({x: 0, y: 0, width: 612, height: 6, color: copper});
       if (logo && Number(logo.width) > 1 && Number(logo.height) > 1) {
         const factor = Math.min(156 / logo.width, 76 / logo.height);
         const logoH = logo.height * factor;
@@ -171,6 +170,7 @@
       if (noteY + 24 > height - 48) noteY = header(false);
       draw(l, 42, noteY, 17, bold, ink); noteY += 24;
     }
+    doc.getPages().forEach(sheet => sheet.drawRectangle({x: 0, y: 0, width: 612, height: 10, color: copper}));
     doc.setTitle(pdfSafe((data.workAddress || data.billAddress || "Invoice") + " - " + data.invoiceNumber));
     doc.setAuthor(pdfSafe(data.fromName || "Ruben Perla"));
     try {

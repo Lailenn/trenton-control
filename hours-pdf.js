@@ -169,7 +169,6 @@
     };
     const header = () => {
       newPage();
-      page.drawRectangle({x: 0, y: 0, width: pageW, height: 6, color: copper});
       if (logo && logo.width > 1 && logo.height > 1) {
         const factor = Math.min(220 / logo.width, 70 / logo.height);
         if (Number.isFinite(factor) && factor > 0) {
@@ -217,6 +216,7 @@
       text(lineText, left, cursor, 10, regular, ink);
       cursor += 14;
     });
+    doc.getPages().forEach(sheet => sheet.drawRectangle({x: 0, y: 0, width: pageW, height: 10, color: copper}));
     doc.setTitle(pdfSafe(`Work hours - ${data.jobAddress || "Arrento Carpentry"}`));
     doc.setAuthor("Arrento Carpentry LLC");
     try {

@@ -86,10 +86,9 @@ button.stat-card:hover { box-shadow: 0 8px 28px rgba(59,110,234,.14); transform:
 .hours-entry-grid .field span { font-size: 10px; }
 .hours-entry-grid input { min-height: 34px; padding: 7px 8px; font-size: 12px; }
 .hours-calculated { margin: 10px 0 0; color: var(--blue-dark); font-size: 11px; font-weight: 700; }
-.hours-preview-panel { min-width: 0; overflow: hidden; }
-.hours-preview-viewport { width: 100%; height: auto !important; overflow-x: auto; overflow-y: visible; background: #e8edf7; padding: 12px; box-sizing: border-box; -webkit-overflow-scrolling: touch; }
+.hours-preview-panel { min-width: 0; overflow-x: auto; overflow-y: visible; }
+.hours-preview-viewport { width: 100%; height: auto !important; overflow-x: auto; overflow-y: visible; background: #e8edf7; padding: 12px; box-sizing: border-box; -webkit-overflow-scrolling: touch; container-type: inline-size; container-name: hours-sheet; }
 .hours-paper, #hoursPaper {
-  position: relative;
   width: 816px;
   min-width: 816px;
   max-width: none;
@@ -98,21 +97,15 @@ button.stat-card:hover { box-shadow: 0 8px 28px rgba(59,110,234,.14); transform:
   padding: 64px 56px 58px;
   box-sizing: border-box;
   border: 0;
+  border-bottom: 10px solid rgb(212, 101, 47);
   background: #fff;
   color: #000;
   font-family: Arial, Helvetica, sans-serif;
-  transform: none !important;
-  zoom: 1 !important;
+  transform-origin: top left;
   box-shadow: 0 4px 18px rgba(26, 40, 67, .12);
 }
-.hours-paper::after, #hoursPaper::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 8px;
-  background: rgb(212, 101, 47);
+@container hours-sheet (max-width: 816px) {
+  .hours-paper, #hoursPaper { zoom: calc(100cqi / 816px); }
 }
 .hours-logo { display: block; width: 293px; height: auto; margin: 0 auto 19px; }
 .hours-job-line { margin: 0; text-align: center; font-size: 17px; font-weight: 700; }
@@ -366,7 +359,7 @@ h1 span { color: var(--blue); }
 .builder-save-row .button { width: 100%; }
 .builder-save-row a { display: block; text-align: center; font-size: 13px; font-weight: 700; }
 .builder-save-row p { margin: 0; color: #8d9aae; font-size: 10px; text-align: center; }
-.invoice-preview-panel { min-width: 0; overflow: hidden; }
+.invoice-preview-panel { min-width: 0; overflow-x: auto; overflow-y: visible; }
 .preview-toolbar { min-height: 51px; padding: 0 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); color: #4d5d74; font-size: 11px; font-weight: 700; }
 .preview-toolbar span { display: flex; align-items: center; gap: 7px; }.preview-toolbar i { width: 7px; height: 7px; display: inline-block; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 4px var(--mint-soft); }.preview-toolbar small { color: #9ba7b6; font-size: 10px; font-weight: 500; }
 .invoice-paper { width: min(100%, 800px); min-height: 900px; margin: 0 auto; padding: 52px 50px 46px; background: #fff; color: #111; font-family: Arial, Helvetica, sans-serif; }
@@ -467,9 +460,10 @@ h1 span { color: var(--blue); }
 @media (max-width: 380px) { .stats-grid { grid-template-columns: 1fr; }.hero h1 { font-size: 29px; }.hero-quote { font-size: 12px; }.button-large { font-size: 12px; } }
 
 
-/* FACTURA: hoja carta 816px, igual al PDF. En el celular se desplaza a la derecha. */
+/* FACTURA: hoja carta 816px, igual al PDF. Si no cabe, se reduce para verse completa. */
 #invoiceView .invoice-preview-panel {
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: visible;
   max-height: none;
   position: static;
 }
@@ -483,10 +477,11 @@ h1 span { color: var(--blue); }
   padding: 12px;
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
+  container-type: inline-size;
+  container-name: invoice-sheet;
 }
 
 #invoicePaper {
-  position: relative;
   width: 816px;
   min-width: 816px;
   max-width: none;
@@ -495,21 +490,15 @@ h1 span { color: var(--blue); }
   padding: 60px 13px 60px 56px;
   box-sizing: border-box;
   border: 0;
+  border-bottom: 10px solid rgb(212, 101, 47);
   background: #fff;
   color: #000;
   font: 16px/1.25 Arial, Helvetica, sans-serif;
-  transform: none !important;
-  zoom: 1 !important;
+  transform-origin: top left;
   box-shadow: 0 4px 18px rgba(26, 40, 67, .12);
 }
-#invoicePaper::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 8px;
-  background: rgb(212, 101, 47);
+@container invoice-sheet (max-width: 816px) {
+  #invoicePaper { zoom: calc(100cqi / 816px); }
 }
 
 #invoicePaper .invoice-header {
@@ -657,7 +646,8 @@ h1 span { color: var(--blue); }
 }
 
 #hoursView .hours-preview-panel {
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: visible;
   max-height: none;
   position: static;
 }
@@ -682,8 +672,7 @@ h1 span { color: var(--blue); }
   padding: 64px 56px 58px;
   box-sizing: border-box;
   background: #fff;
-  transform: none !important;
-  zoom: 1 !important;
+  border-bottom: 10px solid rgb(212, 101, 47);
 }
 
 @media print {
