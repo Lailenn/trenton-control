@@ -85,11 +85,20 @@
     return blob instanceof File ? blob : new File([blob], fileName, { type });
   }
 
+  function isPhone() {
+    const ua = navigator.userAgent || "";
+    return /iPhone|iPad|iPod/i.test(ua)
+      || /Android/i.test(ua) && /Mobile/i.test(ua)
+      || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  }
+
   async function saveBlob(blob, name, options = {}) {
     if (!blob) throw new Error("No hay archivo para descargar.");
     const file = asNamedFile(blob, name);
-    const wantShare = options.share === true;
-    if (wantShare && navigator.canShare && navigator.canShare({ files: [file] })) {
+    const phone = isPhone();
+    const explicit = options.share === true;
+
+    if (phone && explicit && navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
         await navigator.share({ files: [file], title: file.name });
         return "shared";
@@ -97,17 +106,30 @@
         if (error.name === "AbortError") return "cancelled";
       }
     }
+
     const url = URL.createObjectURL(file);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = file.name;
-    link.rel = "noopener";
-    link.style.display = "none";
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-    return "download";
+    try {
+      if (phone && explicit && /iP(hone|ad|od)/i.test(navigator.userAgent || "")) {
+        const opened = window.open(url, "_blank", "noopener");
+        if (opened) {
+          setTimeout(() => URL.revokeObjectURL(url), 120000);
+          return "opened";
+        }
+      }
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = file.name;
+      link.rel = "noopener";
+      link.style.display = "none";
+      document.body.append(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      return "download";
+    } catch (error) {
+      URL.revokeObjectURL(url);
+      throw error;
+    }
   }
 
   root.TrentonFiles = { saveBlob, asNamedFile };

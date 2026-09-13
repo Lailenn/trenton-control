@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=menus-pdf-v1" />
+    <link rel="stylesheet" href="styles.css?v=menus-pdf-v2" />
   </head>
   <body>
     <div id="authGate" class="auth-gate auth-play login-screen" data-mode="login">
@@ -283,7 +283,7 @@
               <div class="archive-heading-actions">
                 <button class="button button-ghost" type="button" id="backupInvoicesButton">Descargar respaldo</button>
                 <button class="button button-primary" type="button" id="importInvoicesButton">＋ Subir invoices anteriores</button>
-                <input id="importInvoiceFiles" type="file" accept="application/pdf,.pdf,.zip" multiple hidden>
+                <input id="importInvoiceFiles" type="file" accept="application/pdf,application/zip,.pdf,.zip" multiple hidden>
               </div>
             </div>
             <div class="archive-filters">
@@ -307,7 +307,7 @@
               <p id="importError" class="form-error" role="alert"></p>
             </section>
             <div class="archive-grid" id="archiveGrid"></div>
-            <p class="archive-help">Los PDFs se guardan en este navegador. Descarga un respaldo para conservar otra copia o llevarla a otra computadora.</p>
+            <p class="archive-help">Los PDFs se guardan en la nube y también en este aparato. Descarga un respaldo para llevar otra copia a la computadora.</p>
           </section>
 
           <section class="page-view hidden archive-view" id="hoursArchiveView">
@@ -397,7 +397,6 @@
   <div class="invoice-paper" id="invoicePaper">
     <div class="invoice-header">
       <div class="invoice-brand">
-        <strong id="previewFromName">Ruben Perla</strong>
         <div class="invoice-logo has-image" id="paperLogo">
           <img src="assets/logo-ruben.png" alt="Logo de Ruben Perla">
         </div>
@@ -528,11 +527,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.0" defer></script>
     <script src="config.js?v=5" defer></script>
     <script src="supabase-client.js?v=2" defer></script>
-    <script src="local-cache.js?v=2" defer></script>
+    <script src="local-cache.js?v=3" defer></script>
     <script src="vendor/pdf-lib.min.js" defer></script>
     <script src="vendor/jszip.min.js" defer></script>
     <script src="invoice-core.js?v=11" defer></script>
-    <script src="invoice-pdf.js?v=13" defer></script>
+    <script src="invoice-pdf.js?v=14" defer></script>
     <script src="cloud-db.js?v=2" defer></script>
     <script src="whatsapp-invoice.js?v=2" defer></script>
     <script src="invoice-archive.js?v=14" defer></script>
@@ -542,6 +541,6 @@
     <script src="hours-archive.js?v=2" defer></script>
     <script src="translator.js?v=4" defer></script>
     <script src="auth-app.js?v=12" defer></script>
-    <script src="app.js?v=pdf-menus-v1" defer></script>
+    <script src="app.js?v=pdf-menus-v2" defer></script>
   </body>
 </html>

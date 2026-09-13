@@ -102,19 +102,20 @@
       page = doc.addPage([612, 792]);
       page.drawRectangle({x: 0, y: 784, width: 612, height: 8, color: teal});
       page.drawRectangle({x: 0, y: 0, width: 612, height: 6, color: copper});
-      const nameLines = wrap(data.fromName || "Ruben Perla", bold, 24, 260);
-      const nameBottom = linesAt(nameLines, 62, 60, 24, bold, 29, teal);
+      let brandBottom = 56;
       if (logo) {
         const factor = Math.min(156 / logo.width, 76 / logo.height);
-        page.drawImage(logo, {x: 62 * s, y: (height - nameBottom - logo.height * factor) * s, width: logo.width * factor * s, height: logo.height * factor * s});
+        const logoH = logo.height * factor;
+        page.drawImage(logo, {x: 62 * s, y: (height - 56 - logoH) * s, width: logo.width * factor * s, height: logoH * s});
+        brandBottom = 56 + logoH + 10;
       }
       const approval = wrap(data.approval || "", bold, 14, 420);
       approval.forEach((l, i) => rightText(l, right, 69 + i * 18, 14, bold, copper));
       const numberY = 69 + approval.length * 18 + 22;
       rightText(data.invoiceNumber, right, numberY, 16, regular, muted);
       rightText("Issued " + dateLabel, right, numberY + 20, 16, regular, muted);
-      if (!parties) return Math.max(205, nameBottom + 100);
-      const y = Math.max(225, nameBottom + 136);
+      if (!parties) return Math.max(205, brandBottom + 24);
+      const y = Math.max(225, brandBottom + 48);
       function party(label, name, details, x, max) {
         draw(label, x, y, 16, bold, teal);
         let bottom = linesAt(wrap(name, bold, 20, max), x, y + 36, 20, bold, 24, ink) + 10;

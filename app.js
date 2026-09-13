@@ -63,6 +63,7 @@
     try {
       const result = await (root.TrentonFiles?.saveBlob || saveBlobFallback)(blob, name, options);
       if (result === "cancelled") showToast("Descarga cancelada.");
+      if (result === "opened") showToast("El PDF se abrió. En el teléfono usa Compartir para guardarlo.");
     } catch (error) {
       showToast(error.message || "No se pudo descargar el PDF.");
     }
@@ -369,7 +370,6 @@
     const remainingAmount = (Core.cents(total) - Core.cents(depositAmount)) / 100;
     const note = data.note || `Note: At the beginning of the project, ${data.deposit}% equivalent to ${money(depositAmount)} is required, and at the end of the work, the final ${100 - data.deposit}% equivalent to ${money(remainingAmount)} is required.`;
     const values = {
-      "#previewFromName": data.fromName,
       "#previewApproval": data.approval,
       "#previewInvoiceNumber": data.invoiceNumber,
       "#previewIssuedDate": invoiceDateLabel(data.issuedDate),
