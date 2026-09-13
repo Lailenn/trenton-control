@@ -61,7 +61,7 @@
       return;
     }
     try {
-      const result = await (root.TrentonFiles?.saveBlob || saveBlobFallback)(blob, name, options);
+      const result = await (window.TrentonFiles?.saveBlob || saveBlobFallback)(blob, name, options);
       if (result === "cancelled") showToast("Descarga cancelada.");
       if (result === "opened") showToast("El PDF se abrió. En el teléfono usa Compartir para guardarlo.");
     } catch (error) {
@@ -553,25 +553,24 @@
     $("#saveGeneratedInvoiceButton").textContent = "Generando PDF…";
     try {
       await attachGeneratedPdf(record, data);
-      $("#saveGeneratedInvoiceButton").textContent = "Descargando…";
-      try {
-        await download(record.pdfBlob, record.pdfName, { share: alsoDownload });
-      } catch (downloadError) {
-        console.warn(downloadError);
-      }
       $("#saveGeneratedInvoiceButton").textContent = "Guardando en la nube…";
       try {
-        await withTimeout(() => saveRecord(record), 15000, "El PDF se descargó, pero la nube tardó demasiado.");
+        await saveRecord(record);
         builderRecordId = record.id;
         replaceInMemory(record);
         render();
+        $("#saveGeneratedInvoiceButton").textContent = "Descargando…";
+        try { await download(record.pdfBlob, record.pdfName, { share: alsoDownload }); }
+        catch (downloadError) { console.warn(downloadError); }
         if (!alsoDownload) navClick("archive");
         showToast(previous
-          ? "Invoice actualizada. El PDF se descargó y quedó en la nube."
-          : "Invoice guardada. El PDF se descargó y quedó en la nube.");
+          ? "Invoice actualizada. El PDF quedó en la nube y se descargó."
+          : "Invoice guardada. El PDF quedó en la nube y se descargó.");
       } catch (cloudError) {
         console.error(cloudError);
-        showToast("El PDF se generó y se descargó, pero no se pudo guardar en la nube: " + (cloudError.message || "revisa la conexión."));
+        try { await download(record.pdfBlob, record.pdfName, { share: true }); }
+        catch (downloadError) { console.warn(downloadError); }
+        showToast("El PDF se generó, pero no se pudo guardar en la nube: " + (cloudError.message || "revisa la conexión."));
       }
     } catch (error) {
       console.error(error);

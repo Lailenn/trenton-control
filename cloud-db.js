@@ -39,11 +39,24 @@
     catch (error) { console.warn("No se pudo guardar el PDF en este teléfono.", error); }
   }
 
+  function slimInvoiceData(data) {
+    if (!data || typeof data !== "object") return data || null;
+    const copy = { ...data };
+    delete copy.logoDataUrl;
+    if (typeof copy.sourceMessage === "string") copy.sourceMessage = copy.sourceMessage.slice(0, 8000);
+    return copy;
+  }
+
   async function persistPdf(kind, bucket, record) {
     if (!record.pdfBlob) return;
     record.pdfPath = record.pdfPath || `${ownerId()}/${record.id}.pdf`;
     await cacheBlob(kind, record.id, record.pdfHash, record.pdfBlob);
-    await upload(bucket, record.pdfPath, record.pdfBlob, "application/pdf");
+    try {
+      await upload(bucket, record.pdfPath, record.pdfBlob, "application/pdf");
+    } catch (error) {
+      console.warn("El PDF quedó en este aparato. La subida a la nube se reintentará.", error);
+      throw error;
+    }
   }
 
   function invoiceRow(record) {
@@ -61,7 +74,7 @@
       hours: Number(record.hours) || 0,
       stage: record.stage || "created",
       description: record.description || "",
-      invoice_data: record.invoiceData || null,
+      invoice_data: slimInvoiceData(record.invoiceData),
       source: record.source || (record.invoiceData ? "generated" : "imported"),
       source_id: record.sourceId || null,
       pdf_hash: record.pdfHash || null,
@@ -136,10 +149,12 @@
     const C = Core();
     const duplicate = duplicateOf(record, existing.filter(item => item.id !== record.id && !item.deletedAt));
     if (duplicate) throw new Error("Esta invoice ya está guardada: " + duplicate.invoiceNumber + ", " + duplicate.address + ". Edita el registro existente.");
-    await persistPdf("invoice", "invoice-pdfs", record);
+    if (record.pdfBlob) record.pdfPath = record.pdfPath || `${ownerId()}/${record.id}.pdf`;
     record.pdfName = record.pdfName || C.fileName(record);
+    if (record.pdfBlob) await cacheBlob("invoice", record.id, record.pdfHash, record.pdfBlob);
     const { error } = await sb().from("invoices").upsert(invoiceRow(record));
     fail(error, "No se pudo guardar la invoice.");
+    if (record.pdfBlob) await upload("invoice-pdfs", record.pdfPath, record.pdfBlob, "application/pdf");
     return record;
   }
 
@@ -223,7 +238,8 @@
   }
 
   async function saveHours(record) {
-    await persistPdf("hours", "hours-pdfs", record);
+    if (record.pdfBlob) record.pdfPath = record.pdfPath || `${ownerId()}/${record.id}.pdf`;
+    if (record.pdfBlob) await cacheBlob("hours", record.id, record.pdfHash, record.pdfBlob);
     const report = {
       id: record.id,
       owner_id: ownerId(),
@@ -239,6 +255,7 @@
     };
     const { error } = await sb().from("hours_reports").upsert(report);
     fail(error, "No se pudo guardar el reporte de horas.");
+    if (record.pdfBlob && record.pdfPath) await upload("hours-pdfs", record.pdfPath, record.pdfBlob, "application/pdf");
     const { error: clearError } = await sb().from("hours_entries").delete().eq("report_id", record.id);
     fail(clearError, "No se pudieron actualizar las jornadas.");
     const rows = (record.entries || []).map((entry, index) => ({
