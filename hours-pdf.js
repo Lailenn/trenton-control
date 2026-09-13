@@ -169,7 +169,6 @@
     };
     const header = () => {
       newPage();
-      page.drawRectangle({x: 0, y: pageH - 8, width: pageW, height: 8, color: rgb(0, 0, 0)});
       page.drawRectangle({x: 0, y: 0, width: pageW, height: 6, color: copper});
       if (logo && logo.width > 1 && logo.height > 1) {
         const factor = Math.min(220 / logo.width, 70 / logo.height);

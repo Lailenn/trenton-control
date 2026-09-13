@@ -108,7 +108,6 @@
     function header(parties = true) {
       if (++pageCount > 8) throw new Error("El PDF se volvió demasiado largo. Acorta la descripción o la nota.");
       page = doc.addPage([612, 792]);
-      page.drawRectangle({x: 0, y: 784, width: 612, height: 8, color: rgb(0, 0, 0)});
       page.drawRectangle({x: 0, y: 0, width: 612, height: 6, color: copper});
       if (logo && Number(logo.width) > 1 && Number(logo.height) > 1) {
         const factor = Math.min(156 / logo.width, 76 / logo.height);

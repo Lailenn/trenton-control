@@ -89,6 +89,7 @@ button.stat-card:hover { box-shadow: 0 8px 28px rgba(59,110,234,.14); transform:
 .hours-preview-panel { min-width: 0; overflow: hidden; }
 .hours-preview-viewport { width: 100%; height: auto !important; overflow-x: auto; overflow-y: visible; background: #e8edf7; padding: 12px; box-sizing: border-box; -webkit-overflow-scrolling: touch; }
 .hours-paper, #hoursPaper {
+  position: relative;
   width: 816px;
   min-width: 816px;
   max-width: none;
@@ -103,6 +104,15 @@ button.stat-card:hover { box-shadow: 0 8px 28px rgba(59,110,234,.14); transform:
   transform: none !important;
   zoom: 1 !important;
   box-shadow: 0 4px 18px rgba(26, 40, 67, .12);
+}
+.hours-paper::after, #hoursPaper::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 8px;
+  background: rgb(212, 101, 47);
 }
 .hours-logo { display: block; width: 293px; height: auto; margin: 0 auto 19px; }
 .hours-job-line { margin: 0; text-align: center; font-size: 17px; font-weight: 700; }
@@ -476,6 +486,7 @@ h1 span { color: var(--blue); }
 }
 
 #invoicePaper {
+  position: relative;
   width: 816px;
   min-width: 816px;
   max-width: none;
@@ -490,6 +501,15 @@ h1 span { color: var(--blue); }
   transform: none !important;
   zoom: 1 !important;
   box-shadow: 0 4px 18px rgba(26, 40, 67, .12);
+}
+#invoicePaper::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 8px;
+  background: rgb(212, 101, 47);
 }
 
 #invoicePaper .invoice-header {
