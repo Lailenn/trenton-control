@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet" />
     <link rel="icon" href="favicon.ico" sizes="any" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=menus-clean-1" />
+    <link rel="stylesheet" href="styles.css?v=pdf-gen-4" />
   </head>
   <body>
     <div id="authGate" class="auth-gate auth-play login-screen" data-mode="login">
@@ -382,7 +382,7 @@
                   <label class="field full"><span>Nota de pago</span><textarea id="builderNote" rows="3" placeholder="Se genera automáticamente si lo dejas vacío."></textarea></label>
                   <label class="field full logo-field"><span>Logo (opcional)</span><input id="builderLogo" type="file" accept="image/*" /><small>Se usa el logo de Rubén. Puedes cargar otro si lo necesitas.</small></label>
                 </div>
-                <div class="builder-save-row"><button class="button button-primary" id="saveGeneratedInvoiceButton" type="button">Guardar invoice y PDF</button><p>Se genera el PDF a color, se descarga solo y queda en el tablero y en Todos los PDFs.</p></div>
+                <div class="builder-save-row"><button class="button button-primary" id="saveGeneratedInvoiceButton" type="button">Guardar invoice y PDF</button><a id="generatedPdfLink" class="hidden" href="#" target="_blank" rel="noopener">Si no se bajó, toca aquí para abrir el PDF</a><p>Se genera el PDF a color, se descarga y queda en el tablero y en Todos los PDFs.</p></div>
               </section>
 
               <section class="invoice-preview-panel">
@@ -525,20 +525,20 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.0" defer></script>
     <script src="config.js?v=5" defer></script>
     <script src="supabase-client.js?v=2" defer></script>
-    <script src="local-cache.js?v=3" defer></script>
+    <script src="local-cache.js?v=pdf-gen-4" defer></script>
     <script src="vendor/pdf-lib.min.js" defer></script>
     <script src="vendor/jszip.min.js" defer></script>
     <script src="invoice-core.js?v=11" defer></script>
-    <script src="invoice-pdf.js?v=pdf-gen-2" defer></script>
-    <script src="cloud-db.js?v=pdf-gen-3" defer></script>
+    <script src="invoice-pdf.js?v=pdf-gen-4" defer></script>
+    <script src="cloud-db.js?v=pdf-gen-4" defer></script>
     <script src="whatsapp-invoice.js?v=2" defer></script>
     <script src="invoice-archive.js?v=14" defer></script>
-    <script src="hours-pdf.js?v=pdf-gen-2" defer></script>
+    <script src="hours-pdf.js?v=pdf-gen-4" defer></script>
     <script src="hours-whatsapp.js?v=2" defer></script>
     <script src="hours-app.js?v=pdf-gen-2" defer></script>
     <script src="hours-archive.js?v=2" defer></script>
     <script src="translator.js?v=4" defer></script>
     <script src="auth-app.js?v=12" defer></script>
-    <script src="app.js?v=pdf-gen-3" defer></script>
+    <script src="app.js?v=pdf-gen-4" defer></script>
   </body>
 </html>

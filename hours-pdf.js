@@ -54,10 +54,10 @@
     if (!logoBytes) return null;
     try {
       const bytes = logoBytes instanceof Uint8Array ? logoBytes : new Uint8Array(logoBytes);
-      if (bytes.length < 8) return null;
+      if (bytes.length < 8 || bytes.length > 250000) return null;
       if (bytes[0] === 0x89 && bytes[1] === 0x50) return await doc.embedPng(bytes);
       if (bytes[0] === 0xFF && bytes[1] === 0xD8) return await doc.embedJpg(bytes);
-      return await doc.embedPng(bytes);
+      return null;
     } catch (error) {
       console.warn("No se pudo incrustar el logo de Arrento", error);
       return null;

@@ -92,44 +92,21 @@
       || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   }
 
-  async function saveBlob(blob, name, options = {}) {
+  async function saveBlob(blob, name) {
     if (!blob) throw new Error("No hay archivo para descargar.");
     const file = asNamedFile(blob, name);
-    const phone = isPhone();
-    const explicit = options.share === true;
-
-    if (phone && explicit && navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: file.name });
-        return "shared";
-      } catch (error) {
-        if (error.name === "AbortError") return "cancelled";
-      }
-    }
-
     const url = URL.createObjectURL(file);
-    try {
-      if (phone && explicit && /iP(hone|ad|od)/i.test(navigator.userAgent || "")) {
-        const opened = window.open(url, "_blank", "noopener");
-        if (opened) {
-          setTimeout(() => URL.revokeObjectURL(url), 120000);
-          return "opened";
-        }
-      }
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = file.name;
-      link.rel = "noopener";
-      link.style.display = "none";
-      document.body.append(link);
-      link.click();
-      link.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
-      return "download";
-    } catch (error) {
-      URL.revokeObjectURL(url);
-      throw error;
-    }
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = file.name;
+    link.rel = "noopener";
+    link.target = "_blank";
+    link.style.display = "none";
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 120000);
+    return "download";
   }
 
   root.TrentonFiles = { saveBlob, asNamedFile };

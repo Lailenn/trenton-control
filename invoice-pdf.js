@@ -29,10 +29,10 @@
     if (!logoBytes) return null;
     try {
       const bytes = logoBytes instanceof Uint8Array ? logoBytes : new Uint8Array(logoBytes);
-      if (bytes.length < 8) return null;
+      if (bytes.length < 8 || bytes.length > 250000) return null;
       if (bytes[0] === 0x89 && bytes[1] === 0x50) return await doc.embedPng(bytes);
       if (bytes[0] === 0xFF && bytes[1] === 0xD8) return await doc.embedJpg(bytes);
-      return await doc.embedPng(bytes);
+      return null;
     } catch (error) {
       console.warn("No se pudo incrustar el logo en la invoice", error);
       return null;
@@ -107,12 +107,12 @@
     }
     function linesAt(lines, x, y, size, font, spacing, color = ink) { lines.forEach((l, i) => draw(l, x, y + i * spacing, size, font, color)); return y + lines.length * spacing; }
     function header(parties = true) {
-      if (++pageCount > 12) throw new Error("El PDF se volvió demasiado largo. Acorta la descripción o la nota.");
+      if (++pageCount > 8) throw new Error("El PDF se volvió demasiado largo. Acorta la descripción o la nota.");
       page = doc.addPage([612, 792]);
       page.drawRectangle({x: 0, y: 784, width: 612, height: 8, color: teal});
       page.drawRectangle({x: 0, y: 0, width: 612, height: 6, color: copper});
       let brandBottom = 56;
-      if (logo && logo.width > 1 && logo.height > 1) {
+      if (logo && Number(logo.width) > 1 && Number(logo.height) > 1) {
         const factor = Math.min(156 / logo.width, 76 / logo.height);
         const logoH = logo.height * factor;
         if (Number.isFinite(factor) && Number.isFinite(logoH) && logoH > 0) {
@@ -125,25 +125,28 @@
       const numberY = 69 + approval.length * 18 + 22;
       rightText(data.invoiceNumber, right, numberY, 16, regular, muted);
       rightText("Issued " + dateLabel, right, numberY + 20, 16, regular, muted);
-      if (!parties) return Math.max(205, brandBottom + 24);
-      const y = Math.max(225, brandBottom + 48);
+      if (!parties) return 205;
+      const y = 225;
       function party(label, name, details, x, max) {
         draw(label, x, y, 16, bold, teal);
         let bottom = linesAt(wrap(name, bold, 20, max), x, y + 36, 20, bold, 24, ink) + 10;
         for (const detail of details.filter(Boolean)) bottom = linesAt(wrap(detail, regular, 16, max), x, bottom, 16, regular, 20, ink) + 6;
-        return bottom - 6;
+        return Number.isFinite(bottom) ? bottom - 6 : y + 80;
       }
       const a = party("FROM", data.fromName, [data.fromPhone, data.fromEmail, data.fromAddress], 62, 342);
       const b = party("BILL TO", data.billName, [data.billAddress], 415, 382);
-      return Math.max(402, a + 35, b + 35);
+      const top = Math.max(402, a + 35, b + 35);
+      return Number.isFinite(top) ? top : 402;
     }
     const description = wrap(data.description || "Trabajo realizado", regular, 16, width * .576 - 12);
-    let index = 0, tableBottom = 0;
-    while (index < description.length) {
+    let index = 0, tableBottom = 402, safety = 0;
+    while (index < description.length && safety++ < 8) {
       const top = header();
-      const capacity = Math.floor((height - 90 - top - 48 - 36) / 20);
-      if (capacity < 1) throw new Error("Reduce la longitud de los datos del encabezado para generar el PDF.");
-      const chunk = description.slice(index, index + capacity); index += chunk.length;
+      let capacity = Math.floor((height - 90 - top - 48 - 36) / 20);
+      if (!Number.isFinite(capacity) || capacity < 1) capacity = 6;
+      const chunk = description.slice(index, index + capacity);
+      if (!chunk.length) break;
+      index += chunk.length;
       const body = Math.max(226, chunk.length * 20 + 36);
       tableBottom = top + 48 + body;
       page.drawRectangle({x: left * s, y: (height - top - 48) * s, width: width * s, height: 48 * s, color: peach});

@@ -16,8 +16,11 @@
   }
 
   async function upload(bucket, path, blob, type) {
-    const { error } = await sb().storage.from(bucket).upload(path, blob, { upsert: true, contentType: type, cacheControl: "3600" });
-    fail(error, "No se pudo subir el archivo.");
+    const result = await Promise.race([
+      sb().storage.from(bucket).upload(path, blob, { upsert: true, contentType: type, cacheControl: "3600" }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("La subida del PDF a la nube tardó demasiado.")), 25000))
+    ]);
+    fail(result.error, "No se pudo subir el archivo.");
     return path;
   }
 
@@ -154,7 +157,10 @@
     if (record.pdfBlob) await cacheBlob("invoice", record.id, record.pdfHash, record.pdfBlob);
     const { error } = await sb().from("invoices").upsert(invoiceRow(record));
     fail(error, "No se pudo guardar la invoice.");
-    if (record.pdfBlob) await upload("invoice-pdfs", record.pdfPath, record.pdfBlob, "application/pdf");
+    if (record.pdfBlob) {
+      try { await upload("invoice-pdfs", record.pdfPath, record.pdfBlob, "application/pdf"); }
+      catch (error) { console.warn("Invoice guardada; el PDF quedó en este aparato.", error); }
+    }
     return record;
   }
 
@@ -255,7 +261,10 @@
     };
     const { error } = await sb().from("hours_reports").upsert(report);
     fail(error, "No se pudo guardar el reporte de horas.");
-    if (record.pdfBlob && record.pdfPath) await upload("hours-pdfs", record.pdfPath, record.pdfBlob, "application/pdf");
+    if (record.pdfBlob && record.pdfPath) {
+      try { await upload("hours-pdfs", record.pdfPath, record.pdfBlob, "application/pdf"); }
+      catch (error) { console.warn("Reporte guardado; el PDF quedó en este aparato.", error); }
+    }
     const { error: clearError } = await sb().from("hours_entries").delete().eq("report_id", record.id);
     fail(clearError, "No se pudieron actualizar las jornadas.");
     const rows = (record.entries || []).map((entry, index) => ({

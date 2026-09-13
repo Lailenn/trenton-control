@@ -339,6 +339,7 @@ h1 span { color: var(--blue); }
 .logo-field small { display: block; margin-top: 5px; color: #97a3b3; font-size: 10px; }
 .builder-save-row { margin-top: 21px; padding-top: 17px; display: grid; gap: 8px; border-top: 1px solid var(--line); }
 .builder-save-row .button { width: 100%; }
+.builder-save-row a { display: block; text-align: center; font-size: 13px; font-weight: 700; }
 .builder-save-row p { margin: 0; color: #8d9aae; font-size: 10px; text-align: center; }
 .invoice-preview-panel { min-width: 0; overflow: hidden; }
 .preview-toolbar { min-height: 51px; padding: 0 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); color: #4d5d74; font-size: 11px; font-weight: 700; }
