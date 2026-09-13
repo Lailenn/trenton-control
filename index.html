@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet" />
     <link rel="icon" href="favicon.ico" sizes="any" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=profile-check-1" />
+    <link rel="stylesheet" href="styles.css?v=profile-mobile-1" />
   </head>
   <body>
     <div id="authGate" class="auth-gate auth-play login-screen" data-mode="login">
@@ -121,10 +121,16 @@
           <button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir menú" aria-expanded="false">
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M4 7h16v2H4zm0 4h16v2H4zm0 4h16v2H4z"/></svg>
           </button>
-          <div class="topbar-brand">
-            <div class="brand-mark"><span>RP</span></div>
-            <div><strong>Ruben Perla</strong><small>2026 · Trenton Builders LLC</small></div>
-          </div>
+          <button class="topbar-brand" id="topbarProfileButton" type="button" title="Tu perfil" aria-haspopup="dialog" aria-expanded="false">
+            <div class="brand-mark">
+              <img id="topbarBrandAvatarImg" alt="" hidden>
+              <span id="topbarBrandInitials">LP</span>
+            </div>
+            <div class="topbar-brand-copy">
+              <strong id="topbarProfileName">Lilian</strong>
+              <small id="topbarProfileRole">Secretaria</small>
+            </div>
+          </button>
           <div class="crumbs"><span>Trenton Builders LLC</span><b>/</b><strong id="topbarSection">Inicio</strong></div>
           <div class="topbar-right">
             <span class="version-badge">Nube + local</span>
@@ -279,7 +285,7 @@
                 <div class="hours-entry-title"><div><p class="field-group-title">Empleados y jornadas</p><small>El total se calcula con entrada, salida y almuerzo. También puedes escribir las horas directamente.</small></div><button class="button button-ghost" id="addHoursEntryButton" type="button">＋ Agregar registro</button></div>
                 <div id="hoursEntries" class="hours-entries"></div>
                 <p class="form-error" id="hoursError" role="alert"></p>
-                <div class="builder-save-row"><button class="button button-primary" id="saveHoursButton" type="button">Guardar reporte y PDF</button><p>Se genera el PDF a color, se descarga solo y también queda en la nube.</p></div>
+                <div class="builder-save-row"><button class="button button-primary" id="saveHoursButton" type="button">Guardar reporte y PDF</button><p>Se guarda en la nube y en este teléfono; después se descarga el PDF.</p></div>
               </section>
 
               <section class="hours-preview-panel">
@@ -576,21 +582,21 @@
     <datalist id="addressHistory"></datalist>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.0" defer></script>
     <script src="config.js?v=5" defer></script>
-    <script src="supabase-client.js?v=2" defer></script>
+    <script src="supabase-client.js?v=hours-cloud-1" defer></script>
     <script src="local-cache.js?v=pdf-gen-4" defer></script>
     <script src="vendor/pdf-lib.min.js" defer></script>
     <script src="vendor/jszip.min.js" defer></script>
     <script src="invoice-core.js?v=price-labor-1" defer></script>
     <script src="invoice-pdf.js?v=orange-bar-2" defer></script>
-    <script src="cloud-db.js?v=profile-check-1" defer></script>
+    <script src="cloud-db.js?v=hours-cloud-1" defer></script>
     <script src="whatsapp-invoice.js?v=addr-1" defer></script>
     <script src="invoice-archive.js?v=14" defer></script>
     <script src="hours-pdf.js?v=hours-grid-1" defer></script>
     <script src="hours-whatsapp.js?v=2" defer></script>
-    <script src="hours-app.js?v=pdf-gen-3" defer></script>
+    <script src="hours-app.js?v=hours-cloud-1" defer></script>
     <script src="hours-archive.js?v=2" defer></script>
     <script src="translator.js?v=4" defer></script>
-    <script src="auth-app.js?v=13" defer></script>
-    <script src="app.js?v=profile-check-1" defer></script>
+    <script src="auth-app.js?v=profile-mobile-1" defer></script>
+    <script src="app.js?v=hours-cloud-1" defer></script>
   </body>
 </html>

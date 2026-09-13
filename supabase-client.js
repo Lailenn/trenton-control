@@ -1,6 +1,7 @@
 (function (root) {
   "use strict";
   let client = null;
+  let lastUser = null;
 
   function create() {
     const config = root.TrentonConfig?.get() || {};
@@ -23,14 +24,14 @@
       if (!client) create();
       return client;
     },
-    reset() { client = null; },
-    userId() { return this.sessionUser()?.id || ""; },
-    sessionUser() { return null; },
+    reset() { client = null; lastUser = null; },
+    userId() { return lastUser?.id || ""; },
+    sessionUser() { return lastUser; },
+    setSessionUser(user) { lastUser = user || null; },
     async session() {
       const { data, error } = await this.client.auth.getSession();
       if (error) throw error;
-      const user = data.session?.user || null;
-      this.sessionUser = () => user;
+      lastUser = data.session?.user || null;
       return data.session;
     }
   };

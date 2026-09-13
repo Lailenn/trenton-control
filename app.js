@@ -626,22 +626,24 @@
     try {
       await attachGeneratedPdf(record, data);
       offerGeneratedPdf(record.pdfBlob, record.pdfName);
-      $("#saveGeneratedInvoiceButton").textContent = "Descargando…";
-      try { await download(record.pdfBlob, record.pdfName, { share: true }); }
-      catch (downloadError) { console.warn(downloadError); }
       $("#saveGeneratedInvoiceButton").textContent = "Guardando en la nube…";
       try {
         await saveRecord(record);
         builderRecordId = record.id;
         replaceInMemory(record);
         render();
+        $("#saveGeneratedInvoiceButton").textContent = "Descargando…";
+        try { await download(record.pdfBlob, record.pdfName, { share: true }); }
+        catch (downloadError) { console.warn(downloadError); }
         if (!alsoDownload) navClick("archive");
         showToast(previous
-          ? "Invoice actualizada. El PDF quedó en la nube y se descargó."
-          : "Invoice guardada. El PDF quedó en la nube y se descargó.");
+          ? "Invoice actualizada. El PDF quedó en la nube, en este teléfono y se descargó."
+          : "Invoice guardada. El PDF quedó en la nube, en este teléfono y se descargó.");
       } catch (cloudError) {
         console.error(cloudError);
-        showToast("El PDF se generó. Si no se bajó, usa el enlace debajo del botón. Nube: " + (cloudError.message || "revisa la conexión."));
+        try { await download(record.pdfBlob, record.pdfName, { share: true }); }
+        catch (downloadError) { console.warn(downloadError); }
+        showToast("El PDF se generó y quedó en este teléfono, pero no en la nube: " + (cloudError.message || "revisa la conexión."));
       }
     } catch (error) {
       console.error(error);

@@ -43,6 +43,7 @@
   function paintAvatarSlots(url) {
     const pairs = [
       [$("#topbarAvatarImg"), $("#topbarAvatarInitials")],
+      [$("#topbarBrandAvatarImg"), $("#topbarBrandInitials")],
       [$("#profilePhotoImg"), $("#profilePhotoInitials")]
     ];
     pairs.forEach(([img, initialsEl]) => {
@@ -69,15 +70,20 @@
     if ($("#profileQuote")) $("#profileQuote").textContent = `“${phraseFor()}”`;
     if ($("#sidebarProfileName")) $("#sidebarProfileName").textContent = profile.displayName || "Lilian";
     if ($("#sidebarRole")) $("#sidebarRole").textContent = profile.jobTitle || "Secretaria";
+    if ($("#topbarProfileName")) $("#topbarProfileName").textContent = profile.displayName || "Lilian";
+    if ($("#topbarProfileRole")) $("#topbarProfileRole").textContent = profile.jobTitle || "Secretaria";
     if ($("#welcomeGreeting")) $("#welcomeGreeting").textContent = greeting();
-    const button = $("#profileAvatarButton");
-    if (button) button.title = profile.displayName || "Tu perfil";
+    ["#profileAvatarButton", "#topbarProfileButton"].forEach(selector => {
+      const button = $(selector);
+      if (button) button.title = profile.displayName || "Tu perfil";
+    });
     paintAvatarSlots(profile.avatarUrl);
   }
 
   function setProfileOpen(open) {
     $("#profileLayer")?.classList.toggle("hidden", !open);
     $("#profileAvatarButton")?.setAttribute("aria-expanded", String(open));
+    $("#topbarProfileButton")?.setAttribute("aria-expanded", String(open));
   }
 
   async function loadProfile() {
@@ -113,10 +119,12 @@
   }
 
   function bindProfile() {
-    $("#profileAvatarButton")?.addEventListener("click", () => {
+    const openProfile = () => {
       paintProfile();
       setProfileOpen(true);
-    });
+    };
+    $("#profileAvatarButton")?.addEventListener("click", openProfile);
+    $("#topbarProfileButton")?.addEventListener("click", openProfile);
     $("#profileScrim")?.addEventListener("click", () => setProfileOpen(false));
     $("#profilePhotoButton")?.addEventListener("click", () => $("#profilePhotoFile")?.click());
     $("#profilePhotoFile")?.addEventListener("change", async event => {
@@ -466,6 +474,7 @@
     watching = true;
     root.TrentonSupabase.client.auth.onAuthStateChange(async (_event, session) => {
       const user = session?.user || null;
+      root.TrentonSupabase?.setSessionUser?.(user);
       root.CloudDB.setUser(user);
       if (!user) {
         setProfileOpen(false);

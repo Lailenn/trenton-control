@@ -179,27 +179,39 @@
       if (!record.pdfBlob || record.pdfBlob.size < 80) throw new Error("El PDF salió vacío. Vuelve a intentar.");
       record.pdfHash = await HoursPDF.hash(record.pdfBlob);
       record.pdfName = fileName(record);
-      $("#hoursError").textContent = "Descargando…";
-      try { await download(record.pdfBlob, record.pdfName, { share: downloadAfter }); }
-      catch (downloadError) { console.warn(downloadError); }
       $("#hoursError").textContent = "Guardando en la nube…";
+      let cloudOk = false;
       try {
-        await root.CloudDB.saveHours(record); await load(); renderHistory();
+        await root.CloudDB.saveHours(record);
+        cloudOk = true;
+        await load(); renderHistory();
         window.TrentonControl?.hoursArchive?.render?.();
-        $("#hoursError").textContent = downloadAfter
-          ? "PDF guardado en la nube y descargado. También queda en Horas de trabajo / PDFs."
-          : "Reporte y PDF guardados en la nube. Si no se bajó al teléfono, ábrelo en Horas de trabajo / PDFs.";
-        if (root.TrentonControl?.toast) root.TrentonControl.toast("Reporte de horas guardado");
+        $("#hoursError").textContent = "Guardado en la nube. Descargando PDF…";
+        if (root.TrentonControl?.toast) root.TrentonControl.toast("Reporte de horas guardado en la nube");
       } catch (cloudError) {
         console.error(cloudError);
-        $("#hoursError").textContent = "El PDF se generó y se descargó, pero no se pudo guardar en la nube: " + (cloudError.message || "revisa la conexión.");
+        try { await load(); renderHistory(); } catch (_) { /* local copy may still show */ }
+        $("#hoursError").textContent = "El reporte quedó en este teléfono, pero no en la nube: " + (cloudError.message || "revisa la conexión") + ". Si hours_reports está vacía, corre supabase/schema-fix-hours-cloud.sql y vuelve a guardar. Descargando PDF…";
+        if (root.TrentonControl?.toast) root.TrentonControl.toast("PDF listo en el teléfono; la nube falló");
+      }
+      try { await download(record.pdfBlob, record.pdfName, { share: downloadAfter }); }
+      catch (downloadError) { console.warn(downloadError); }
+      if (cloudOk) {
+        $("#hoursError").textContent = downloadAfter
+          ? "PDF guardado en la nube, en este teléfono y descargado. También queda en Horas de trabajo / PDFs."
+          : "Reporte y PDF guardados en la nube y en este teléfono. Si no se bajó, ábrelo en Horas de trabajo / PDFs.";
       }
     } catch (error) { console.error(error); $("#hoursError").textContent = error.message || "No se pudo generar el PDF de horas."; }
     finally { saving = false; $("#saveHoursButton").disabled = false; $("#downloadHoursButton").disabled = false; }
   }
 
   function renderHistory() {
-    $("#hoursHistoryGrid").innerHTML = reports.length ? reports.map(record => `<article class="hours-history-card"><div><strong>${esc(record.jobAddress)}</strong><span>${esc(dateText(record.reportDate))}</span></div><b>${esc(formatHours(record.entries.reduce((sum, entry) => sum + Number(entry.hours || 0), 0)))} HRS · ${esc(money(record.entries.reduce((sum, entry) => sum + Number(entry.hours || 0) * Number(entry.rate || 0), 0)))}</b><button class="button button-ghost" type="button" data-hours-download="${esc(record.id)}">Descargar PDF</button></article>`).join("") : '<div class="hours-empty-history">Todavía no hay reportes guardados.</div>';
+    $("#hoursHistoryGrid").innerHTML = reports.length ? reports.map(record => {
+      const rows = record.entries || [];
+      const hours = rows.reduce((sum, entry) => sum + Number(entry.hours || 0), 0);
+      const pay = rows.reduce((sum, entry) => sum + Number(entry.hours || 0) * Number(entry.rate || 0), 0);
+      return `<article class="hours-history-card"><div><strong>${esc(record.jobAddress)}</strong><span>${esc(dateText(record.reportDate))}${record.cloudSynced === false ? " · solo en este teléfono" : ""}</span></div><b>${esc(formatHours(hours))} HRS · ${esc(money(pay))}</b><button class="button button-ghost" type="button" data-hours-download="${esc(record.id)}">Descargar PDF</button></article>`;
+    }).join("") : '<div class="hours-empty-history">Todavía no hay reportes guardados.</div>';
   }
 
   async function open() { try { await load(); renderHistory(); } catch (error) { $("#hoursError").textContent = error.message || "No se pudo abrir el almacenamiento de horas."; } renderPreview(); }

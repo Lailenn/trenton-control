@@ -1,6 +1,8 @@
 (function (root) {
   "use strict";
   let currentUser = null;
+  const HOURS_META = "trenton.hours.meta";
+  const INVOICE_META = "trenton.invoices.meta";
 
   function sb() { return root.TrentonSupabase.client; }
   function Core() { return root.InvoiceCore; }
@@ -9,10 +11,57 @@
     if (!id) throw new Error("No hay sesión. Vuelve a entrar.");
     return id;
   }
+  async function requireOwnerId() {
+    try {
+      const { data } = await sb().auth.getUser();
+      if (data?.user?.id) {
+        currentUser = data.user;
+        root.TrentonSupabase?.setSessionUser?.(data.user);
+        return data.user.id;
+      }
+    } catch (error) {
+      console.warn("No se pudo refrescar la sesión", error);
+    }
+    return ownerId();
+  }
+  function errorText(error) {
+    if (!error) return "";
+    return [error.message, error.details, error.hint, error.code].filter(Boolean).join(" — ");
+  }
+  function isMissingColumn(error) {
+    return /column|schema cache|PGRST204|does not exist|Could not find/i.test(errorText(error));
+  }
   function fail(error, fallback) {
     if (!error) return;
     if (error.code === "23505") throw new Error("Esta invoice ya está guardada. Edita el registro existente.");
-    throw new Error(error.message || fallback || "No se pudo completar la operación en la nube.");
+    const extra = errorText(error);
+    throw new Error(extra || fallback || "No se pudo completar la operación en la nube.");
+  }
+  function readJson(key) {
+    try { return JSON.parse(localStorage.getItem(key) || "[]"); }
+    catch { return []; }
+  }
+  function writeJson(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); }
+    catch (error) { console.warn("No se pudo guardar la copia local", error); }
+  }
+  function slimRecord(record) {
+    const copy = { ...record };
+    delete copy.pdfBlob;
+    delete copy.checkPhotos;
+    return copy;
+  }
+  function rememberHours(record) {
+    if (!record?.id) return;
+    const list = readJson(HOURS_META).filter(item => item.id !== record.id);
+    list.unshift(slimRecord(record));
+    writeJson(HOURS_META, list.slice(0, 300));
+  }
+  function rememberInvoice(record) {
+    if (!record?.id) return;
+    const list = readJson(INVOICE_META).filter(item => item.id !== record.id);
+    list.unshift(slimRecord(record));
+    writeJson(INVOICE_META, list.slice(0, 400));
   }
 
   async function upload(bucket, path, blob, type) {
@@ -62,12 +111,12 @@
     }
   }
 
-  function invoiceRow(record) {
+  function invoiceRow(record, uid) {
     const C = Core();
     const issued = C.issuedDate(record) || null;
     return {
       id: record.id,
-      owner_id: ownerId(),
+      owner_id: uid,
       address: record.address || "",
       address_norm: C.addressNorm(record.address || record.workAddress),
       invoice_number: record.invoiceNumber || "",
@@ -125,16 +174,39 @@
     );
   }
 
+  async function queryInvoices() {
+    let result = await sb().from("invoices").select("*").is("deleted_at", null).order("updated_at", { ascending: false });
+    if (result.error && isMissingColumn(result.error)) {
+      result = await sb().from("invoices").select("*").order("id", { ascending: false });
+    }
+    return result;
+  }
+
   async function listInvoices() {
-    const { data, error } = await sb().from("invoices").select("*").is("deleted_at", null).order("updated_at", { ascending: false });
-    fail(error, "No se pudieron leer las invoices.");
-    const { data: photos, error: photoError } = await sb().from("check_photos").select("*").order("captured_at", { ascending: false });
-    fail(photoError, "No se pudieron leer las fotos de cheque.");
-    const records = (data || []).map(row => invoiceFrom(row, photos || []));
-    await Promise.all(records.map(async record => {
-      record.pdfBlob = await root.LocalCache.get("invoice", record.id, record.pdfHash);
+    const { data, error } = await queryInvoices();
+    if (error) fail(error, "No se pudieron leer las invoices.");
+    let photos = [];
+    try {
+      const photoResult = await sb().from("check_photos").select("*").order("captured_at", { ascending: false });
+      if (photoResult.error) console.warn(photoResult.error);
+      else photos = photoResult.data || [];
+    } catch (photoError) {
+      console.warn("No se pudieron leer las fotos de cheque.", photoError);
+    }
+    const cloud = (data || []).map(row => invoiceFrom(row, photos));
+    const seen = new Set(cloud.map(item => item.id));
+    const local = readJson(INVOICE_META).filter(item => item.id && !seen.has(item.id)).map(item => ({
+      ...item,
+      pdfBlob: null,
+      cloud: false,
+      checkPhotos: item.checkPhotos || []
     }));
-    return records;
+    const merged = cloud.concat(local);
+    await Promise.all(merged.map(async record => {
+      record.pdfBlob = record.pdfBlob || await root.LocalCache.get("invoice", record.id, record.pdfHash);
+    }));
+    syncPendingInvoices().catch(error => console.warn("No se pudieron subir invoices pendientes.", error));
+    return merged;
   }
 
   async function ensureInvoicePdf(record) {
@@ -150,18 +222,56 @@
 
   async function saveInvoice(record, existing = []) {
     const C = Core();
+    const uid = await requireOwnerId();
     const duplicate = duplicateOf(record, existing.filter(item => item.id !== record.id && !item.deletedAt));
     if (duplicate) throw new Error("Esta invoice ya está guardada: " + duplicate.invoiceNumber + ", " + duplicate.address + ". Edita el registro existente.");
-    if (record.pdfBlob) record.pdfPath = record.pdfPath || `${ownerId()}/${record.id}.pdf`;
+    if (record.pdfBlob) record.pdfPath = record.pdfPath || `${uid}/${record.id}.pdf`;
     record.pdfName = record.pdfName || C.fileName(record);
     if (record.pdfBlob) await cacheBlob("invoice", record.id, record.pdfHash, record.pdfBlob);
-    const { error } = await sb().from("invoices").upsert(invoiceRow(record));
-    fail(error, "No se pudo guardar la invoice.");
+    rememberInvoice({ ...record, cloudSynced: false });
+    const row = invoiceRow(record, uid);
+    let result = await sb().from("invoices").upsert(row).select("id").maybeSingle();
+    if (result.error && isMissingColumn(result.error)) {
+      result = await sb().from("invoices").upsert({
+        id: row.id,
+        owner_id: uid,
+        address: row.address,
+        invoice_number: row.invoice_number,
+        issued_date: row.issued_date,
+        amount_cents: row.amount_cents,
+        hours: row.hours,
+        stage: row.stage,
+        description: row.description
+      }).select("id").maybeSingle();
+    }
+    fail(result.error, "No se pudo guardar la invoice.");
+    if (!result.data?.id) throw new Error("Supabase no confirmó la invoice. Corre supabase/schema-fix-hours-cloud.sql y vuelve a guardar.");
+    record.cloudSynced = true;
+    rememberInvoice(record);
     if (record.pdfBlob) {
       try { await upload("invoice-pdfs", record.pdfPath, record.pdfBlob, "application/pdf"); }
       catch (error) { console.warn("Invoice guardada; el PDF quedó en este aparato.", error); }
     }
     return record;
+  }
+
+  let syncingInvoices = false;
+  async function syncPendingInvoices() {
+    if (syncingInvoices) return;
+    syncingInvoices = true;
+    try {
+      const pending = readJson(INVOICE_META).filter(item => item.id && item.cloudSynced === false);
+      for (const item of pending) {
+        try {
+          item.pdfBlob = item.pdfBlob || await root.LocalCache.get("invoice", item.id, item.pdfHash);
+          await saveInvoice(item, []);
+        } catch (error) {
+          console.warn("Invoice pendiente no subió a la nube", item.id, error);
+        }
+      }
+    } finally {
+      syncingInvoices = false;
+    }
   }
 
   async function saveMany(incoming, existing = []) {
@@ -220,16 +330,35 @@
     };
   }
 
+  async function queryHoursReports() {
+    let result = await sb().from("hours_reports").select("*").is("deleted_at", null).order("updated_at", { ascending: false });
+    if (result.error && isMissingColumn(result.error)) {
+      result = await sb().from("hours_reports").select("*").order("report_date", { ascending: false });
+    }
+    return result;
+  }
+
   async function listHours() {
-    const { data: reports, error } = await sb().from("hours_reports").select("*").is("deleted_at", null).order("updated_at", { ascending: false });
-    fail(error, "No se pudieron leer los reportes de horas.");
-    const { data: entries, error: entryError } = await sb().from("hours_entries").select("*");
-    fail(entryError, "No se pudieron leer las jornadas.");
-    const records = (reports || []).map(report => hoursFrom(report, entries || []));
-    await Promise.all(records.map(async record => {
-      record.pdfBlob = await root.LocalCache.get("hours", record.id, record.pdfHash);
+    let cloud = [];
+    try {
+      const { data: reports, error } = await queryHoursReports();
+      if (error) fail(error, "No se pudieron leer los reportes de horas.");
+      let entries = [];
+      const entryResult = await sb().from("hours_entries").select("*");
+      if (entryResult.error) console.warn(entryResult.error);
+      else entries = entryResult.data || [];
+      cloud = (reports || []).map(report => ({ ...hoursFrom(report, entries), cloudSynced: true }));
+    } catch (error) {
+      console.warn("Nube de horas no disponible; se usan los reportes de este aparato.", error);
+    }
+    const seen = new Set(cloud.map(item => item.id));
+    const local = readJson(HOURS_META).filter(item => item.id && !seen.has(item.id));
+    const merged = cloud.concat(local);
+    await Promise.all(merged.map(async record => {
+      record.pdfBlob = record.pdfBlob || await root.LocalCache.get("hours", record.id, record.pdfHash);
     }));
-    return records;
+    syncPendingHours().catch(error => console.warn("No se pudieron subir reportes pendientes.", error));
+    return merged;
   }
 
   async function ensureHoursPdf(record) {
@@ -243,34 +372,29 @@
     return record.pdfBlob;
   }
 
-  async function saveHours(record) {
-    if (record.pdfBlob) record.pdfPath = record.pdfPath || `${ownerId()}/${record.id}.pdf`;
-    if (record.pdfBlob) await cacheBlob("hours", record.id, record.pdfHash, record.pdfBlob);
-    const report = {
-      id: record.id,
-      owner_id: ownerId(),
-      job_address: record.jobAddress,
-      report_date: record.reportDate,
-      description: record.description || "",
-      default_rate: Number(record.defaultRate) || 0,
-      pdf_hash: record.pdfHash || null,
-      pdf_path: record.pdfPath || null,
-      pdf_name: record.pdfName || "",
-      deleted_at: null,
-      updated_at: record.updatedAt || new Date().toISOString()
-    };
-    const { error } = await sb().from("hours_reports").upsert(report);
-    fail(error, "No se pudo guardar el reporte de horas.");
-    if (record.pdfBlob && record.pdfPath) {
-      try { await upload("hours-pdfs", record.pdfPath, record.pdfBlob, "application/pdf"); }
-      catch (error) { console.warn("Reporte guardado; el PDF quedó en este aparato.", error); }
+  async function upsertHoursReport(report) {
+    let result = await sb().from("hours_reports").upsert(report).select("id").maybeSingle();
+    if (result.error && isMissingColumn(result.error)) {
+      result = await sb().from("hours_reports").upsert({
+        id: report.id,
+        owner_id: report.owner_id,
+        job_address: report.job_address,
+        report_date: report.report_date,
+        description: report.description
+      }).select("id").maybeSingle();
     }
+    fail(result.error, "No se pudo guardar el reporte de horas.");
+    if (!result.data?.id) throw new Error("Supabase no confirmó el reporte. Corre supabase/schema-fix-hours-cloud.sql y vuelve a guardar.");
+    return result.data;
+  }
+
+  async function replaceHoursEntries(record, uid) {
     const { error: clearError } = await sb().from("hours_entries").delete().eq("report_id", record.id);
-    fail(clearError, "No se pudieron actualizar las jornadas.");
+    if (clearError && !isMissingColumn(clearError)) fail(clearError, "No se pudieron actualizar las jornadas.");
     const rows = (record.entries || []).map((entry, index) => ({
       id: entry.id || `${record.id}-${index + 1}`,
       report_id: record.id,
-      owner_id: ownerId(),
+      owner_id: uid,
       work_date: entry.date || record.reportDate,
       employee: entry.employee,
       time_in: entry.timeIn || "",
@@ -281,23 +405,73 @@
       hours: Number(entry.hours) || 0,
       sort_order: index
     }));
-    if (rows.length) {
-      const { error: insertError } = await sb().from("hours_entries").insert(rows);
-      fail(insertError, "No se pudieron guardar las jornadas.");
+    if (!rows.length) return;
+    let result = await sb().from("hours_entries").insert(rows);
+    if (result.error && isMissingColumn(result.error)) {
+      result = await sb().from("hours_entries").insert(rows.map(({ hours_override, ...rest }) => rest));
+    }
+    fail(result.error, "No se pudieron guardar las jornadas.");
+  }
+
+  async function saveHours(record) {
+    const uid = await requireOwnerId();
+    record.updatedAt = record.updatedAt || new Date().toISOString();
+    if (record.pdfBlob) record.pdfPath = record.pdfPath || `${uid}/${record.id}.pdf`;
+    if (record.pdfBlob) await cacheBlob("hours", record.id, record.pdfHash, record.pdfBlob);
+    rememberHours({ ...record, cloudSynced: false });
+    await upsertHoursReport({
+      id: record.id,
+      owner_id: uid,
+      job_address: record.jobAddress,
+      report_date: record.reportDate,
+      description: record.description || "",
+      default_rate: Number(record.defaultRate) || 0,
+      pdf_hash: record.pdfHash || null,
+      pdf_path: record.pdfPath || null,
+      pdf_name: record.pdfName || "",
+      deleted_at: null,
+      updated_at: record.updatedAt
+    });
+    await replaceHoursEntries(record, uid);
+    record.cloudSynced = true;
+    rememberHours(record);
+    if (record.pdfBlob && record.pdfPath) {
+      try { await upload("hours-pdfs", record.pdfPath, record.pdfBlob, "application/pdf"); }
+      catch (error) { console.warn("Reporte guardado; el PDF quedó en este aparato.", error); }
     }
     return record;
+  }
+
+  let syncingHours = false;
+  async function syncPendingHours() {
+    if (syncingHours) return;
+    syncingHours = true;
+    try {
+      const pending = readJson(HOURS_META).filter(item => item.id && item.cloudSynced === false);
+      for (const item of pending) {
+        try {
+          item.pdfBlob = item.pdfBlob || await root.LocalCache.get("hours", item.id, item.pdfHash);
+          await saveHours(item);
+        } catch (error) {
+          console.warn("Reporte pendiente no subió a la nube", item.id, error);
+        }
+      }
+    } finally {
+      syncingHours = false;
+    }
   }
 
   async function addCheckPhoto(invoiceId, file, note = "") {
     if (!file) throw new Error("Selecciona una foto del cheque.");
     if (!/^image\/(jpeg|png|webp)$/i.test(file.type)) throw new Error("Usa una foto JPG, PNG o WebP.");
     if (file.size > 8 * 1024 * 1024) throw new Error("La foto del cheque supera 8 MB.");
+    const uid = await requireOwnerId();
     const id = `check-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const ext = file.type.includes("png") ? "png" : file.type.includes("webp") ? "webp" : "jpg";
-    const path = `${ownerId()}/${invoiceId}/${id}.${ext}`;
+    const path = `${uid}/${invoiceId}/${id}.${ext}`;
     await upload("check-photos", path, file, file.type);
     await root.LocalCache.put("check", id, "", file);
-    const row = { id, invoice_id: invoiceId, owner_id: ownerId(), storage_path: path, file_name: file.name || `${id}.${ext}`, note: String(note || "").slice(0, 500), captured_at: new Date().toISOString() };
+    const row = { id, invoice_id: invoiceId, owner_id: uid, storage_path: path, file_name: file.name || `${id}.${ext}`, note: String(note || "").slice(0, 500), captured_at: new Date().toISOString() };
     const { error } = await sb().from("check_photos").insert(row);
     fail(error, "No se pudo guardar la foto del cheque.");
     return { ...row, blob: file };
@@ -385,7 +559,10 @@
   }
 
   root.CloudDB = {
-    setUser(user) { currentUser = user; },
+    setUser(user) {
+      currentUser = user;
+      root.TrentonSupabase?.setSessionUser?.(user);
+    },
     listInvoices,
     saveInvoice,
     saveMany,
@@ -395,6 +572,7 @@
     listHours,
     saveHours,
     ensureHoursPdf,
+    syncPendingHours,
     addCheckPhoto,
     ensureCheckPhoto,
     removeCheckPhoto,
