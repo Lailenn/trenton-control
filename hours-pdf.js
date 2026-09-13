@@ -93,7 +93,6 @@
     const totalPay = summary.reduce((sum, row) => sum + row.pay, 0);
     const pageW = 612, pageH = 792, left = 42, width = 528;
     const ink = rgb(28 / 255, 25 / 255, 23 / 255);
-    const teal = rgb(15 / 255, 118 / 255, 110 / 255);
     const copper = rgb(212 / 255, 101 / 255, 47 / 255);
     const peach = rgb(253 / 255, 233 / 255, 217 / 255);
     const lineColor = rgb(176 / 255, 137 / 255, 104 / 255);
@@ -152,7 +151,7 @@
     };
     const header = () => {
       newPage();
-      page.drawRectangle({x: 0, y: pageH - 8, width: pageW, height: 8, color: teal});
+      page.drawRectangle({x: 0, y: pageH - 8, width: pageW, height: 8, color: rgb(0, 0, 0)});
       page.drawRectangle({x: 0, y: 0, width: pageW, height: 6, color: copper});
       if (logo && logo.width > 1 && logo.height > 1) {
         const factor = Math.min(220 / logo.width, 70 / logo.height);

@@ -53,7 +53,6 @@
     const dateLabel = date ? date.slice(5, 7) + "/" + date.slice(8, 10) + "/" + date.slice(0, 4) : "";
     const logo = await embedLogo(doc, logoBytes);
     const s = .75, height = 1056, left = 56, right = 803, width = right - left;
-    const teal = rgb(15 / 255, 118 / 255, 110 / 255);
     const copper = rgb(212 / 255, 101 / 255, 47 / 255);
     const peach = rgb(253 / 255, 233 / 255, 217 / 255);
     const ink = rgb(28 / 255, 25 / 255, 23 / 255);
@@ -109,7 +108,7 @@
     function header(parties = true) {
       if (++pageCount > 8) throw new Error("El PDF se volvió demasiado largo. Acorta la descripción o la nota.");
       page = doc.addPage([612, 792]);
-      page.drawRectangle({x: 0, y: 784, width: 612, height: 8, color: teal});
+      page.drawRectangle({x: 0, y: 784, width: 612, height: 8, color: rgb(0, 0, 0)});
       page.drawRectangle({x: 0, y: 0, width: 612, height: 6, color: copper});
       let brandBottom = 56;
       if (logo && Number(logo.width) > 1 && Number(logo.height) > 1) {
