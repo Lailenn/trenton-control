@@ -10,6 +10,7 @@ create table if not exists public.profiles (
   display_name text not null default 'Lilian',
   job_title text not null default 'Secretaria',
   avatar_path text,
+  email text not null default '',
   created_at timestamptz not null default now()
 );
 
@@ -128,9 +129,14 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, display_name)
-  values (new.id, coalesce(new.raw_user_meta_data->>'display_name', 'Lilian'))
-  on conflict (id) do nothing;
+  insert into public.profiles (id, display_name, email)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'display_name', 'Lilian'),
+    coalesce(new.email, '')
+  )
+  on conflict (id) do update
+    set email = coalesce(nullif(excluded.email, ''), public.profiles.email);
   return new;
 end;
 $$;

@@ -116,7 +116,8 @@
     $("#statWorking").textContent = records.filter((record) => record.stage === "working").length;
     $("#statWaiting").textContent = records.filter((record) => record.stage === "waiting").length;
     $("#statPaid").textContent = money(Core.summarize(paid).total);
-    $("#navTotal").textContent = records.length;
+    const total = $("#navTotal");
+    if (total) total.textContent = records.length;
   }
 
   function pdfUrl(record) {

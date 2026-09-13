@@ -11,18 +11,37 @@
     if (!id) throw new Error("No hay sesión. Vuelve a entrar.");
     return id;
   }
-  async function requireOwnerId() {
+  async function requireUser() {
     try {
       const { data } = await sb().auth.getUser();
       if (data?.user?.id) {
         currentUser = data.user;
         root.TrentonSupabase?.setSessionUser?.(data.user);
-        return data.user.id;
+        return data.user;
       }
     } catch (error) {
       console.warn("No se pudo refrescar la sesión", error);
     }
-    return ownerId();
+    const user = currentUser || root.TrentonSupabase?.sessionUser?.();
+    if (!user?.id) throw new Error("No hay sesión. Vuelve a entrar.");
+    return user;
+  }
+  async function requireOwnerId() {
+    return (await requireUser()).id;
+  }
+  function emailFromUser(user) {
+    if (!user) return "";
+    const identityEmail = (user.identities || [])
+      .map(item => item?.identity_data?.email || item?.identity_data?.email_address)
+      .find(Boolean);
+    return String(
+      user.email
+      || user.new_email
+      || user.user_metadata?.email
+      || user.user_metadata?.email_address
+      || identityEmail
+      || ""
+    ).trim();
   }
   function errorText(error) {
     if (!error) return "";
@@ -493,64 +512,152 @@
 
   function profileFrom(row, user) {
     return {
-      id: row?.id || user?.id || ownerId(),
-      displayName: row?.display_name || "Lilian",
+      id: row?.id || user?.id || currentUser?.id || "",
+      displayName: row?.display_name || user?.user_metadata?.display_name || user?.user_metadata?.full_name || "Lilian",
       jobTitle: row?.job_title || "Secretaria",
       avatarPath: row?.avatar_path || null,
       createdAt: row?.created_at || user?.created_at || new Date().toISOString(),
-      email: user?.email || currentUser?.email || ""
+      email: row?.email || emailFromUser(user) || emailFromUser(currentUser)
     };
   }
 
-  async function getProfile() {
-    const id = ownerId();
-    const { data, error } = await sb().from("profiles").select("*").eq("id", id).maybeSingle();
-    if (error) fail(error, "No se pudo leer el perfil.");
-    if (!data) {
-      const seed = { id, display_name: "Lilian" };
-      const { error: insertError } = await sb().from("profiles").insert(seed);
-      if (insertError && insertError.code !== "23505") fail(insertError, "No se pudo crear el perfil. Corre el SQL de supabase/schema-update-profile.sql");
+  async function rasterToJpeg(file) {
+    const url = URL.createObjectURL(file);
+    try {
+      const source = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error("bad-image"));
+        img.src = url;
+      });
+      const width = source.naturalWidth || source.width || 0;
+      const height = source.naturalHeight || source.height || 0;
+      if (!width || !height) throw new Error("bad-image");
+      const max = 960;
+      const scale = Math.min(1, max / Math.max(width, height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(width * scale));
+      canvas.height = Math.max(1, Math.round(height * scale));
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.88));
+      if (!blob) throw new Error("bad-image");
+      return new File([blob], "avatar.jpg", { type: "image/jpeg" });
+    } finally {
+      URL.revokeObjectURL(url);
     }
-    const { data: row } = await sb().from("profiles").select("*").eq("id", id).maybeSingle();
-    return profileFrom(row, currentUser);
+  }
+
+  async function prepareAvatarFile(file) {
+    if (!file) throw new Error("Selecciona una foto de perfil.");
+    const type = String(file.type || "").toLowerCase();
+    const name = String(file.name || "avatar").toLowerCase();
+    const looksImage = /^image\//.test(type)
+      || type === "application/octet-stream"
+      || !type
+      || /\.(jpe?g|png|webp|heic|heif|gif|bmp)$/.test(name);
+    if (!looksImage) throw new Error("Usa una foto de la cámara o de la galería.");
+    if (file.size > 12 * 1024 * 1024) throw new Error("La foto pesa demasiado. Elige otra más liviana.");
+    if (/image\/(jpeg|jpg|png|webp)/.test(type) && file.size <= 1.8 * 1024 * 1024) {
+      return { blob: file, type, name: file.name || `avatar.${type.includes("png") ? "png" : type.includes("webp") ? "webp" : "jpg"}` };
+    }
+    try {
+      const converted = await rasterToJpeg(file);
+      return { blob: converted, type: "image/jpeg", name: "avatar.jpg" };
+    } catch (error) {
+      if (/image\/(jpeg|jpg|png|webp)/.test(type)) {
+        return { blob: file, type, name: file.name || "avatar.jpg" };
+      }
+      throw new Error("No se pudo leer esa foto. En el iPhone elige “Opciones” → “Más compatible”, o toma una con la cámara.");
+    }
+  }
+
+  async function getProfile() {
+    const user = await requireUser();
+    const id = user.id;
+    const email = emailFromUser(user);
+    let row = null;
+    let result = await sb().from("profiles").select("*").eq("id", id).maybeSingle();
+    if (result.error && isMissingColumn(result.error)) {
+      result = await sb().from("profiles").select("id, display_name, created_at").eq("id", id).maybeSingle();
+    }
+    if (result.error) fail(result.error, "No se pudo leer el perfil.");
+    row = result.data;
+    if (!row) {
+      const seed = { id, display_name: user.user_metadata?.display_name || "Lilian", email };
+      let insert = await sb().from("profiles").insert(seed);
+      if (insert.error && isMissingColumn(insert.error)) {
+        insert = await sb().from("profiles").insert({ id, display_name: seed.display_name });
+      }
+      if (insert.error && insert.error.code !== "23505") fail(insert.error, "No se pudo crear el perfil. Corre supabase/schema-update-profile.sql");
+      const again = await sb().from("profiles").select("*").eq("id", id).maybeSingle();
+      row = again.data;
+    } else if (email && !row.email) {
+      const patched = await sb().from("profiles").update({ email }).eq("id", id);
+      if (!patched.error) row = { ...row, email };
+    }
+    return profileFrom(row, user);
   }
 
   async function saveProfile(profile) {
-    const id = ownerId();
+    const user = await requireUser();
+    const id = user.id;
     const name = String(profile.displayName || "").trim() || "Lilian";
     const job = String(profile.jobTitle || "").trim() || "Secretaria";
-    const row = { id, display_name: name, job_title: job };
+    const email = emailFromUser(user) || String(profile.email || "").trim();
+    const row = { id, display_name: name, job_title: job, email };
     if (profile.avatarPath !== undefined) row.avatar_path = profile.avatarPath;
-    let { error } = await sb().from("profiles").upsert(row);
-    if (error && /job_title|avatar_path/i.test(`${error.message || ""} ${error.details || ""}`)) {
-      const fallback = await sb().from("profiles").upsert({ id, display_name: name });
-      if (fallback.error) fail(fallback.error, "No se pudo guardar el perfil.");
-      throw new Error("Falta actualizar Supabase para foto y cargo. En SQL Editor pega supabase/schema-update-profile.sql y vuelve a guardar.");
+    let result = await sb().from("profiles").upsert(row).select("id").maybeSingle();
+    if (result.error && isMissingColumn(result.error)) {
+      const fallback = { id, display_name: name };
+      if (email) fallback.email = email;
+      if (profile.avatarPath !== undefined) fallback.avatar_path = profile.avatarPath;
+      result = await sb().from("profiles").upsert(fallback).select("id").maybeSingle();
+      if (result.error && isMissingColumn(result.error)) {
+        result = await sb().from("profiles").upsert({ id, display_name: name }).select("id").maybeSingle();
+        if (!result.error) {
+          fail(result.error);
+          throw new Error("Falta actualizar Supabase para foto, correo y cargo. En SQL Editor pega supabase/schema-update-profile.sql y vuelve a guardar.");
+        }
+      }
     }
-    fail(error, "No se pudo guardar el perfil.");
+    fail(result.error, "No se pudo guardar el perfil.");
     return getProfile();
   }
 
   async function saveAvatar(file) {
-    if (!file) throw new Error("Selecciona una foto de perfil.");
-    if (!/^image\/(jpeg|png|webp)$/i.test(file.type)) throw new Error("Usa una foto JPG, PNG o WebP.");
-    if (file.size > 6 * 1024 * 1024) throw new Error("La foto de perfil supera 6 MB.");
-    const ext = file.type.includes("png") ? "png" : file.type.includes("webp") ? "webp" : "jpg";
-    const path = `${ownerId()}/avatar.${ext}`;
-    await upload("avatars", path, file, file.type);
-    await root.LocalCache.put("avatar", ownerId(), "", file);
+    const user = await requireUser();
+    const prepared = await prepareAvatarFile(file);
+    const path = `${user.id}/avatar.jpg`;
+    try {
+      await upload("avatars", path, prepared.blob, prepared.type);
+    } catch (error) {
+      const text = String(error.message || "");
+      if (/bucket|not found|row-level security|unauthorized|malformed/i.test(text)) {
+        throw new Error("No se pudo subir la foto. Corre supabase/schema-update-profile.sql en SQL Editor y vuelve a intentar.");
+      }
+      throw error;
+    }
+    await root.LocalCache.put("avatar", user.id, "", prepared.blob);
     const current = await getProfile();
-    await saveProfile({ ...current, avatarPath: path });
-    return { path, blob: file };
+    try {
+      await saveProfile({ ...current, avatarPath: path });
+    } catch (error) {
+      console.warn("Foto subida; no se pudo anotar la ruta en profiles", error);
+    }
+    return { path, blob: prepared.blob };
   }
 
   async function ensureAvatar(profile) {
-    if (!profile?.avatarPath) return null;
-    const cached = await root.LocalCache.get("avatar", ownerId());
+    const id = currentUser?.id || root.TrentonSupabase.userId();
+    const cached = id ? await root.LocalCache.get("avatar", id) : null;
     if (cached) return cached;
+    if (!profile?.avatarPath) return null;
     try {
       const blob = await download("avatars", profile.avatarPath);
-      if (blob) await root.LocalCache.put("avatar", ownerId(), "", blob);
+      if (blob && id) await root.LocalCache.put("avatar", id, "", blob);
       return blob;
     } catch (error) {
       console.warn("No se pudo descargar la foto de perfil", error);

@@ -44,6 +44,7 @@
     const pairs = [
       [$("#topbarAvatarImg"), $("#topbarAvatarInitials")],
       [$("#topbarBrandAvatarImg"), $("#topbarBrandInitials")],
+      [$("#sidebarAvatarImg"), $("#sidebarAvatarInitials")],
       [$("#profilePhotoImg"), $("#profilePhotoInitials")]
     ];
     pairs.forEach(([img, initialsEl]) => {
@@ -63,8 +64,8 @@
     if ($("#profileDisplayName")) $("#profileDisplayName").textContent = profile.displayName || "Lilian";
     if ($("#profileNameInput")) $("#profileNameInput").value = profile.displayName || "Lilian";
     if ($("#profileRoleInput")) $("#profileRoleInput").value = profile.jobTitle || "Secretaria";
-    if ($("#profileEmail")) $("#profileEmail").textContent = profile.email || "—";
-    if ($("#profileEmailLine")) $("#profileEmailLine").textContent = profile.email || "";
+    if ($("#profileEmail")) $("#profileEmail").textContent = profile.email || sessionEmail() || "—";
+    if ($("#profileEmailLine")) $("#profileEmailLine").textContent = profile.email || sessionEmail() || "";
     if ($("#profileSince")) $("#profileSince").textContent = year;
     if ($("#profileHello")) $("#profileHello").textContent = helloLine().replace(",", "");
     if ($("#profileQuote")) $("#profileQuote").textContent = `“${phraseFor()}”`;
@@ -73,7 +74,7 @@
     if ($("#topbarProfileName")) $("#topbarProfileName").textContent = profile.displayName || "Lilian";
     if ($("#topbarProfileRole")) $("#topbarProfileRole").textContent = profile.jobTitle || "Secretaria";
     if ($("#welcomeGreeting")) $("#welcomeGreeting").textContent = greeting();
-    ["#profileAvatarButton", "#topbarProfileButton"].forEach(selector => {
+    ["#profileAvatarButton", "#topbarProfileButton", "#sidebarProfileButton"].forEach(selector => {
       const button = $(selector);
       if (button) button.title = profile.displayName || "Tu perfil";
     });
@@ -84,6 +85,32 @@
     $("#profileLayer")?.classList.toggle("hidden", !open);
     $("#profileAvatarButton")?.setAttribute("aria-expanded", String(open));
     $("#topbarProfileButton")?.setAttribute("aria-expanded", String(open));
+    $("#sidebarProfileButton")?.setAttribute("aria-expanded", String(open));
+  }
+
+  function sessionEmail() {
+    const user = root.TrentonSupabase?.sessionUser?.();
+    const identityEmail = (user?.identities || [])
+      .map(item => item?.identity_data?.email || item?.identity_data?.email_address)
+      .find(Boolean);
+    return String(
+      user?.email
+      || user?.new_email
+      || user?.user_metadata?.email
+      || user?.user_metadata?.email_address
+      || identityEmail
+      || localStorage.getItem("trenton.remember-email")
+      || ""
+    ).trim();
+  }
+
+  function setProfileStatus(message, isError = false) {
+    const status = $("#profileError");
+    if (status) {
+      status.textContent = message || "";
+      status.classList.toggle("is-ok", Boolean(message) && !isError);
+    }
+    if (message && (isError || ! /[.…]$/.test(message))) toast(message);
   }
 
   async function loadProfile() {
@@ -93,9 +120,18 @@
       const blob = await root.CloudDB.ensureAvatar(next);
       if (avatarObjectUrl) URL.revokeObjectURL(avatarObjectUrl);
       avatarObjectUrl = blob ? URL.createObjectURL(blob) : null;
-      profile = { ...next, avatarUrl: avatarObjectUrl };
+      profile = { ...next, email: next.email || sessionEmail(), avatarUrl: avatarObjectUrl };
     } catch (error) {
       console.warn("No se pudo leer el perfil", error);
+      profile = { ...profile, email: profile.email || sessionEmail() };
+      try {
+        const blob = await root.CloudDB.ensureAvatar(profile);
+        if (blob) {
+          if (avatarObjectUrl) URL.revokeObjectURL(avatarObjectUrl);
+          avatarObjectUrl = URL.createObjectURL(blob);
+          profile.avatarUrl = avatarObjectUrl;
+        }
+      } catch (_) { /* keep initials */ }
     }
     paintProfile();
   }
@@ -103,42 +139,47 @@
   async function saveProfileNow() {
     const displayName = $("#profileNameInput")?.value.trim() || "Lilian";
     const jobTitle = $("#profileRoleInput")?.value.trim() || "Secretaria";
-    const saved = await root.CloudDB.saveProfile({ ...profile, displayName, jobTitle, avatarPath: profile.avatarPath });
-    profile = { ...profile, ...saved, displayName: saved.displayName, jobTitle: saved.jobTitle };
+    setProfileStatus("Guardando perfil…");
+    const saved = await root.CloudDB.saveProfile({ ...profile, displayName, jobTitle, avatarPath: profile.avatarPath, email: profile.email || sessionEmail() });
+    profile = { ...profile, ...saved, displayName: saved.displayName, jobTitle: saved.jobTitle, email: saved.email || sessionEmail() };
     paintProfile();
-    toast("Perfil guardado en la nube.");
+    setProfileStatus("Perfil guardado en la nube.");
   }
 
   async function saveAvatarNow(file) {
+    setProfileStatus("Subiendo foto…");
     const result = await root.CloudDB.saveAvatar(file);
     if (avatarObjectUrl) URL.revokeObjectURL(avatarObjectUrl);
     avatarObjectUrl = URL.createObjectURL(result.blob);
-    profile = { ...profile, avatarPath: result.path, avatarUrl: avatarObjectUrl };
+    profile = { ...profile, avatarPath: result.path, avatarUrl: avatarObjectUrl, email: profile.email || sessionEmail() };
     paintProfile();
-    toast("Foto de perfil guardada en la nube.");
+    setProfileStatus("Foto de perfil guardada en la nube.");
   }
 
   function bindProfile() {
-    const openProfile = () => {
+    const openProfile = async () => {
+      setProfileStatus("");
       paintProfile();
       setProfileOpen(true);
+      try { await loadProfile(); }
+      catch (error) { setProfileStatus(error.message || "No se pudo leer el perfil.", true); }
     };
     $("#profileAvatarButton")?.addEventListener("click", openProfile);
     $("#topbarProfileButton")?.addEventListener("click", openProfile);
+    $("#sidebarProfileButton")?.addEventListener("click", openProfile);
     $("#profileScrim")?.addEventListener("click", () => setProfileOpen(false));
-    $("#profilePhotoButton")?.addEventListener("click", () => $("#profilePhotoFile")?.click());
     $("#profilePhotoFile")?.addEventListener("change", async event => {
       const file = event.target.files?.[0];
       event.target.value = "";
       if (!file) return;
       try { await saveAvatarNow(file); }
-      catch (error) { toast(error.message || "No se pudo guardar la foto. Si es la primera vez, corre el SQL de perfiles en Supabase."); }
+      catch (error) { setProfileStatus(error.message || "No se pudo guardar la foto. Corre supabase/schema-update-profile.sql en Supabase.", true); }
     });
     $("#saveProfileButton")?.addEventListener("click", async () => {
       const button = $("#saveProfileButton");
       button.disabled = true;
       try { await saveProfileNow(); }
-      catch (error) { toast(error.message || "No se pudo guardar el perfil."); }
+      catch (error) { setProfileStatus(error.message || "No se pudo guardar el perfil.", true); }
       finally { button.disabled = false; }
     });
     document.addEventListener("keydown", event => {
@@ -485,6 +526,15 @@
       }
       showApp(true);
       paintLoginHello();
+      try {
+        const { data } = await root.TrentonSupabase.client.auth.getUser();
+        if (data?.user) {
+          root.TrentonSupabase.setSessionUser(data.user);
+          root.CloudDB.setUser(data.user);
+        }
+      } catch (_) { /* session.user still used */ }
+      profile = { ...profile, email: sessionEmail() || profile.email };
+      paintProfile();
       await loadProfile();
       if ($("#welcomeGreeting")) $("#welcomeGreeting").textContent = greeting();
       setQuote($("#heroQuote"), PHRASES[quoteIndex % PHRASES.length]);

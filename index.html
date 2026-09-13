@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet" />
     <link rel="icon" href="favicon.ico" sizes="any" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=profile-mobile-1" />
+    <link rel="stylesheet" href="styles.css?v=sidebar-nav-1" />
   </head>
   <body>
     <div id="authGate" class="auth-gate auth-play login-screen" data-mode="login">
@@ -87,32 +87,57 @@
     <div class="app-shell app-locked" id="appShell" hidden>
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-head">
-          <div class="brand-block">
-            <div class="brand-mark"><span>RP</span></div>
-            <div><strong>Ruben Perla</strong><small>2026 · Trenton Builders LLC</small></div>
-          </div>
-          <button class="sidebar-close" id="sidebarClose" type="button" aria-label="Cerrar menú">
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4 17.6 5 12 10.6z"/></svg>
+          <button class="sidebar-profile" id="sidebarProfileButton" type="button" title="Tu perfil">
+            <span class="sidebar-avatar">
+              <img id="sidebarAvatarImg" alt="" hidden>
+              <span id="sidebarAvatarInitials">LP</span>
+            </span>
+            <span class="sidebar-profile-copy">
+              <strong id="sidebarProfileName">Lilian</strong>
+              <small id="sidebarRole">Secretaria</small>
+            </span>
           </button>
-          <button class="button button-ghost logout-button js-logout" type="button">Salir</button>
+          <button class="sidebar-close" id="sidebarClose" type="button" aria-label="Cerrar menú">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4 17.6 5 12 10.6z"/></svg>
+          </button>
         </div>
         <div class="sidebar-scroll">
-          <div class="workspace-chip"><span class="workspace-dot"></span><span>Trenton Builders LLC</span><span class="workspace-chevron">⌄</span></div>
-          <p class="nav-label">Espacio de trabajo</p>
+          <p class="nav-label">Navegación</p>
           <nav class="main-nav" aria-label="Navegación principal">
-            <button class="nav-item active" type="button" data-nav="board"><span class="nav-icon">▦</span> Inicio <span class="nav-count" id="navTotal">0</span></button>
-            <button class="nav-item" type="button" data-nav="invoice"><span class="nav-icon">✦</span> Crear invoice</button>
-            <button class="nav-item" type="button" data-nav="hours"><span class="nav-icon">◷</span> Horas trabajadas</button>
-            <button class="nav-item" type="button" data-nav="archive"><span class="nav-icon">▤</span> Invoices / PDFs</button>
-            <button class="nav-item" type="button" data-nav="hours-archive"><span class="nav-icon">◷</span> Horas de trabajo / PDFs</button>
-            <button class="nav-item" type="button" data-nav="created"><span class="nav-icon">＋</span> Facturas creadas</button>
-            <button class="nav-item" type="button" data-nav="working"><span class="nav-icon">◷</span> En trabajo</button>
-            <button class="nav-item" type="button" data-nav="waiting"><span class="nav-icon">⌛</span> Esperando cheque</button>
-            <button class="nav-item" type="button" data-nav="paid"><span class="nav-icon">✓</span> Pagadas</button>
+            <button class="nav-item active" type="button" data-nav="board">
+              <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 4.2 3.8 11h2.4v8.2h4.4v-5.2h3.8v5.2h4.4V11h2.4z"/></svg></span>
+              Inicio
+            </button>
+            <button class="nav-item" type="button" data-nav="invoice">
+              <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M7 3h8l4 4v14H7zm8 1.8V8h3.2z"/><path fill="currentColor" d="M11 11h2v6h-2zm-2 2h6v2H9z"/></svg></span>
+              Crear invoice
+            </button>
+            <button class="nav-item" type="button" data-nav="hours">
+              <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 3.2A8.8 8.8 0 1 0 20.8 12 8.8 8.8 0 0 0 12 3.2zm.7 4.6h-1.6v5.1l4.2 2.5.8-1.3-3.4-2z"/></svg></span>
+              Horas trabajadas
+            </button>
+            <button class="nav-item" type="button" data-nav="archive">
+              <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 6.2h15v1.8h-15zm0 4.4h15v1.8h-15zm0 4.4h10.6V16.8H4.5z"/></svg></span>
+              Invoices / PDFs
+            </button>
+            <button class="nav-item" type="button" data-nav="hours-archive">
+              <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M5 18.5V10h2.8v8.5zm5.6 0V6h2.8v12.5zm5.6 0v-7.2H19v7.2z"/></svg></span>
+              Horas de trabajo / PDFs
+            </button>
+            <button class="nav-item" type="button" data-nav="created">
+              <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M7 3h8l4 4v14H7zm8 1.8V8h3.2zM9.2 12.2h5.6v1.6H9.2zm0 3.3h8v1.6h-8z"/></svg></span>
+              Facturas creadas
+            </button>
           </nav>
-          <div class="sidebar-note"><span class="note-icon">i</span><div><strong>Tu control diario</strong><p>Una tarjeta por invoice y dirección.</p></div></div>
         </div>
-        <div class="sidebar-footer"><span id="sidebarRole">Secretaría</span><strong id="sidebarProfileName">Lilian Perla</strong><button class="button button-ghost js-register-passkey" type="button">Registrar huella</button><button class="button button-ghost logout-button js-logout" type="button" id="logoutButton">Salir</button></div>
+        <div class="sidebar-footer">
+          <button class="sidebar-passkey js-register-passkey" type="button">Registrar huella</button>
+          <button class="sidebar-logout js-logout" type="button" id="logoutButton">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M10 4v2H6v12h4v2H4V4zm4.8 4.1 1.4-1.4L21 11.5l-4.8 4.8-1.4-1.4 2.4-2.4H10v-2h7.2z"/></svg>
+            Salir
+          </button>
+          <p class="sidebar-motto">Trabajo organizado,<br>mejores resultados. <span class="sidebar-paw" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M8.2 8.4a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2zm7.6 0a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2zM5.6 12.2a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm12.8 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM12 20.2c-2.8 0-5-1.7-5-3.8 0-1.6 1.3-2.7 5-2.7s5 1.1 5 2.7c0 2.1-2.2 3.8-5 3.8z"/></svg></span></p>
+        </div>
       </aside>
       <div class="sidebar-scrim" id="sidebarScrim" aria-hidden="true"></div>
 
@@ -557,13 +582,16 @@
       <button class="profile-scrim" id="profileScrim" type="button" aria-label="Cerrar perfil"></button>
       <section class="profile-card" id="profileCard" role="dialog" aria-labelledby="profileDisplayName" aria-modal="true">
         <div class="profile-hero">
-          <button class="profile-photo" id="profilePhotoButton" type="button" aria-label="Cambiar foto de perfil">
-            <img id="profilePhotoImg" alt="Foto de perfil" hidden>
-            <span id="profilePhotoInitials">LP</span>
-            <span class="profile-camera" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3zm3 5a5 5 0 1 1 0 10 5 5 0 0 1 0-10z"/></svg>
-            </span>
-          </button>
+          <div class="profile-photo-wrap">
+            <input id="profilePhotoFile" class="profile-photo-input" type="file" accept="image/*,image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp,.heic,.heif" aria-label="Cambiar foto de perfil">
+            <div class="profile-photo" id="profilePhotoButton">
+              <img id="profilePhotoImg" alt="Foto de perfil" hidden>
+              <span id="profilePhotoInitials">LP</span>
+              <span class="profile-camera" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3zm3 5a5 5 0 1 1 0 10 5 5 0 0 1 0-10z"/></svg>
+              </span>
+            </div>
+          </div>
           <p class="profile-hello" id="profileHello">Buenas tardes</p>
           <h2 id="profileDisplayName">Lilian</h2>
           <p class="profile-mail" id="profileEmailLine"></p>
@@ -575,8 +603,8 @@
           <div class="profile-row"><span>Miembro desde</span><strong id="profileSince">2026</strong></div>
         </div>
         <p class="profile-quote" id="profileQuote">“Disciplina hoy, resultados mañana.”</p>
+        <p class="form-error" id="profileError" role="status"></p>
         <button class="button button-primary" type="button" id="saveProfileButton">Guardar perfil</button>
-        <input id="profilePhotoFile" type="file" accept="image/jpeg,image/png,image/webp,image/*" hidden>
       </section>
     </div>
     <datalist id="addressHistory"></datalist>
@@ -588,7 +616,7 @@
     <script src="vendor/jszip.min.js" defer></script>
     <script src="invoice-core.js?v=price-labor-1" defer></script>
     <script src="invoice-pdf.js?v=orange-bar-2" defer></script>
-    <script src="cloud-db.js?v=hours-cloud-1" defer></script>
+    <script src="cloud-db.js?v=profile-fix-2" defer></script>
     <script src="whatsapp-invoice.js?v=addr-1" defer></script>
     <script src="invoice-archive.js?v=14" defer></script>
     <script src="hours-pdf.js?v=hours-grid-1" defer></script>
@@ -596,7 +624,7 @@
     <script src="hours-app.js?v=hours-cloud-1" defer></script>
     <script src="hours-archive.js?v=2" defer></script>
     <script src="translator.js?v=4" defer></script>
-    <script src="auth-app.js?v=profile-mobile-1" defer></script>
-    <script src="app.js?v=hours-cloud-1" defer></script>
+    <script src="auth-app.js?v=sidebar-nav-1" defer></script>
+    <script src="app.js?v=sidebar-nav-1" defer></script>
   </body>
 </html>
