@@ -18,7 +18,7 @@
   async function upload(bucket, path, blob, type) {
     const result = await Promise.race([
       sb().storage.from(bucket).upload(path, blob, { upsert: true, contentType: type, cacheControl: "3600" }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error("La subida del PDF a la nube tardó demasiado.")), 25000))
+      new Promise((_, reject) => setTimeout(() => reject(new Error("La subida a la nube tardó demasiado. Revisa la conexión e intenta de nuevo.")), 45000))
     ]);
     fail(result.error, "No se pudo subir el archivo.");
     return path;
@@ -317,6 +317,73 @@
     await root.LocalCache.remove("check", photo.id);
   }
 
+  function profileFrom(row, user) {
+    return {
+      id: row?.id || user?.id || ownerId(),
+      displayName: row?.display_name || "Lilian",
+      jobTitle: row?.job_title || "Secretaria",
+      avatarPath: row?.avatar_path || null,
+      createdAt: row?.created_at || user?.created_at || new Date().toISOString(),
+      email: user?.email || currentUser?.email || ""
+    };
+  }
+
+  async function getProfile() {
+    const id = ownerId();
+    const { data, error } = await sb().from("profiles").select("*").eq("id", id).maybeSingle();
+    if (error) fail(error, "No se pudo leer el perfil.");
+    if (!data) {
+      const seed = { id, display_name: "Lilian" };
+      const { error: insertError } = await sb().from("profiles").insert(seed);
+      if (insertError && insertError.code !== "23505") fail(insertError, "No se pudo crear el perfil. Corre el SQL de supabase/schema-update-profile.sql");
+    }
+    const { data: row } = await sb().from("profiles").select("*").eq("id", id).maybeSingle();
+    return profileFrom(row, currentUser);
+  }
+
+  async function saveProfile(profile) {
+    const id = ownerId();
+    const name = String(profile.displayName || "").trim() || "Lilian";
+    const job = String(profile.jobTitle || "").trim() || "Secretaria";
+    const row = { id, display_name: name, job_title: job };
+    if (profile.avatarPath !== undefined) row.avatar_path = profile.avatarPath;
+    let { error } = await sb().from("profiles").upsert(row);
+    if (error && /job_title|avatar_path/i.test(`${error.message || ""} ${error.details || ""}`)) {
+      const fallback = await sb().from("profiles").upsert({ id, display_name: name });
+      if (fallback.error) fail(fallback.error, "No se pudo guardar el perfil.");
+      throw new Error("Falta actualizar Supabase para foto y cargo. En SQL Editor pega supabase/schema-update-profile.sql y vuelve a guardar.");
+    }
+    fail(error, "No se pudo guardar el perfil.");
+    return getProfile();
+  }
+
+  async function saveAvatar(file) {
+    if (!file) throw new Error("Selecciona una foto de perfil.");
+    if (!/^image\/(jpeg|png|webp)$/i.test(file.type)) throw new Error("Usa una foto JPG, PNG o WebP.");
+    if (file.size > 6 * 1024 * 1024) throw new Error("La foto de perfil supera 6 MB.");
+    const ext = file.type.includes("png") ? "png" : file.type.includes("webp") ? "webp" : "jpg";
+    const path = `${ownerId()}/avatar.${ext}`;
+    await upload("avatars", path, file, file.type);
+    await root.LocalCache.put("avatar", ownerId(), "", file);
+    const current = await getProfile();
+    await saveProfile({ ...current, avatarPath: path });
+    return { path, blob: file };
+  }
+
+  async function ensureAvatar(profile) {
+    if (!profile?.avatarPath) return null;
+    const cached = await root.LocalCache.get("avatar", ownerId());
+    if (cached) return cached;
+    try {
+      const blob = await download("avatars", profile.avatarPath);
+      if (blob) await root.LocalCache.put("avatar", ownerId(), "", blob);
+      return blob;
+    } catch (error) {
+      console.warn("No se pudo descargar la foto de perfil", error);
+      return null;
+    }
+  }
+
   root.CloudDB = {
     setUser(user) { currentUser = user; },
     listInvoices,
@@ -331,6 +398,10 @@
     addCheckPhoto,
     ensureCheckPhoto,
     removeCheckPhoto,
+    getProfile,
+    saveProfile,
+    saveAvatar,
+    ensureAvatar,
     download
   };
 })(typeof globalThis !== "undefined" ? globalThis : this);

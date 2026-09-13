@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet" />
     <link rel="icon" href="favicon.ico" sizes="any" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=orange-bar-2" />
+    <link rel="stylesheet" href="styles.css?v=profile-check-1" />
   </head>
   <body>
     <div id="authGate" class="auth-gate auth-play login-screen" data-mode="login">
@@ -112,7 +112,7 @@
           </nav>
           <div class="sidebar-note"><span class="note-icon">i</span><div><strong>Tu control diario</strong><p>Una tarjeta por invoice y dirección.</p></div></div>
         </div>
-        <div class="sidebar-footer"><span>Secretaría</span><strong>Lilian Perla</strong><button class="button button-ghost js-register-passkey" type="button">Registrar huella</button><button class="button button-ghost logout-button js-logout" type="button" id="logoutButton">Salir</button></div>
+        <div class="sidebar-footer"><span id="sidebarRole">Secretaría</span><strong id="sidebarProfileName">Lilian Perla</strong><button class="button button-ghost js-register-passkey" type="button">Registrar huella</button><button class="button button-ghost logout-button js-logout" type="button" id="logoutButton">Salir</button></div>
       </aside>
       <div class="sidebar-scrim" id="sidebarScrim" aria-hidden="true"></div>
 
@@ -129,7 +129,10 @@
           <div class="topbar-right">
             <span class="version-badge">Nube + local</span>
             <span class="saved-indicator" id="savedIndicator"><i></i> En la nube y en este navegador</span>
-            <button class="avatar" type="button" title="Lilian Perla">LP</button>
+            <button class="avatar" id="profileAvatarButton" type="button" title="Tu perfil" aria-haspopup="dialog" aria-expanded="false">
+              <img id="topbarAvatarImg" alt="" hidden>
+              <span id="topbarAvatarInitials">LP</span>
+            </button>
           </div>
         </header>
 
@@ -204,6 +207,24 @@
               <p class="passkey-origin" id="passkeyOriginHint"></p>
             </div>
             <button class="button button-primary js-register-passkey" id="registerPasskeyButton" type="button">Registrar este aparato</button>
+          </section>
+
+          <section class="archive-callout dash-archive check-callout" id="checkDesk">
+            <div class="dash-archive-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 6h18v12H3zm2 2v8h14V8zm2 2h4v2H7zm6 0h4v1.5h-4zm0 3h4V15h-4zM7 14h4v1H7z"/></svg></div>
+            <div class="check-desk-copy">
+              <h2>Evidencia de cheques pagados</h2>
+              <p>Elige una invoice en Esperando cheque o Pagado y sube la foto del cheque. Queda en la nube junto al PDF.</p>
+              <div class="check-desk-actions">
+                <label class="check-desk-select">
+                  <span>Invoice</span>
+                  <select id="checkDeskInvoice"></select>
+                </label>
+                <button class="button button-primary" type="button" id="checkDeskUploadButton">Subir foto del cheque</button>
+              </div>
+              <p class="check-desk-status" id="checkDeskStatus">Aún no hay invoices en esas fases.</p>
+              <div class="check-photo-grid" id="checkDeskGrid"></div>
+            </div>
+            <input id="checkDeskFile" type="file" accept="image/jpeg,image/png,image/webp,image/*" capture="environment" multiple hidden>
           </section>
 
           <section class="board-section dash-board">
@@ -509,7 +530,7 @@
             <section class="check-evidence hidden" id="checkEvidence">
               <p class="field-group-title">Evidencia del cheque</p>
               <p class="check-hint" id="checkPhotoHint">Si Trenton ya pagó, adjunta la foto del cheque. Puedes guardar pagada ahora y subirla después.</p>
-              <input id="checkPhotoFile" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden>
+              <input id="checkPhotoFile" type="file" accept="image/jpeg,image/png,image/webp,image/*" capture="environment" multiple hidden>
               <button type="button" class="button button-ghost" id="addCheckPhotoButton">Adjuntar foto del cheque</button>
               <div id="checkPhotoGrid" class="check-photo-grid"></div>
             </section>
@@ -526,6 +547,32 @@
       <iframe id="pdfDialogFrame" title="PDF de la invoice"></iframe>
     </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="profile-layer hidden" id="profileLayer">
+      <button class="profile-scrim" id="profileScrim" type="button" aria-label="Cerrar perfil"></button>
+      <section class="profile-card" id="profileCard" role="dialog" aria-labelledby="profileDisplayName" aria-modal="true">
+        <div class="profile-hero">
+          <button class="profile-photo" id="profilePhotoButton" type="button" aria-label="Cambiar foto de perfil">
+            <img id="profilePhotoImg" alt="Foto de perfil" hidden>
+            <span id="profilePhotoInitials">LP</span>
+            <span class="profile-camera" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3zm3 5a5 5 0 1 1 0 10 5 5 0 0 1 0-10z"/></svg>
+            </span>
+          </button>
+          <p class="profile-hello" id="profileHello">Buenas tardes</p>
+          <h2 id="profileDisplayName">Lilian</h2>
+          <p class="profile-mail" id="profileEmailLine"></p>
+        </div>
+        <div class="profile-rows">
+          <div class="profile-row"><span>Correo</span><strong id="profileEmail"></strong></div>
+          <label class="profile-row profile-edit"><span>Nombre</span><input id="profileNameInput" type="text" maxlength="60" autocomplete="name"></label>
+          <label class="profile-row profile-edit"><span>Cargo</span><input id="profileRoleInput" type="text" maxlength="40" placeholder="Secretaria"></label>
+          <div class="profile-row"><span>Miembro desde</span><strong id="profileSince">2026</strong></div>
+        </div>
+        <p class="profile-quote" id="profileQuote">“Disciplina hoy, resultados mañana.”</p>
+        <button class="button button-primary" type="button" id="saveProfileButton">Guardar perfil</button>
+        <input id="profilePhotoFile" type="file" accept="image/jpeg,image/png,image/webp,image/*" hidden>
+      </section>
+    </div>
     <datalist id="addressHistory"></datalist>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.0" defer></script>
     <script src="config.js?v=5" defer></script>
@@ -535,7 +582,7 @@
     <script src="vendor/jszip.min.js" defer></script>
     <script src="invoice-core.js?v=price-labor-1" defer></script>
     <script src="invoice-pdf.js?v=orange-bar-2" defer></script>
-    <script src="cloud-db.js?v=pdf-gen-4" defer></script>
+    <script src="cloud-db.js?v=profile-check-1" defer></script>
     <script src="whatsapp-invoice.js?v=addr-1" defer></script>
     <script src="invoice-archive.js?v=14" defer></script>
     <script src="hours-pdf.js?v=hours-grid-1" defer></script>
@@ -543,7 +590,7 @@
     <script src="hours-app.js?v=pdf-gen-3" defer></script>
     <script src="hours-archive.js?v=2" defer></script>
     <script src="translator.js?v=4" defer></script>
-    <script src="auth-app.js?v=12" defer></script>
-    <script src="app.js?v=menus-toggle-1" defer></script>
+    <script src="auth-app.js?v=13" defer></script>
+    <script src="app.js?v=profile-check-1" defer></script>
   </body>
 </html>

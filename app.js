@@ -140,6 +140,7 @@
       <p class="card-date">${esc(cardDate(record))}</p>
       <h4 class="card-address"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 1 7 7c0 5.25-7 13-7 13S5 14.25 5 9a7 7 0 0 1 7-7zm0 9.5A2.5 2.5 0 1 0 12 6a2.5 2.5 0 0 0 0 5.5z"/></svg>${esc(record.address)}</h4>
       <div class="card-details"><span class="card-hours"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm1 5h-2v6l4.5 2.7.9-1.5L13 12.2z"/></svg>${Number(record.hours || 0)} hrs</span><span class="card-amount">${money(record.amount)}</span></div>
+      ${record.stage === "waiting" || record.stage === "paid" || (record.checkPhotos || []).length ? `<div class="card-check">${(record.checkPhotos || []).length ? `<span class="check-badge">Cheque ×${record.checkPhotos.length}</span>` : `<span class="check-badge" style="background:#eef1fb;color:#5b6580">Sin foto</span>`}<button class="card-check-btn" type="button" data-action="attach-check" data-id="${esc(record.id)}">Subir cheque</button></div>` : ""}
     </article>`;
   }
 
@@ -152,7 +153,7 @@
     wireBoardEvents();
   }
 
-  function render() { updateWelcome(); updateStats(); renderBoard(); archive?.render(); hoursArchive?.render(); window.HoursApp?.render(); }
+  function render() { updateWelcome(); updateStats(); renderBoard(); renderCheckDesk(); archive?.render(); hoursArchive?.render(); window.HoursApp?.render(); }
 
   function replayViewAnimation(view) {
     const node = $(`#${view}View`);
@@ -186,6 +187,57 @@
       }
     }
     grid.innerHTML = cards.join("");
+  }
+
+  function checkableRecords() {
+    return records.filter(record => record.stage === "waiting" || record.stage === "paid" || (record.checkPhotos || []).length);
+  }
+
+  async function renderCheckDesk() {
+    const select = $("#checkDeskInvoice");
+    const status = $("#checkDeskStatus");
+    const grid = $("#checkDeskGrid");
+    if (!select || !status || !grid) return;
+    const list = checkableRecords();
+    const current = select.value;
+    select.innerHTML = list.length
+      ? list.map(record => `<option value="${esc(record.id)}">${esc(record.invoiceNumber)} · ${esc(record.address)}</option>`).join("")
+      : `<option value="">Sin invoices en Esperando cheque / Pagado</option>`;
+    if (current && list.some(record => record.id === current)) select.value = current;
+    const record = records.find(item => item.id === select.value);
+    if (!record) {
+      status.textContent = "Cuando una invoice pase a Esperando cheque o Pagado, aquí puedes subir la foto.";
+      grid.innerHTML = "";
+      return;
+    }
+    const photos = record.checkPhotos || [];
+    status.textContent = photos.length
+      ? `${photos.length} foto${photos.length === 1 ? "" : "s"} en la nube para ${record.invoiceNumber}.`
+      : `Aún no hay foto del cheque de ${record.invoiceNumber}.`;
+    if (!photos.length) { grid.innerHTML = ""; return; }
+    const cards = [];
+    for (const photo of photos) {
+      try {
+        const blob = await Cloud.ensureCheckPhoto(photo);
+        const url = URL.createObjectURL(blob);
+        cards.push(`<figure class="check-thumb"><img src="${url}" alt="${esc(photo.file_name || "Cheque")}"><button type="button" class="mini-action delete" data-desk-check-id="${esc(photo.id)}" aria-label="Quitar foto">×</button></figure>`);
+      } catch (_) {
+        cards.push(`<figure class="check-thumb"><span>No se pudo abrir</span></figure>`);
+      }
+    }
+    grid.innerHTML = cards.join("");
+  }
+
+  async function uploadCheckFiles(record, files) {
+    if (!record) throw new Error("Elige primero una invoice.");
+    const chosen = Array.from(files || []).filter(Boolean);
+    if (!chosen.length) return record;
+    for (const file of chosen) {
+      const photo = await Cloud.addCheckPhoto(record.id, file);
+      record.checkPhotos = [photo, ...(record.checkPhotos || [])];
+    }
+    replaceInMemory(record);
+    return record;
   }
 
   function openModal(stage = "created", record = null) {
@@ -303,6 +355,12 @@
     if (action === "menu") { const record = records.find((item) => item.id === button.dataset.id); if (record) openModal(record.stage, record); }
     if (action === "open-pdf") { const record = records.find((item) => item.id === button.dataset.id); if (record) await openStoredPdf(record); }
     if (action === "next" || action === "back") { const record = records.find((item) => item.id === button.dataset.id); const index = stages.findIndex((stage) => stage.id === record?.stage); const next = index + (action === "next" ? 1 : -1); if (record && next >= 0 && next < stages.length) await moveRecord(record.id, stages[next].id); }
+    if (action === "attach-check") {
+      const record = records.find(item => item.id === button.dataset.id);
+      if (!record) return;
+      const picker = $("#checkDeskFile");
+      if (picker) { picker.dataset.invoiceId = record.id; picker.click(); }
+    }
     if (action === "delete") {
       const record = records.find((item) => item.id === button.dataset.id);
       if (!record || !confirm(`¿Eliminar la invoice ${record.invoiceNumber} de ${record.address}? Se ocultará, no se borra del historial de la nube.`)) return;
@@ -769,11 +827,7 @@
     const record = records.find(item => item.id === editingId);
     if (!record) { showToast("Guarda primero la invoice y luego adjunta el cheque."); event.target.value = ""; return; }
     try {
-      for (const file of files) {
-        const photo = await Cloud.addCheckPhoto(record.id, file);
-        record.checkPhotos = [photo, ...(record.checkPhotos || [])];
-      }
-      replaceInMemory(record);
+      await uploadCheckFiles(record, files);
       await renderCheckPhotos(record);
       render();
       showToast("Foto del cheque guardada en la nube.");
@@ -790,6 +844,37 @@
     record.checkPhotos = record.checkPhotos.filter(item => item.id !== photo.id);
     replaceInMemory(record);
     await renderCheckPhotos(record);
+    render();
+  });
+  $("#checkDeskInvoice")?.addEventListener("change", () => renderCheckDesk());
+  $("#checkDeskUploadButton")?.addEventListener("click", () => {
+    const record = records.find(item => item.id === $("#checkDeskInvoice")?.value);
+    if (!record) { showToast("Mueve una invoice a Esperando cheque o Pagado para adjuntar el cheque."); return; }
+    const picker = $("#checkDeskFile");
+    if (picker) { picker.dataset.invoiceId = record.id; picker.click(); }
+  });
+  $("#checkDeskFile")?.addEventListener("change", async event => {
+    const invoiceId = event.target.dataset.invoiceId || $("#checkDeskInvoice")?.value;
+    const record = records.find(item => item.id === invoiceId);
+    try {
+      await uploadCheckFiles(record, event.target.files);
+      if (editingId === record?.id) await renderCheckPhotos(record);
+      render();
+      showToast("Foto del cheque guardada en la nube.");
+    } catch (error) { showToast(error.message || "No se pudo subir la foto del cheque."); }
+    event.target.value = "";
+    delete event.target.dataset.invoiceId;
+  });
+  $("#checkDeskGrid")?.addEventListener("click", async event => {
+    const button = event.target.closest("[data-desk-check-id]");
+    if (!button) return;
+    const invoiceId = $("#checkDeskInvoice")?.value;
+    const record = records.find(item => item.id === invoiceId);
+    const photo = record?.checkPhotos?.find(item => item.id === button.dataset.deskCheckId);
+    if (!photo || !confirm("¿Quitar esta foto del cheque?")) return;
+    await Cloud.removeCheckPhoto(photo);
+    record.checkPhotos = record.checkPhotos.filter(item => item.id !== photo.id);
+    replaceInMemory(record);
     render();
   });
 

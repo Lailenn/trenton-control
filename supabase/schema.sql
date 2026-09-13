@@ -8,6 +8,8 @@ create extension if not exists pgcrypto;
 create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   display_name text not null default 'Lilian',
+  job_title text not null default 'Secretaria',
+  avatar_path text,
   created_at timestamptz not null default now()
 );
 
@@ -153,6 +155,10 @@ drop policy if exists "profiles_update_own" on public.profiles;
 create policy "profiles_update_own" on public.profiles
   for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
 
+drop policy if exists "profiles_insert_own" on public.profiles;
+create policy "profiles_insert_own" on public.profiles
+  for insert to authenticated with check (id = auth.uid());
+
 drop policy if exists "invoices_all_own" on public.invoices;
 create policy "invoices_all_own" on public.invoices
   for all to authenticated
@@ -185,7 +191,8 @@ insert into storage.buckets (id, name, public)
 values
   ('invoice-pdfs', 'invoice-pdfs', false),
   ('hours-pdfs', 'hours-pdfs', false),
-  ('check-photos', 'check-photos', false)
+  ('check-photos', 'check-photos', false),
+  ('avatars', 'avatars', false)
 on conflict (id) do nothing;
 
 drop policy if exists "invoice_pdfs_select" on storage.objects;
@@ -230,3 +237,18 @@ create policy "check_photos_update" on storage.objects for update to authenticat
   with check (bucket_id = 'check-photos' and split_part(name, '/', 1) = auth.uid()::text);
 create policy "check_photos_delete" on storage.objects for delete to authenticated
   using (bucket_id = 'check-photos' and split_part(name, '/', 1) = auth.uid()::text);
+
+drop policy if exists "avatars_select" on storage.objects;
+drop policy if exists "avatars_insert" on storage.objects;
+drop policy if exists "avatars_update" on storage.objects;
+drop policy if exists "avatars_delete" on storage.objects;
+
+create policy "avatars_select" on storage.objects for select to authenticated
+  using (bucket_id = 'avatars' and split_part(name, '/', 1) = auth.uid()::text);
+create policy "avatars_insert" on storage.objects for insert to authenticated
+  with check (bucket_id = 'avatars' and split_part(name, '/', 1) = auth.uid()::text);
+create policy "avatars_update" on storage.objects for update to authenticated
+  using (bucket_id = 'avatars' and split_part(name, '/', 1) = auth.uid()::text)
+  with check (bucket_id = 'avatars' and split_part(name, '/', 1) = auth.uid()::text);
+create policy "avatars_delete" on storage.objects for delete to authenticated
+  using (bucket_id = 'avatars' and split_part(name, '/', 1) = auth.uid()::text);

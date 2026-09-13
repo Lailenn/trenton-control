@@ -18,6 +18,8 @@
   let booting = false;
   let quoteIndex = new Date().getDate() % PHRASES.length;
   let quoteTimer;
+  let profile = { displayName: "Lilian", jobTitle: "Secretaria", email: "", createdAt: "2026-01-01", avatarUrl: null };
+  let avatarObjectUrl = null;
 
   function phraseFor(date = new Date()) {
     return PHRASES[date.getDate() % PHRASES.length];
@@ -29,7 +31,111 @@
   }
 
   function greeting(date = new Date()) {
-    return `${helloLine(date).replace(",", "")}, Lilian. 👋`;
+    const name = String(profile.displayName || "Lilian").trim().split(/\s+/)[0] || "Lilian";
+    return `${helloLine(date).replace(",", "")}, ${name}. 👋`;
+  }
+
+  function initialsFrom(name) {
+    const parts = String(name || "Lilian").trim().split(/\s+/).filter(Boolean);
+    return ((parts[0]?.[0] || "L") + (parts[1]?.[0] || "")).toUpperCase() || "LP";
+  }
+
+  function paintAvatarSlots(url) {
+    const pairs = [
+      [$("#topbarAvatarImg"), $("#topbarAvatarInitials")],
+      [$("#profilePhotoImg"), $("#profilePhotoInitials")]
+    ];
+    pairs.forEach(([img, initialsEl]) => {
+      if (img) {
+        img.hidden = !url;
+        if (url) img.src = url;
+      }
+      if (initialsEl) {
+        initialsEl.hidden = Boolean(url);
+        initialsEl.textContent = initialsFrom(profile.displayName);
+      }
+    });
+  }
+
+  function paintProfile() {
+    const year = String(profile.createdAt || "2026").slice(0, 4);
+    if ($("#profileDisplayName")) $("#profileDisplayName").textContent = profile.displayName || "Lilian";
+    if ($("#profileNameInput")) $("#profileNameInput").value = profile.displayName || "Lilian";
+    if ($("#profileRoleInput")) $("#profileRoleInput").value = profile.jobTitle || "Secretaria";
+    if ($("#profileEmail")) $("#profileEmail").textContent = profile.email || "—";
+    if ($("#profileEmailLine")) $("#profileEmailLine").textContent = profile.email || "";
+    if ($("#profileSince")) $("#profileSince").textContent = year;
+    if ($("#profileHello")) $("#profileHello").textContent = helloLine().replace(",", "");
+    if ($("#profileQuote")) $("#profileQuote").textContent = `“${phraseFor()}”`;
+    if ($("#sidebarProfileName")) $("#sidebarProfileName").textContent = profile.displayName || "Lilian";
+    if ($("#sidebarRole")) $("#sidebarRole").textContent = profile.jobTitle || "Secretaria";
+    if ($("#welcomeGreeting")) $("#welcomeGreeting").textContent = greeting();
+    const button = $("#profileAvatarButton");
+    if (button) button.title = profile.displayName || "Tu perfil";
+    paintAvatarSlots(profile.avatarUrl);
+  }
+
+  function setProfileOpen(open) {
+    $("#profileLayer")?.classList.toggle("hidden", !open);
+    $("#profileAvatarButton")?.setAttribute("aria-expanded", String(open));
+  }
+
+  async function loadProfile() {
+    if (!root.CloudDB?.getProfile) return;
+    try {
+      const next = await root.CloudDB.getProfile();
+      const blob = await root.CloudDB.ensureAvatar(next);
+      if (avatarObjectUrl) URL.revokeObjectURL(avatarObjectUrl);
+      avatarObjectUrl = blob ? URL.createObjectURL(blob) : null;
+      profile = { ...next, avatarUrl: avatarObjectUrl };
+    } catch (error) {
+      console.warn("No se pudo leer el perfil", error);
+    }
+    paintProfile();
+  }
+
+  async function saveProfileNow() {
+    const displayName = $("#profileNameInput")?.value.trim() || "Lilian";
+    const jobTitle = $("#profileRoleInput")?.value.trim() || "Secretaria";
+    const saved = await root.CloudDB.saveProfile({ ...profile, displayName, jobTitle, avatarPath: profile.avatarPath });
+    profile = { ...profile, ...saved, displayName: saved.displayName, jobTitle: saved.jobTitle };
+    paintProfile();
+    toast("Perfil guardado en la nube.");
+  }
+
+  async function saveAvatarNow(file) {
+    const result = await root.CloudDB.saveAvatar(file);
+    if (avatarObjectUrl) URL.revokeObjectURL(avatarObjectUrl);
+    avatarObjectUrl = URL.createObjectURL(result.blob);
+    profile = { ...profile, avatarPath: result.path, avatarUrl: avatarObjectUrl };
+    paintProfile();
+    toast("Foto de perfil guardada en la nube.");
+  }
+
+  function bindProfile() {
+    $("#profileAvatarButton")?.addEventListener("click", () => {
+      paintProfile();
+      setProfileOpen(true);
+    });
+    $("#profileScrim")?.addEventListener("click", () => setProfileOpen(false));
+    $("#profilePhotoButton")?.addEventListener("click", () => $("#profilePhotoFile")?.click());
+    $("#profilePhotoFile")?.addEventListener("change", async event => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (!file) return;
+      try { await saveAvatarNow(file); }
+      catch (error) { toast(error.message || "No se pudo guardar la foto. Si es la primera vez, corre el SQL de perfiles en Supabase."); }
+    });
+    $("#saveProfileButton")?.addEventListener("click", async () => {
+      const button = $("#saveProfileButton");
+      button.disabled = true;
+      try { await saveProfileNow(); }
+      catch (error) { toast(error.message || "No se pudo guardar el perfil."); }
+      finally { button.disabled = false; }
+    });
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") setProfileOpen(false);
+    });
   }
 
   function paintLoginHello() {
@@ -362,6 +468,7 @@
       const user = session?.user || null;
       root.CloudDB.setUser(user);
       if (!user) {
+        setProfileOpen(false);
         showApp(false);
         setGate(root.TrentonConfig.ready() ? "login" : "config");
         onLogout?.();
@@ -369,6 +476,7 @@
       }
       showApp(true);
       paintLoginHello();
+      await loadProfile();
       if ($("#welcomeGreeting")) $("#welcomeGreeting").textContent = greeting();
       setQuote($("#heroQuote"), PHRASES[quoteIndex % PHRASES.length]);
       setQuote($("#authWelcomeQuote"), PHRASES[quoteIndex % PHRASES.length]);
@@ -461,8 +569,9 @@
     });
 
     bindLogoutButtons();
+    bindProfile();
     watchAuth(onReady, onLogout);
   }
 
-  root.AuthApp = { start, greeting, phrase: phraseFor, phrases: PHRASES, replayWelcome };
+  root.AuthApp = { start, greeting, phrase: phraseFor, phrases: PHRASES, replayWelcome, loadProfile };
 })(typeof globalThis !== "undefined" ? globalThis : this);
