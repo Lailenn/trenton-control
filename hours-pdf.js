@@ -140,7 +140,6 @@
         catch (__) { /* si un glifo no entra, no tumba todo el PDF */ }
       }
     };
-    const centered = (value, top, size = 10, font = regular, color = ink) => { const label = pdfSafe(value); text(label, (pageW - measure(font, label, size)) / 2, top, size, font, color); };
     const line = (x1, y1, x2, y2, thickness = 1, color = lineColor) => page.drawLine({start: {x: x1, y: pageH - y1}, end: {x: x2, y: pageH - y2}, thickness, color});
     const cell = (value, x, top, w, size = 10, font = regular, align = "left", color = ink) => {
       const label = pdfSafe(value);
@@ -157,14 +156,32 @@
       const rowHeight = 27, headerHeight = 28, totalHeight = 27, height = headerHeight + rows.length * rowHeight + totalHeight;
       page.drawRectangle({x: left, y: pageH - top - headerHeight, width, height: headerHeight, color: peach});
       page.drawRectangle({x: left, y: pageH - top - height, width, height: totalHeight, color: peach});
-      line(left, top, left + width, top); line(left, top + headerHeight, left + width, top + headerHeight); line(left, top + height - totalHeight, left + width, top + height - totalHeight); line(left, top + height, left + width, top + height);
-      let x = left; columns.forEach(w => { line(x, top, x, top + height); x += w; }); line(left + width, top, left + width, top + height);
-      x = left; headers.forEach((header, i) => { cell(header, x, top, columns[i], 9.6, bold, "left", ink); x += columns[i]; });
+      if (bodyFirstColumnPeach) {
+        rows.forEach((_, rowIndex) => {
+          page.drawRectangle({
+            x: left,
+            y: pageH - top - headerHeight - (rowIndex + 1) * rowHeight,
+            width: columns[0],
+            height: rowHeight,
+            color: peach
+          });
+        });
+      }
+      const horizontals = [top, top + headerHeight];
+      for (let i = 1; i <= rows.length; i++) horizontals.push(top + headerHeight + i * rowHeight);
+      horizontals.push(top + height);
+      horizontals.forEach(y => line(left, y, left + width, y));
+      let x = left;
+      columns.forEach(w => { line(x, top, x, top + height); x += w; });
+      line(left + width, top, left + width, top + height);
+      x = left;
+      headers.forEach((header, i) => { cell(header, x, top, columns[i], 9.6, bold, "left", ink); x += columns[i]; });
       rows.forEach((row, rowIndex) => {
-        if (bodyFirstColumnPeach) page.drawRectangle({x: left, y: pageH - top - headerHeight - (rowIndex + 1) * rowHeight, width: columns[0], height: rowHeight, color: peach});
-        x = left; row.forEach((value, i) => { cell(value, x, top + headerHeight + rowIndex * rowHeight, columns[i], 9.5, i === 0 ? bold : regular, "left", ink); x += columns[i]; });
+        x = left;
+        row.forEach((value, i) => { cell(value, x, top + headerHeight + rowIndex * rowHeight, columns[i], 9.5, i === 0 ? bold : regular, "left", ink); x += columns[i]; });
       });
-      x = left; totalRow.forEach((value, i) => { cell(value, x, top + height - totalHeight, columns[i], 9.5, bold, "left", ink); x += columns[i]; });
+      x = left;
+      totalRow.forEach((value, i) => { cell(value, x, top + height - totalHeight, columns[i], 9.5, bold, "left", ink); x += columns[i]; });
       return top + height;
     };
     const header = () => {
@@ -177,7 +194,7 @@
       }
       const jobLabel = "JOB:"; const address = pdfSafe(data.jobAddress || ""); const jobSize = 13; const jobWidth = measure(bold, jobLabel, jobSize) + 8 + measure(bold, address, jobSize); const jobX = (pageW - jobWidth) / 2;
       text(jobLabel, jobX, 137, jobSize, bold, ink); text(address, jobX + measure(bold, jobLabel, jobSize) + 8, 137, jobSize, bold, ink); line(jobX + measure(bold, jobLabel, jobSize) + 8, 154, jobX + jobWidth, 154, 1, ink);
-      centered(fullDate(data.reportDate), 169, 13, bold, ink);
+      text(fullDate(data.reportDate), left, 169, 13, bold, ink);
       cursor = 205;
     };
     header();
