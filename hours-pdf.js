@@ -143,8 +143,15 @@
     const centered = (value, top, size = 10, font = regular, color = ink) => { const label = pdfSafe(value); text(label, (pageW - measure(font, label, size)) / 2, top, size, font, color); };
     const line = (x1, y1, x2, y2, thickness = 1, color = lineColor) => page.drawLine({start: {x: x1, y: pageH - y1}, end: {x: x2, y: pageH - y2}, thickness, color});
     const cell = (value, x, top, w, size = 10, font = regular, align = "left", color = ink) => {
-      const label = pdfSafe(value); const measured = measure(font, label, size); const px = align === "center" ? x + (w - measured) / 2 : align === "right" ? x + w - measured - 7 : x + 7;
-      text(label, px, top + 7, size, font, color);
+      const label = pdfSafe(value);
+      let used = size;
+      let measured = measure(font, label, used);
+      while (used > 6.5 && measured > Math.max(12, w - 10)) {
+        used -= 0.4;
+        measured = measure(font, label, used);
+      }
+      const px = align === "center" ? x + Math.max(2, (w - measured) / 2) : align === "right" ? x + w - measured - 5 : x + 5;
+      text(label, px, top + 8, used, font, color);
     };
     const table = (top, columns, headers, rows, totalRow, bodyFirstColumnPeach = false) => {
       const rowHeight = 27, headerHeight = 28, totalHeight = 27, height = headerHeight + rows.length * rowHeight + totalHeight;
@@ -176,7 +183,7 @@
       cursor = 205;
     };
     header();
-    const columns = [100, 115, 85, 85, 70, Math.max(60, width - 100 - 115 - 85 - 85 - 70)];
+    const columns = [90, 112, 66, 66, 54, 140];
     const pageLimit = pageH - 82;
     const maxRowsFit = () => Math.max(0, Math.floor((pageLimit - cursor - 28 - 27) / 27));
     const pagedTable = (cols, headers, allRows, totalRow, peachFirst = false, gapAfter = 44) => {

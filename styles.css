@@ -86,15 +86,15 @@ button.stat-card:hover { box-shadow: 0 8px 28px rgba(59,110,234,.14); transform:
 .hours-entry-grid .field span { font-size: 10px; }
 .hours-entry-grid input { min-height: 34px; padding: 7px 8px; font-size: 12px; }
 .hours-calculated { margin: 10px 0 0; color: var(--blue-dark); font-size: 11px; font-weight: 700; }
-.hours-preview-panel { min-width: 0; overflow: visible; container-type: inline-size; container-name: hours-sheet; }
-.hours-preview-viewport { width: 100%; height: auto !important; overflow: visible; background: #fff; padding: 0; box-sizing: border-box; }
+.hours-preview-panel { min-width: 0; overflow: hidden; }
+.hours-preview-viewport { width: 100%; height: auto !important; overflow-x: auto; overflow-y: visible; background: #e8edf7; padding: 12px; box-sizing: border-box; -webkit-overflow-scrolling: touch; }
 .hours-paper, #hoursPaper {
-  width: 100%;
-  max-width: 816px;
-  min-width: 0;
-  min-height: 922px;
+  width: 816px;
+  min-width: 816px;
+  max-width: none;
+  min-height: 1056px;
   margin: 0 auto;
-  padding: 60px 40px 58px;
+  padding: 64px 56px 58px;
   box-sizing: border-box;
   border: 0;
   background: #fff;
@@ -102,18 +102,19 @@ button.stat-card:hover { box-shadow: 0 8px 28px rgba(59,110,234,.14); transform:
   font-family: Arial, Helvetica, sans-serif;
   transform: none !important;
   zoom: 1 !important;
+  box-shadow: 0 4px 18px rgba(26, 40, 67, .12);
 }
-.hours-logo { display: block; width: 300px; height: auto; margin: 0 auto 19px; }
+.hours-logo { display: block; width: 293px; height: auto; margin: 0 auto 19px; }
 .hours-job-line { margin: 0; text-align: center; font-size: 17px; font-weight: 700; }
 .hours-job-line u { text-underline-offset: 3px; }
 .hours-report-date { margin: 31px 0 29px; font-size: 17px; font-weight: 700; }
 .hours-work-table, .hours-summary-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 0 0 59px; font-size: 13px; }
-.hours-work-table th, .hours-work-table td, .hours-summary-table th, .hours-summary-table td { height: 39px; padding: 7px 9px; border: 1px solid #000; text-align: left; vertical-align: middle; overflow-wrap: break-word; word-break: break-word; color: #000; }
+.hours-work-table th, .hours-work-table td, .hours-summary-table th, .hours-summary-table td { height: 36px; padding: 6px 8px; border: 1px solid #000; text-align: left; vertical-align: middle; white-space: nowrap; overflow: hidden; color: #000; }
 .hours-work-table th, .hours-summary-table th { font-weight: 700; background: #fde9d9; color: #000; }
-.hours-work-table th:nth-child(1) { width: 18%; }.hours-work-table th:nth-child(2) { width: 22%; }.hours-work-table th:nth-child(3) { width: 16%; }.hours-work-table th:nth-child(4) { width: 16%; }.hours-work-table th:nth-child(5) { width: 14%; }.hours-work-table th:nth-child(6) { width: 14%; }
+.hours-work-table th:nth-child(1) { width: 17%; }.hours-work-table th:nth-child(2) { width: 21.2%; }.hours-work-table th:nth-child(3) { width: 12.5%; }.hours-work-table th:nth-child(4) { width: 12.5%; }.hours-work-table th:nth-child(5) { width: 10.2%; }.hours-work-table th:nth-child(6) { width: 26.6%; }
 .hours-work-table tfoot td, .hours-summary-table tfoot td, .hours-summary-table tbody td:first-child { background: #fde9d9; font-weight: 700; color: #000; }
 .hours-summary-table { margin-bottom: 62px; }
-.hours-summary-table th:nth-child(1) { width: 31%; }.hours-summary-table th:nth-child(2) { width: 24%; }.hours-summary-table th:nth-child(3) { width: 26%; }.hours-summary-table th:nth-child(4) { width: 19%; }
+.hours-summary-table th:nth-child(1) { width: 34.1%; }.hours-summary-table th:nth-child(2) { width: 24.6%; }.hours-summary-table th:nth-child(3) { width: 26.5%; }.hours-summary-table th:nth-child(4) { width: 14.8%; }
 .hours-description { font-size: 16px; line-height: 1.5; }
 .hours-description p { min-height: 55px; margin: 18px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .hours-empty-preview { margin: 40px 0 59px; border: 1px dashed #b5bfce; padding: 25px; text-align: center; color: #69778a; }
@@ -124,50 +125,7 @@ button.stat-card:hover { box-shadow: 0 8px 28px rgba(59,110,234,.14); transform:
 .hours-history-card strong, .hours-history-card span { display: block; overflow-wrap: anywhere; }.hours-history-card span { margin-top: 4px; color: var(--muted); font-size: 11px; }.hours-history-card b { font-size: 18px; }.hours-history-card .button { justify-self: start; }
 .hours-empty-history { padding: 28px; border: 1px dashed #c5d0e4; border-radius: 10px; color: var(--muted); text-align: center; }
 @media (max-width: 950px) { .hours-page-heading { align-items: flex-start; flex-direction: column; }.hours-layout { grid-template-columns: 1fr; }.hours-preview-panel { order: -1; } }
-@media (max-width: 570px) { .hours-heading-actions, .hours-heading-actions .button { width: 100%; }.hours-form-panel, .hours-history { padding: 16px; }.hours-fields, .hours-entry-grid { grid-template-columns: 1fr; }.hours-fields .field.full, .hours-entry-grid .hours-employee { grid-column: auto; }.hours-entry-title { align-items: flex-start; flex-direction: column; }.hours-entry-title .button { width: 100%; }.hours-preview-viewport { padding: 0; }.hours-paper, #hoursPaper { padding: 28px 16px 36px; min-height: 922px; }.hours-logo { width: 250px; }.hours-job-line, .hours-report-date { font-size: 14px; }.hours-work-table, .hours-summary-table { font-size: 10px; }.hours-work-table th, .hours-work-table td, .hours-summary-table th, .hours-summary-table td { padding: 5px 4px; }.version-badge { display: none; } }
-@container hours-sheet (max-width: 720px) {
-  .hours-preview-viewport { padding: 0; }
-  .hours-paper, #hoursPaper { padding: 28px 16px 36px; min-height: 922px; }
-  .hours-logo { width: min(220px, 70%); }
-  .hours-job-line, .hours-report-date { font-size: 13px; }
-  .hours-work-table, .hours-summary-table { font-size: 9px; margin-bottom: 28px; }
-  .hours-work-table th, .hours-work-table td, .hours-summary-table th, .hours-summary-table td {
-    height: auto;
-    min-height: 28px;
-    padding: 5px 3px;
-    white-space: normal;
-  }
-  .hours-description { font-size: 13px; }
-}
-@media screen and (max-width: 820px) {
-  #invoicePaper {
-    padding: 22px 12px 28px;
-    min-height: 0;
-  }
-  #invoicePaper .invoice-header { gap: 12px; }
-  #invoicePaper .invoice-logo { width: min(132px, 42vw); height: auto; }
-  #invoicePaper .invoice-meta > strong { margin-bottom: 10px; font-size: 11px; line-height: 1.25; }
-  #invoicePaper .invoice-meta > span { font-size: 12px; line-height: 1.3; }
-  #invoicePaper .invoice-parties {
-    margin-top: 24px;
-    padding: 0;
-    gap: 10px;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-  #invoicePaper .invoice-party-label { margin-bottom: 8px; font-size: 11px; line-height: 1.2; }
-  #invoicePaper .invoice-parties strong { font-size: 14px; line-height: 1.2; }
-  #invoicePaper .invoice-parties p { font-size: 11px; line-height: 1.3; }
-  #invoicePaper .invoice-table { margin-top: 18px; }
-  #invoicePaper .invoice-table col:nth-child(1) { width: 40% !important; }
-  #invoicePaper .invoice-table col:nth-child(2) { width: 12% !important; }
-  #invoicePaper .invoice-table col:nth-child(3),
-  #invoicePaper .invoice-table col:nth-child(4) { width: 24% !important; }
-  #invoicePaper .invoice-table th { height: auto; min-height: 36px; padding: 6px 3px; font-size: 10px; }
-  #invoicePaper .invoice-table tbody td { height: 150px; padding: 10px 4px; font-size: 12px; }
-  #invoicePaper .invoice-table tfoot td,
-  #invoicePaper .invoice-table tfoot td:last-child { font-size: 11px; white-space: normal; }
-  #invoicePaper .invoice-payment-note { margin: 22px 0 0; font-size: 12px; line-height: 1.4; }
-}
+@media (max-width: 570px) { .hours-heading-actions, .hours-heading-actions .button { width: 100%; }.hours-form-panel, .hours-history { padding: 16px; }.hours-fields, .hours-entry-grid { grid-template-columns: 1fr; }.hours-fields .field.full, .hours-entry-grid .hours-employee { grid-column: auto; }.hours-entry-title { align-items: flex-start; flex-direction: column; }.hours-entry-title .button { width: 100%; }.version-badge { display: none; } }
 .import-panel { margin: 24px 0 30px; padding: 25px; border: 1px solid #d5defa; border-radius: 16px; background: #f0f4ff; }
 .import-heading { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
 .import-heading h2 { font-size: 24px; }
@@ -499,29 +457,31 @@ h1 span { color: var(--blue); }
 @media (max-width: 380px) { .stats-grid { grid-template-columns: 1fr; }.hero h1 { font-size: 29px; }.hero-quote { font-size: 12px; }.button-large { font-size: 12px; } }
 
 
-/* FACTURA: hoja carta visible, sin zoom ni JS que recalen el layout */
+/* FACTURA: hoja carta 816px, igual al PDF. En el celular se desplaza a la derecha. */
 #invoiceView .invoice-preview-panel {
-  overflow: visible;
+  overflow: hidden;
   max-height: none;
   position: static;
-  container-type: inline-size;
-  container-name: invoice-sheet;
 }
 
 #invoiceView .invoice-preview-viewport {
   width: 100%;
   height: auto !important;
-  overflow: visible;
-  background: #fff;
+  overflow-x: auto;
+  overflow-y: visible;
+  background: #e8edf7;
+  padding: 12px;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
 }
 
 #invoicePaper {
-  width: 100%;
-  max-width: 816px;
-  min-width: 0;
-  min-height: 922px;
+  width: 816px;
+  min-width: 816px;
+  max-width: none;
+  min-height: 1056px;
   margin: 0 auto;
-  padding: 60px 24px 60px 40px;
+  padding: 60px 13px 60px 56px;
   box-sizing: border-box;
   border: 0;
   background: #fff;
@@ -529,6 +489,7 @@ h1 span { color: var(--blue); }
   font: 16px/1.25 Arial, Helvetica, sans-serif;
   transform: none !important;
   zoom: 1 !important;
+  box-shadow: 0 4px 18px rgba(26, 40, 67, .12);
 }
 
 #invoicePaper .invoice-header {
@@ -629,10 +590,8 @@ h1 span { color: var(--blue); }
   font-size: 14px;
   font-weight: 700;
   text-align: center;
-  white-space: normal;
+  white-space: nowrap;
   line-height: 1.15;
-  overflow-wrap: break-word;
-  hyphens: auto;
 }
 
 #invoicePaper .invoice-table th:first-child {
@@ -678,7 +637,7 @@ h1 span { color: var(--blue); }
 }
 
 #hoursView .hours-preview-panel {
-  overflow: visible;
+  overflow: hidden;
   max-height: none;
   position: static;
 }
@@ -686,111 +645,25 @@ h1 span { color: var(--blue); }
 #hoursView .hours-preview-viewport {
   width: 100%;
   height: auto !important;
-  overflow: visible;
-  background: #fff;
-  padding: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+  background: #e8edf7;
+  padding: 12px;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
 }
 
 #hoursView #hoursPaper {
-  width: 100%;
-  max-width: 816px;
-  min-width: 0;
-  min-height: 922px;
+  width: 816px;
+  min-width: 816px;
+  max-width: none;
+  min-height: 1056px;
   margin: 0 auto;
+  padding: 64px 56px 58px;
   box-sizing: border-box;
   background: #fff;
   transform: none !important;
   zoom: 1 !important;
-}
-
-@container invoice-sheet (max-width: 720px) {
-  #invoiceView .invoice-preview-viewport {
-    padding: 8px;
-    background: #e8edf7;
-  }
-  #invoicePaper {
-    padding: 22px 12px 28px;
-    min-height: 0;
-  }
-  #invoicePaper .invoice-header {
-    gap: 12px;
-  }
-  #invoicePaper .invoice-logo {
-    width: min(132px, 42cqi);
-    height: auto;
-  }
-  #invoicePaper .invoice-meta > strong {
-    margin-bottom: 10px;
-    font-size: 11px;
-    line-height: 1.25;
-  }
-  #invoicePaper .invoice-meta > span {
-    font-size: 12px;
-    line-height: 1.3;
-  }
-  #invoicePaper .invoice-parties {
-    margin-top: 24px;
-    padding: 0;
-    gap: 10px;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-  #invoicePaper .invoice-party-label {
-    margin-bottom: 8px;
-    font-size: 11px;
-    line-height: 1.2;
-  }
-  #invoicePaper .invoice-parties strong {
-    font-size: 14px;
-    line-height: 1.2;
-  }
-  #invoicePaper .invoice-parties p {
-    font-size: 11px;
-    line-height: 1.3;
-  }
-  #invoicePaper .invoice-table {
-    margin-top: 18px;
-  }
-  #invoicePaper .invoice-table col:nth-child(1) { width: 40% !important; }
-  #invoicePaper .invoice-table col:nth-child(2) { width: 12% !important; }
-  #invoicePaper .invoice-table col:nth-child(3),
-  #invoicePaper .invoice-table col:nth-child(4) { width: 24% !important; }
-  #invoicePaper .invoice-table th {
-    height: auto;
-    min-height: 36px;
-    padding: 6px 3px;
-    font-size: 10px;
-  }
-  #invoicePaper .invoice-table tbody td {
-    height: 150px;
-    padding: 10px 4px;
-    font-size: 12px;
-  }
-  #invoicePaper .invoice-table tfoot td {
-    font-size: 11px;
-    white-space: normal;
-  }
-  #invoicePaper .invoice-table tfoot td:last-child {
-    white-space: normal;
-  }
-  #invoicePaper .invoice-payment-note {
-    margin: 22px 0 0;
-    font-size: 12px;
-    line-height: 1.4;
-  }
-}
-
-@container invoice-sheet (max-width: 420px) {
-  #invoicePaper .invoice-table col:nth-child(1) { width: 36% !important; }
-  #invoicePaper .invoice-table col:nth-child(2) { width: 14% !important; }
-  #invoicePaper .invoice-table col:nth-child(3),
-  #invoicePaper .invoice-table col:nth-child(4) { width: 25% !important; }
-  #invoicePaper .invoice-table th {
-    font-size: 9px;
-    padding: 5px 2px;
-  }
-  #invoicePaper .invoice-parties strong {
-    font-size: 13px;
-  }
 }
 
 @media print {
@@ -1319,7 +1192,7 @@ body {
   background: var(--surface);
 }
 .hours-entry-row, .hours-history-card { background: #f6f7fc; border-color: #dde3f2; }
-.hours-preview-viewport, .invoice-preview-viewport { background: #fff; }
+.hours-preview-viewport, .invoice-preview-viewport { background: #e8edf7; }
 .translator-panel {
   border-color: #ddd6fb;
   border-left-color: var(--purple);

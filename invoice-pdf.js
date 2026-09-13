@@ -110,13 +110,11 @@
       page = doc.addPage([612, 792]);
       page.drawRectangle({x: 0, y: 784, width: 612, height: 8, color: rgb(0, 0, 0)});
       page.drawRectangle({x: 0, y: 0, width: 612, height: 6, color: copper});
-      let drewLogo = false;
       if (logo && Number(logo.width) > 1 && Number(logo.height) > 1) {
         const factor = Math.min(156 / logo.width, 76 / logo.height);
         const logoH = logo.height * factor;
         if (Number.isFinite(factor) && Number.isFinite(logoH) && logoH > 0) {
           page.drawImage(logo, {x: 62 * s, y: (height - 56 - logoH) * s, width: logo.width * factor * s, height: logoH * s});
-          drewLogo = true;
         }
       }
       const approval = wrap(data.approval || "", bold, 14, 420);
@@ -124,9 +122,6 @@
       const numberY = 69 + approval.length * 18 + 22;
       rightText(data.invoiceNumber, right, numberY, 16, regular, muted);
       rightText("Issued " + dateLabel, right, numberY + 20, 16, regular, muted);
-      if (!drewLogo) {
-        draw(data.fromName || "Ruben Perla", 62, 56, 28, bold, ink);
-      }
       if (!parties) return 205;
       const y = 225;
       function party(label, name, details, x, max) {
