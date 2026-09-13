@@ -67,8 +67,9 @@
   async function generate(data, logoBytes) {
     const pdfLib = lib();
     if (!pdfLib) throw new Error("No se cargó el generador de PDF. Recarga la página.");
-    const {PDFDocument, StandardFonts, rgb} = pdfLib;
+    const {PDFDocument, StandardFonts, rgb, PageSizes} = pdfLib;
     const doc = await PDFDocument.create();
+    const letter = (PageSizes && PageSizes.Letter) || [612, 792];
     const regular = await doc.embedFont(StandardFonts.Helvetica);
     const bold = await doc.embedFont(StandardFonts.HelveticaBold);
     const logo = await embedLogo(doc, logoBytes);
@@ -91,7 +92,7 @@
     });
     const totalHours = summary.reduce((sum, row) => sum + row.totalHours, 0);
     const totalPay = summary.reduce((sum, row) => sum + row.pay, 0);
-    const pageW = 612, pageH = 792, left = 42, width = 528;
+    const pageW = Number(letter[0]) || 612, pageH = Number(letter[1]) || 792, left = 42, width = pageW - left * 2;
     const ink = rgb(28 / 255, 25 / 255, 23 / 255);
     const copper = rgb(212 / 255, 101 / 255, 47 / 255);
     const peach = rgb(253 / 255, 233 / 255, 217 / 255);
@@ -120,7 +121,13 @@
       }
       return result.filter(Boolean);
     };
-    const newPage = () => { page = doc.addPage([pageW, pageH]); cursor = 44; };
+    const newPage = () => {
+      page = doc.addPage([pageW, pageH]);
+      if (typeof page.setSize === "function") page.setSize(pageW, pageH);
+      if (typeof page.setMediaBox === "function") page.setMediaBox(0, 0, pageW, pageH);
+      if (typeof page.setCropBox === "function") page.setCropBox(0, 0, pageW, pageH);
+      cursor = 44;
+    };
     const text = (value, x, top, size = 10, font = regular, color = ink) => {
       const label = pdfSafe(value);
       try { page.drawText(label, {x, y: pageH - top - size, size, font, color}); }
@@ -165,8 +172,8 @@
       cursor = 205;
     };
     header();
-    const columns = [100, 115, 85, 85, 70, 73];
-    const pageLimit = 710;
+    const columns = [100, 115, 85, 85, 70, Math.max(60, width - 100 - 115 - 85 - 85 - 70)];
+    const pageLimit = pageH - 82;
     const maxRowsFit = () => Math.max(0, Math.floor((pageLimit - cursor - 28 - 27) / 27));
     const pagedTable = (cols, headers, allRows, totalRow, peachFirst = false, gapAfter = 44) => {
       let start = 0;
@@ -192,11 +199,11 @@
       pagedTable(columns, ["DATE", "EMPLOYEE", "TIME IN", "TIME OUT", "LUNCH", "TOTAL HOURS"], tableRows, ["TOTAL", "", "", "", "", hoursLabel(employeeTotal)]);
     }
     const summaryRows = summary.map(row => [row.employee, hoursLabel(row.totalHours), row.rate == null ? "VARIES" : `${money(row.rate)}/HR`, money(row.pay)]);
-    pagedTable([180, 130, 140, 82], ["EMPLOYEE", "TOTAL HOURS", "HOURLY RATE", "TOTAL PAY"], summaryRows, ["TOTAL", hoursLabel(totalHours), "", money(totalPay)], true, 57);
+    pagedTable([180, 130, 140, Math.max(70, width - 180 - 130 - 140)], ["EMPLOYEE", "TOTAL HOURS", "HOURLY RATE", "TOTAL PAY"], summaryRows, ["TOTAL", hoursLabel(totalHours), "", money(totalPay)], true, 57);
     text("Description:", left, cursor, 11, bold, ink);
     cursor += 22;
     wrap(data.description || "", regular, 10, width).forEach(lineText => {
-      if (cursor + 16 > 750) { header(); text("Description:", left, cursor, 11, bold, ink); cursor += 22; }
+      if (cursor + 16 > pageH - 42) { header(); text("Description:", left, cursor, 11, bold, ink); cursor += 22; }
       text(lineText, left, cursor, 10, regular, ink);
       cursor += 14;
     });
