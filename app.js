@@ -390,14 +390,27 @@
     requestAnimationFrame(fitInvoicePreview);
   }
 
+  let fittingPreview = false;
+  let lastPreviewKey = "";
+
   function fitInvoicePreview() {
     const viewport = $("#invoiceViewport");
     const paper = $("#invoicePaper");
-    if (!viewport || !paper || !viewport.clientWidth || !paper.offsetHeight) return;
-    const scale = Math.min(1, viewport.clientWidth / paper.offsetWidth);
+    if (!viewport || !paper || fittingPreview) return;
+    if ($("#invoiceView")?.classList.contains("hidden")) return;
+    const width = viewport.clientWidth;
+    const paperWidth = paper.offsetWidth;
+    const paperHeight = paper.offsetHeight;
+    if (!width || !paperWidth || !paperHeight) return;
+    const scale = Math.min(1, width / paperWidth);
+    const height = Math.ceil(paperHeight * scale);
+    const key = width + ":" + paperWidth + ":" + paperHeight + ":" + scale.toFixed(4) + ":" + height;
+    if (key === lastPreviewKey) return;
+    fittingPreview = true;
+    lastPreviewKey = key;
     paper.style.transform = `scale(${scale})`;
-    const height = `${Math.ceil(paper.offsetHeight * scale)}px`;
-    if (viewport.style.height !== height) viewport.style.height = height;
+    viewport.style.height = height + "px";
+    requestAnimationFrame(() => { fittingPreview = false; });
   }
 
   function setSidebarOpen(open) {
@@ -421,7 +434,7 @@
     setSidebarOpen(false);
     replayViewAnimation(view);
     if (view === "board") window.AuthApp?.replayWelcome?.();
-    if (view === "invoice") updateInvoicePreview();
+    if (view === "invoice") { lastPreviewKey = ""; updateInvoicePreview(); }
     if (view === "hours") window.HoursApp?.open();
   }
 
@@ -560,8 +573,12 @@
         builderRecordId = record.id;
         replaceInMemory(record);
         render();
-        if (alsoDownload) await download(record.pdfBlob, record.pdfName, { share: true });
-        else await download(record.pdfBlob, record.pdfName);
+        try {
+          if (alsoDownload) await download(record.pdfBlob, record.pdfName, { share: true });
+          else await download(record.pdfBlob, record.pdfName);
+        } catch (downloadError) {
+          console.warn(downloadError);
+        }
         if (!alsoDownload) navClick("archive");
         showToast(previous
           ? "Invoice actualizada. El PDF quedó en la nube y se descargó."
@@ -731,14 +748,9 @@
   updateWelcome();
   setInterval(updateWelcome, 60000);
   $("#resetInvoiceButton").addEventListener("click", () => resetInvoiceBuilder());
-  window.addEventListener("resize", fitInvoicePreview);
-  window.addEventListener("afterprint", fitInvoicePreview);
-  $("#paperLogo").addEventListener("load", fitInvoicePreview, true);
-  if ("ResizeObserver" in window) {
-    const previewObserver = new ResizeObserver(() => requestAnimationFrame(fitInvoicePreview));
-    previewObserver.observe($("#invoiceViewport"));
-    previewObserver.observe($("#invoicePaper"));
-  }
+  window.addEventListener("resize", () => { lastPreviewKey = ""; fitInvoicePreview(); });
+  window.addEventListener("afterprint", () => { lastPreviewKey = ""; fitInvoicePreview(); });
+  $("#paperLogo").addEventListener("load", () => { lastPreviewKey = ""; fitInvoicePreview(); }, true);
   $("#printInvoiceButton").addEventListener("click", () => saveGeneratedInvoice(true));
   $("#saveGeneratedInvoiceButton").addEventListener("click", () => saveGeneratedInvoice(false));
   $("#fillInvoiceFromTextButton").addEventListener("click", fillInvoiceFromText);

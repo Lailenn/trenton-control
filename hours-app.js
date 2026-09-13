@@ -105,10 +105,23 @@
     requestAnimationFrame(fitPreview);
   }
 
+  let fittingHours = false;
+  let lastHoursKey = "";
   function fitPreview() {
     const viewport = $("#hoursPreviewViewport"), paper = $("#hoursPaper");
-    if (!viewport || !paper || !viewport.clientWidth || !paper.offsetWidth) return;
-    const scale = Math.min(1, viewport.clientWidth / paper.offsetWidth); paper.style.transform = `scale(${scale})`; viewport.style.height = `${Math.ceil(paper.offsetHeight * scale)}px`;
+    if (!viewport || !paper || fittingHours) return;
+    if ($("#hoursView")?.classList.contains("hidden")) return;
+    const width = viewport.clientWidth, paperWidth = paper.offsetWidth, paperHeight = paper.offsetHeight;
+    if (!width || !paperWidth || !paperHeight) return;
+    const scale = Math.min(1, width / paperWidth);
+    const height = Math.ceil(paperHeight * scale);
+    const key = width + ":" + paperWidth + ":" + paperHeight + ":" + scale.toFixed(4) + ":" + height;
+    if (key === lastHoursKey) return;
+    fittingHours = true;
+    lastHoursKey = key;
+    paper.style.transform = `scale(${scale})`;
+    viewport.style.height = height + "px";
+    requestAnimationFrame(() => { fittingHours = false; });
   }
 
   async function logoBytes() {
@@ -233,7 +246,7 @@
       else $("#hoursError").textContent = "No hay PDF de horas para descargar.";
     } catch (error) { $("#hoursError").textContent = error.message || "No se pudo descargar el PDF."; }
   });
-  window.addEventListener("resize", fitPreview);
+  window.addEventListener("resize", () => { lastHoursKey = ""; fitPreview(); });
   function resetSession() { reports = []; renderHistory(); window.TrentonControl?.hoursArchive?.render?.(); }
   reset();
   root.HoursApp = {open, render, boot, resetSession, reports: () => reports};
