@@ -726,6 +726,7 @@
   $("#clearFilterButton").addEventListener("click", () => { $("#searchInput").value = ""; document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.nav === "board")); renderBoard(); });
   document.querySelectorAll(".nav-item").forEach((item) => item.addEventListener("click", () => navClick(item.dataset.nav)));
   $("#mobileMenu").addEventListener("click", () => setSidebarOpen(!$("#sidebar").classList.contains("open")));
+  $("#sidebarClose")?.addEventListener("click", () => setSidebarOpen(false));
   $("#sidebarScrim")?.addEventListener("click", () => setSidebarOpen(false));
   document.addEventListener("keydown", (event) => { if (event.key === "Escape") setSidebarOpen(false); });
   updateWelcome();

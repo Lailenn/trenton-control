@@ -128,7 +128,7 @@
       if (!parties) return 205;
       const y = 225;
       function party(label, name, details, x, max) {
-        draw(label, x, y, 16, bold, teal);
+        draw(label, x, y, 16, bold, ink);
         let bottom = linesAt(wrap(name, bold, 20, max), x, y + 36, 20, bold, 24, ink) + 10;
         for (const detail of details.filter(Boolean)) bottom = linesAt(wrap(detail, regular, 16, max), x, bottom, 16, regular, 20, ink) + 6;
         return Number.isFinite(bottom) ? bottom - 6 : y + 80;
@@ -155,7 +155,7 @@
       [top, top + 48, tableBottom].forEach(y => line(left, y, right, y, .7, lineColor));
       ["Description", "QTY", "Price, USD", "Amount, USD"].forEach((label, i) => {
         const x = i === 0 ? left + 8 : (columns[i] + columns[i + 1] - measure(bold, label, 14)) / 2;
-        draw(label, x, top + 15, 14, bold, teal);
+        draw(label, x, top + 15, 14, bold, ink);
       });
       linesAt(chunk, left + 5, top + 66, 16, regular, 20, ink);
       if (index === description.length) {
@@ -166,7 +166,7 @@
         rightText("Price for materials and labor:", columns[3] - 7, tableBottom + 4, 16, regular, ink);
         const totalText = money(total).replace("$", "$ ");
         const totalSize = Math.min(16, (right - columns[3] - 12) / Math.max(measure(bold, totalText, 1), 0.01));
-        draw(totalText, columns[3] + 6, tableBottom + 4, totalSize, bold, teal);
+        draw(totalText, columns[3] + 6, tableBottom + 4, totalSize, bold, ink);
       }
     }
     const noteLines = wrap(note, bold, 17, right - 42);

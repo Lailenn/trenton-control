@@ -1071,6 +1071,7 @@ body {
     linear-gradient(180deg, #2a3358 0%, #1e2746 100%);
   color: #eef1fb;
 }
+.sidebar-close { display: none; }
 .sidebar-head {
   position: relative;
   z-index: 2;
@@ -1518,16 +1519,27 @@ body {
   .dock-item svg { width: 20px; height: 20px; }
   .dock-item.is-active { color: #2f6bff; }
   .dock-fab {
+    display: grid;
+    place-items: center;
     width: 44px;
     height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    padding: 0;
     margin: 0 auto;
     border: 0;
     border-radius: 50%;
     background: #2f6bff;
     color: #fff;
-    font-size: 26px;
-    line-height: 1;
+    line-height: 0;
+    appearance: none;
+    -webkit-appearance: none;
     box-shadow: 0 6px 14px rgba(47, 107, 255, .28);
+  }
+  .dock-fab svg {
+    display: block;
+    width: 22px;
+    height: 22px;
   }
   .toast { bottom: calc(var(--dock-h) + 12px); }
   #boardView .dash-stats { grid-template-columns: 1fr 1fr; }
@@ -1704,6 +1716,49 @@ body {
     min-height: 44px;
     touch-action: manipulation;
     pointer-events: auto;
+  }
+  body.sidebar-lock .topbar,
+  body.sidebar-lock .mobile-dock {
+    display: none !important;
+  }
+  body.sidebar-lock .sidebar {
+    top: 0 !important;
+    bottom: 0 !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-bottom-right-radius: 0;
+    z-index: 100 !important;
+  }
+  body.sidebar-lock .sidebar-scrim {
+    top: 0 !important;
+    bottom: 0 !important;
+    z-index: 90 !important;
+  }
+  body.sidebar-lock .sidebar-head {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px 14px 10px;
+  }
+  body.sidebar-lock .sidebar-head .brand-block {
+    padding-bottom: 0;
+    flex: 1;
+    min-width: 0;
+  }
+  body.sidebar-lock .sidebar-head .logout-button {
+    display: none !important;
+  }
+  body.sidebar-lock .sidebar-close {
+    display: grid !important;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 auto;
+    border: 1px solid rgba(255,255,255,.22);
+    border-radius: 12px;
+    background: rgba(255,255,255,.1);
+    color: #fff;
   }
 }
 

@@ -161,7 +161,7 @@
         }
       }
       const jobLabel = "JOB:"; const address = pdfSafe(data.jobAddress || ""); const jobSize = 13; const jobWidth = measure(bold, jobLabel, jobSize) + 8 + measure(bold, address, jobSize); const jobX = (pageW - jobWidth) / 2;
-      text(jobLabel, jobX, 137, jobSize, bold, teal); text(address, jobX + measure(bold, jobLabel, jobSize) + 8, 137, jobSize, bold, ink); line(jobX + measure(bold, jobLabel, jobSize) + 8, 154, jobX + jobWidth, 154, 1.2, copper);
+      text(jobLabel, jobX, 137, jobSize, bold, ink); text(address, jobX + measure(bold, jobLabel, jobSize) + 8, 137, jobSize, bold, ink); line(jobX + measure(bold, jobLabel, jobSize) + 8, 154, jobX + jobWidth, 154, 1.2, copper);
       centered(fullDate(data.reportDate), 169, 13, bold, copper);
       cursor = 205;
     };
@@ -194,10 +194,10 @@
     }
     const summaryRows = summary.map(row => [row.employee, hoursLabel(row.totalHours), row.rate == null ? "VARIES" : `${money(row.rate)}/HR`, money(row.pay)]);
     pagedTable([180, 130, 140, 82], ["EMPLOYEE", "TOTAL HOURS", "HOURLY RATE", "TOTAL PAY"], summaryRows, ["TOTAL", hoursLabel(totalHours), "", money(totalPay)], true, 57);
-    text("Description:", left, cursor, 11, bold, teal);
+    text("Description:", left, cursor, 11, bold, ink);
     cursor += 22;
     wrap(data.description || "", regular, 10, width).forEach(lineText => {
-      if (cursor + 16 > 750) { header(); text("Description:", left, cursor, 11, bold, teal); cursor += 22; }
+      if (cursor + 16 > 750) { header(); text("Description:", left, cursor, 11, bold, ink); cursor += 22; }
       text(lineText, left, cursor, 10, regular, ink);
       cursor += 14;
     });
