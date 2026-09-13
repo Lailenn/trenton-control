@@ -26,7 +26,7 @@ body { margin: 0; min-width: 320px; background: var(--canvas); color: var(--ink)
 button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 .hidden { display: none !important; }
-button:disabled { cursor: not-allowed; opacity: .58; }
+button:disabled { cursor: pointer; opacity: .58; }
 button:focus-visible, a:focus-visible { outline: 3px solid #8da7ff; outline-offset: 3px; }
 a.button { text-decoration: none; }
 button.stat-card { color: inherit; text-align: left; font: inherit; cursor: pointer; }
@@ -87,11 +87,8 @@ button.stat-card:hover { box-shadow: 0 8px 28px rgba(59,110,234,.14); transform:
 .hours-entry-grid input { min-height: 34px; padding: 7px 8px; font-size: 12px; }
 .hours-calculated { margin: 10px 0 0; color: var(--blue-dark); font-size: 11px; font-weight: 700; }
 .hours-preview-panel { min-width: 0; overflow: visible; }
-.hours-preview-viewport { width: 100%; height: auto !important; container-type: inline-size; overflow: visible; background: #eef1f6; padding: 22px; box-sizing: border-box; }
-.hours-paper { width: 100%; max-width: 816px; min-width: 0; min-height: 1056px; margin: 0 auto; padding: 42px 44px 58px; box-sizing: border-box; transform: none !important; background: #fff; color: #000; font-family: Arial, Helvetica, sans-serif; box-shadow: 0 4px 18px rgba(26, 40, 67, .12); }
-@supports (zoom: 0.5) {
-  .hours-paper { width: 816px; max-width: none; min-width: 816px; zoom: min(1, calc(100cqi / 816px)); }
-}
+.hours-preview-viewport { width: 100%; height: auto !important; overflow: visible; background: #eef1f6; padding: 22px; box-sizing: border-box; }
+.hours-paper { width: 100%; max-width: 816px; min-width: 0; min-height: 1056px; margin: 0 auto; padding: 42px 44px 58px; box-sizing: border-box; transform: none !important; zoom: 1 !important; background: #fff; color: #000; font-family: Arial, Helvetica, sans-serif; box-shadow: 0 4px 18px rgba(26, 40, 67, .12); }
 .hours-logo { display: block; width: 300px; height: auto; margin: 0 auto 19px; }
 .hours-job-line { margin: 0; text-align: center; font-size: 17px; font-weight: 700; }
 .hours-job-line u { text-underline-offset: 3px; }
@@ -444,7 +441,7 @@ h1 span { color: var(--blue); }
 @media (max-width: 380px) { .stats-grid { grid-template-columns: 1fr; }.hero h1 { font-size: 29px; }.hero-quote { font-size: 12px; }.button-large { font-size: 12px; } }
 
 
-/* FACTURA: FORMATO ORIGINAL DE RUBEN, SIN BUCLE DE ESCALADO */
+/* FACTURA: hoja carta visible, sin zoom ni JS que recalen el layout */
 #invoiceView .invoice-preview-panel {
   overflow: visible;
   max-height: none;
@@ -454,7 +451,6 @@ h1 span { color: var(--blue); }
 #invoiceView .invoice-preview-viewport {
   width: 100%;
   height: auto !important;
-  container-type: inline-size;
   overflow: visible;
   background: #fff;
 }
@@ -472,15 +468,7 @@ h1 span { color: var(--blue); }
   color: #000;
   font: 16px/1.25 Arial, Helvetica, sans-serif;
   transform: none !important;
-}
-
-@supports (zoom: 0.5) {
-  #invoicePaper {
-    width: 816px;
-    max-width: none;
-    min-width: 816px;
-    zoom: min(1, calc(100cqi / 816px));
-  }
+  zoom: 1 !important;
 }
 
 #invoicePaper .invoice-header {
@@ -2154,7 +2142,7 @@ body {
 }
 .login-passkey:disabled {
   opacity: .6;
-  cursor: wait;
+  cursor: pointer;
 }
 .login-passkey-hint,
 .passkey-origin {

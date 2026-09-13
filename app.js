@@ -622,22 +622,9 @@
       if (previous.pdfBlob && !previous.pdfHash) {
         try {
           const record = {...previous, pdfHash: await PDFs.hash(previous.pdfBlob)};
-          if (!Core.issuedDate(record)) {
-            try { record.issuedDate = (await PDFs.read(record.pdfBlob)).fields.issuedDate || ""; } catch (_) { /* Keep undated records for manual review. */ }
-          }
           await saveRecord(record); replaceInMemory(record); changed = true;
         } catch (error) { console.error("No se pudo preparar el PDF de", previous.invoiceNumber, error); }
-        continue;
       }
-      if (!previous.invoiceData || previous.pdfBlob || previous.pdfPath) continue;
-      const date = Core.issuedDate(previous);
-      if (!date) continue;
-      try {
-        const record = {...previous, issuedDate: date};
-        const data = {...previous.invoiceData, issuedDate: date, workAddress: previous.address, invoiceNumber: previous.invoiceNumber, description: previous.description};
-        if (Core.cents(Number(data.qty) * Number(data.price)) !== Core.cents(previous.amount)) { data.qty = 1; data.price = previous.amount; if (data.note) continue; }
-        await attachGeneratedPdf(record, data); await saveRecord(record); replaceInMemory(record); changed = true;
-      } catch (error) { console.error("No se pudo recuperar el PDF de", previous.invoiceNumber, error); }
     }
     if (changed) render();
   }
@@ -798,8 +785,6 @@
   window.TranslatorApp?.bindAll();
 
   async function boot() {
-    const controls = ["saveGeneratedInvoiceButton", "printInvoiceButton", "saveButton", "importInvoicesButton"];
-    controls.forEach(id => { if ($("#" + id)) $("#" + id).disabled = true; });
     try {
       await window.LocalCache.open();
       await loadRecords();
@@ -807,16 +792,15 @@
       await resetInvoiceBuilder();
       updateSaved("En la nube y en este navegador");
       render();
-      await recoverExistingPdfs();
-      await window.HoursApp?.boot?.();
       ready = true;
+      recoverExistingPdfs().catch(error => console.warn(error));
+      window.HoursApp?.boot?.().catch(error => console.warn(error));
     } catch (error) {
       console.error(error);
+      ready = true;
       updateSaved("Nube no disponible");
       render();
       showToast(error.message || "No se pudieron cargar los registros de Supabase.");
-    } finally {
-      controls.forEach(id => { if ($("#" + id)) $("#" + id).disabled = false; });
     }
   }
 
