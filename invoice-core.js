@@ -59,7 +59,7 @@
     const lines = String(text || "").replace(/\u00a0/g, " ").split(/\r?\n/).map(s => s.trim()).filter(Boolean);
     const warnings = [], fields = {address: "", invoiceNumber: "", issuedDate: "", amount: null};
     const rules = [
-      /^(?:price\s+for\s+materials?\s+and\s+labou?r|precio\s+(?:(?:por|de|para)\s+)?materiales?\s+y\s+mano\s+de\s+obra)\s*[:=]?\s*(.*)$/i,
+      /^(?:price\s+(?:for|per|of)\s+(?:materials?\s+and\s+)?labou?r|precio\s+(?:(?:por|de|para)\s+)?(?:materiales?\s+y\s+)?(?:mano\s+de\s+obra|labou?r))\s*[:.\-=]?\s*(.*)$/i,
       /^(?:grand\s+total|invoice\s+total|total\s+(?:de\s+la\s+factura|factura|facturado|invoice))\s*[:=]?\s*(.*)$/i,
       /^(?:total(?:\s+(?:amount|price))?|monto\s+total|precio\s+total|importe\s+total)\s*[:=]?\s*(.*)$/i
     ];
