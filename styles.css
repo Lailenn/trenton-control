@@ -87,8 +87,22 @@ button.stat-card:hover { box-shadow: 0 8px 28px rgba(59,110,234,.14); transform:
 .hours-entry-grid input { min-height: 34px; padding: 7px 8px; font-size: 12px; }
 .hours-calculated { margin: 10px 0 0; color: var(--blue-dark); font-size: 11px; font-weight: 700; }
 .hours-preview-panel { min-width: 0; overflow: visible; container-type: inline-size; container-name: hours-sheet; }
-.hours-preview-viewport { width: 100%; height: auto !important; overflow: visible; background: #eef1f6; padding: 22px; box-sizing: border-box; }
-.hours-paper { width: 8.5in; max-width: 100%; min-width: 0; min-height: 11in; margin: 0 auto; padding: 42px 44px 58px; box-sizing: border-box; transform: none !important; zoom: 1 !important; background: #fff; color: #000; font-family: Arial, Helvetica, sans-serif; box-shadow: 0 4px 18px rgba(26, 40, 67, .12); }
+.hours-preview-viewport { width: 100%; height: auto !important; overflow: visible; background: #fff; padding: 0; box-sizing: border-box; }
+.hours-paper, #hoursPaper {
+  width: 100%;
+  max-width: 816px;
+  min-width: 0;
+  min-height: 922px;
+  margin: 0 auto;
+  padding: 60px 40px 58px;
+  box-sizing: border-box;
+  border: 0;
+  background: #fff;
+  color: #000;
+  font-family: Arial, Helvetica, sans-serif;
+  transform: none !important;
+  zoom: 1 !important;
+}
 .hours-logo { display: block; width: 300px; height: auto; margin: 0 auto 19px; }
 .hours-job-line { margin: 0; text-align: center; font-size: 17px; font-weight: 700; }
 .hours-job-line u { text-underline-offset: 3px; }
@@ -110,10 +124,10 @@ button.stat-card:hover { box-shadow: 0 8px 28px rgba(59,110,234,.14); transform:
 .hours-history-card strong, .hours-history-card span { display: block; overflow-wrap: anywhere; }.hours-history-card span { margin-top: 4px; color: var(--muted); font-size: 11px; }.hours-history-card b { font-size: 18px; }.hours-history-card .button { justify-self: start; }
 .hours-empty-history { padding: 28px; border: 1px dashed #c5d0e4; border-radius: 10px; color: var(--muted); text-align: center; }
 @media (max-width: 950px) { .hours-page-heading { align-items: flex-start; flex-direction: column; }.hours-layout { grid-template-columns: 1fr; }.hours-preview-panel { order: -1; } }
-@media (max-width: 570px) { .hours-heading-actions, .hours-heading-actions .button { width: 100%; }.hours-form-panel, .hours-history { padding: 16px; }.hours-fields, .hours-entry-grid { grid-template-columns: 1fr; }.hours-fields .field.full, .hours-entry-grid .hours-employee { grid-column: auto; }.hours-entry-title { align-items: flex-start; flex-direction: column; }.hours-entry-title .button { width: 100%; }.hours-preview-viewport { padding: 10px; }.hours-paper { padding: 28px 32px 46px; }.hours-logo { width: 250px; }.hours-job-line, .hours-report-date { font-size: 14px; }.hours-work-table, .hours-summary-table { font-size: 10px; }.hours-work-table th, .hours-work-table td, .hours-summary-table th, .hours-summary-table td { padding: 5px 4px; }.version-badge { display: none; } }
+@media (max-width: 570px) { .hours-heading-actions, .hours-heading-actions .button { width: 100%; }.hours-form-panel, .hours-history { padding: 16px; }.hours-fields, .hours-entry-grid { grid-template-columns: 1fr; }.hours-fields .field.full, .hours-entry-grid .hours-employee { grid-column: auto; }.hours-entry-title { align-items: flex-start; flex-direction: column; }.hours-entry-title .button { width: 100%; }.hours-preview-viewport { padding: 0; }.hours-paper, #hoursPaper { padding: 28px 16px 36px; min-height: 922px; }.hours-logo { width: 250px; }.hours-job-line, .hours-report-date { font-size: 14px; }.hours-work-table, .hours-summary-table { font-size: 10px; }.hours-work-table th, .hours-work-table td, .hours-summary-table th, .hours-summary-table td { padding: 5px 4px; }.version-badge { display: none; } }
 @container hours-sheet (max-width: 720px) {
-  .hours-preview-viewport { padding: 8px; }
-  .hours-paper { padding: 20px 10px 28px; min-height: 0; }
+  .hours-preview-viewport { padding: 0; }
+  .hours-paper, #hoursPaper { padding: 28px 16px 36px; min-height: 922px; }
   .hours-logo { width: min(220px, 70%); }
   .hours-job-line, .hours-report-date { font-size: 13px; }
   .hours-work-table, .hours-summary-table { font-size: 9px; margin-bottom: 28px; }
@@ -398,7 +412,7 @@ h1 span { color: var(--blue); }
 @media (max-width: 950px) { .invoice-page-heading { align-items: flex-start; flex-direction: column; }.invoice-builder { grid-template-columns: 1fr; }.invoice-preview-panel { order: -1; }.invoice-paper { min-height: 0; } }
 @media (max-width: 570px) { .invoice-page-actions { width: 100%; flex-direction: column; }.invoice-page-actions .button { width: 100%; }.invoice-form-panel { padding: 16px; }.invoice-fields { grid-template-columns: 1fr; }.invoice-fields .field.full { grid-column: auto; }.invoice-paper { padding: 26px 16px 30px; transform-origin: top left; }.paper-brand strong { font-size: 18px; }.paper-logo { width: 53px; height: 37px; }.paper-meta { min-width: 145px; }.paper-meta strong { font-size: 9px; }.paper-meta span { font-size: 12px; }.paper-parties { gap: 18px; margin-top: 55px; }.paper-parties span { margin-bottom: 15px; font-size: 11px; }.paper-parties strong { font-size: 14px; }.paper-parties p { font-size: 10px; }.paper-table { margin-top: 31px; font-size: 10px; }.paper-table th { height: 38px; padding: 4px; font-size: 8px; }.paper-table td { height: 180px; padding: 6px 4px; }.paper-total { gap: 5px; font-size: 10px; }.paper-total strong { min-width: 86px; padding: 5px; font-size: 10px; }.paper-note { margin-top: 32px; font-size: 10px; } }
 @media print { @page { size: letter; margin: 0; } body { background: #fff; } body * { visibility: hidden !important; } #invoiceView, #invoiceView * { visibility: visible !important; } #invoiceView { position: absolute; inset: 0; display: block !important; padding: 0; } #invoiceView .invoice-page-heading, #invoiceView .invoice-form-panel, #invoiceView .preview-toolbar { display: none !important; } #invoiceView .invoice-builder { display: block; } #invoiceView .invoice-preview-panel { border: 0; box-shadow: none; } #invoiceView .invoice-paper { width: 100%; min-height: 0; padding: 52px 50px 46px; box-shadow: none; } }
-@media print { @page { size: letter; margin: 0; } body * { visibility: hidden !important; } #hoursView, #hoursView * { visibility: visible !important; } #hoursView { position: absolute; inset: 0; display: block !important; padding: 0; } #hoursView .hours-page-heading, #hoursView .hours-form-panel, #hoursView .hours-history, #hoursView .preview-toolbar { display: none !important; } #hoursView .hours-layout { display: block; } #hoursView .hours-preview-panel { border: 0; box-shadow: none; } #hoursView .hours-preview-viewport { padding: 0; overflow: visible; } #hoursView .hours-paper { width: 8.5in; min-height: 11in; max-width: 8.5in; transform: none !important; zoom: 1 !important; box-shadow: none; margin: 0 auto; } }
+@media print { @page { size: letter; margin: 0; } body * { visibility: hidden !important; } #hoursView, #hoursView * { visibility: visible !important; } #hoursView { position: absolute; inset: 0; display: block !important; padding: 0; } #hoursView .hours-page-heading, #hoursView .hours-form-panel, #hoursView .hours-history, #hoursView .preview-toolbar { display: none !important; } #hoursView .hours-layout { display: block; } #hoursView .hours-preview-panel { border: 0; box-shadow: none; } #hoursView .hours-preview-viewport { padding: 0; overflow: visible; } #hoursView .hours-paper, #hoursView #hoursPaper { width: 816px; max-width: 816px; min-height: 1056px; padding: 60px 40px 58px; transform: none !important; zoom: 1 !important; box-shadow: none; margin: 0 auto; } }
 
 /* RENOVACIÓN VISUAL Y MENÚ RESPONSIVO */
 @media screen {
@@ -661,6 +675,32 @@ h1 span { color: var(--blue); }
 
 #invoicePaper [hidden] {
   display: none !important;
+}
+
+#hoursView .hours-preview-panel {
+  overflow: visible;
+  max-height: none;
+  position: static;
+}
+
+#hoursView .hours-preview-viewport {
+  width: 100%;
+  height: auto !important;
+  overflow: visible;
+  background: #fff;
+  padding: 0;
+}
+
+#hoursView #hoursPaper {
+  width: 100%;
+  max-width: 816px;
+  min-width: 0;
+  min-height: 922px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  background: #fff;
+  transform: none !important;
+  zoom: 1 !important;
 }
 
 @container invoice-sheet (max-width: 720px) {
@@ -1279,7 +1319,7 @@ body {
   background: var(--surface);
 }
 .hours-entry-row, .hours-history-card { background: #f6f7fc; border-color: #dde3f2; }
-.hours-preview-viewport, .invoice-preview-viewport { background: #e8edf7; }
+.hours-preview-viewport, .invoice-preview-viewport { background: #fff; }
 .translator-panel {
   border-color: #ddd6fb;
   border-left-color: var(--purple);
