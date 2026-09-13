@@ -24,7 +24,11 @@
   };
   const dayName = value => pdfSafe(dateValue(value)?.toLocaleDateString("en-US", {weekday: "long"}) || value || "");
   const fullDate = value => pdfSafe(dateValue(value)?.toLocaleDateString("en-US", {weekday: "long", month: "long", day: "numeric", year: "numeric"}) || value || "");
-  const hoursLabel = value => `${(Number(value) || 0).toFixed(2)} HRS`;
+  const hoursLabel = value => {
+    const number = Number(value) || 0;
+    const label = Number.isInteger(number) ? String(number) : String(number.toFixed(2)).replace(/\.?0+$/, "");
+    return `${label} HRS`;
+  };
   const money = value => {
     const number = Number(value) || 0;
     const decimals = Number.isInteger(number) ? 0 : 2;
@@ -54,7 +58,7 @@
     if (!logoBytes) return null;
     try {
       const bytes = logoBytes instanceof Uint8Array ? logoBytes : new Uint8Array(logoBytes);
-      if (bytes.length < 8 || bytes.length > 250000) return null;
+      if (bytes.length < 8 || bytes.length > 1500000) return null;
       if (bytes[0] === 0x89 && bytes[1] === 0x50) return await doc.embedPng(bytes);
       if (bytes[0] === 0xFF && bytes[1] === 0xD8) return await doc.embedJpg(bytes);
       return null;
@@ -93,10 +97,10 @@
     const totalHours = summary.reduce((sum, row) => sum + row.totalHours, 0);
     const totalPay = summary.reduce((sum, row) => sum + row.pay, 0);
     const pageW = Number(letter[0]) || 612, pageH = Number(letter[1]) || 792, left = 42, width = pageW - left * 2;
-    const ink = rgb(28 / 255, 25 / 255, 23 / 255);
+    const ink = rgb(0, 0, 0);
     const copper = rgb(212 / 255, 101 / 255, 47 / 255);
     const peach = rgb(253 / 255, 233 / 255, 217 / 255);
-    const lineColor = rgb(176 / 255, 137 / 255, 104 / 255);
+    const lineColor = rgb(0, 0, 0);
     let page, cursor;
     const measure = (font, value, size) => {
       const label = pdfSafe(value);
@@ -137,7 +141,7 @@
       }
     };
     const centered = (value, top, size = 10, font = regular, color = ink) => { const label = pdfSafe(value); text(label, (pageW - measure(font, label, size)) / 2, top, size, font, color); };
-    const line = (x1, y1, x2, y2, thickness = .65, color = lineColor) => page.drawLine({start: {x: x1, y: pageH - y1}, end: {x: x2, y: pageH - y2}, thickness, color});
+    const line = (x1, y1, x2, y2, thickness = 1, color = lineColor) => page.drawLine({start: {x: x1, y: pageH - y1}, end: {x: x2, y: pageH - y2}, thickness, color});
     const cell = (value, x, top, w, size = 10, font = regular, align = "left", color = ink) => {
       const label = pdfSafe(value); const measured = measure(font, label, size); const px = align === "center" ? x + (w - measured) / 2 : align === "right" ? x + w - measured - 7 : x + 7;
       text(label, px, top + 7, size, font, color);
@@ -167,8 +171,8 @@
         }
       }
       const jobLabel = "JOB:"; const address = pdfSafe(data.jobAddress || ""); const jobSize = 13; const jobWidth = measure(bold, jobLabel, jobSize) + 8 + measure(bold, address, jobSize); const jobX = (pageW - jobWidth) / 2;
-      text(jobLabel, jobX, 137, jobSize, bold, ink); text(address, jobX + measure(bold, jobLabel, jobSize) + 8, 137, jobSize, bold, ink); line(jobX + measure(bold, jobLabel, jobSize) + 8, 154, jobX + jobWidth, 154, 1.2, copper);
-      centered(fullDate(data.reportDate), 169, 13, bold, copper);
+      text(jobLabel, jobX, 137, jobSize, bold, ink); text(address, jobX + measure(bold, jobLabel, jobSize) + 8, 137, jobSize, bold, ink); line(jobX + measure(bold, jobLabel, jobSize) + 8, 154, jobX + jobWidth, 154, 1, ink);
+      centered(fullDate(data.reportDate), 169, 13, bold, ink);
       cursor = 205;
     };
     header();

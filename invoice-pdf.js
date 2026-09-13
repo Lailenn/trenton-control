@@ -29,7 +29,7 @@
     if (!logoBytes) return null;
     try {
       const bytes = logoBytes instanceof Uint8Array ? logoBytes : new Uint8Array(logoBytes);
-      if (bytes.length < 8 || bytes.length > 250000) return null;
+      if (bytes.length < 8 || bytes.length > 1500000) return null;
       if (bytes[0] === 0x89 && bytes[1] === 0x50) return await doc.embedPng(bytes);
       if (bytes[0] === 0xFF && bytes[1] === 0xD8) return await doc.embedJpg(bytes);
       return null;
@@ -55,9 +55,9 @@
     const s = .75, height = 1056, left = 56, right = 803, width = right - left;
     const copper = rgb(212 / 255, 101 / 255, 47 / 255);
     const peach = rgb(253 / 255, 233 / 255, 217 / 255);
-    const ink = rgb(28 / 255, 25 / 255, 23 / 255);
-    const muted = rgb(87 / 255, 83 / 255, 78 / 255);
-    const lineColor = rgb(176 / 255, 137 / 255, 104 / 255);
+    const ink = rgb(0, 0, 0);
+    const muted = rgb(128 / 255, 128 / 255, 128 / 255);
+    const lineColor = rgb(0, 0, 0);
     function measure(font, value, size) {
       const text = pdfSafe(value);
       try { return font.widthOfTextAtSize(text, size); }
@@ -101,7 +101,7 @@
     function rightText(value, x, y, size = 16, font = regular, color = ink) {
       draw(value, x - measure(font, value, size), y, size, font, color);
     }
-    function line(x1, y1, x2, y2, thickness = .6, color = lineColor) {
+    function line(x1, y1, x2, y2, thickness = 1, color = lineColor) {
       page.drawLine({start: {x: x1 * s, y: (height - y1) * s}, end: {x: x2 * s, y: (height - y2) * s}, thickness, color});
     }
     function linesAt(lines, x, y, size, font, spacing, color = ink) { lines.forEach((l, i) => draw(l, x, y + i * spacing, size, font, color)); return y + lines.length * spacing; }
@@ -110,20 +110,23 @@
       page = doc.addPage([612, 792]);
       page.drawRectangle({x: 0, y: 784, width: 612, height: 8, color: rgb(0, 0, 0)});
       page.drawRectangle({x: 0, y: 0, width: 612, height: 6, color: copper});
-      let brandBottom = 56;
+      let drewLogo = false;
       if (logo && Number(logo.width) > 1 && Number(logo.height) > 1) {
         const factor = Math.min(156 / logo.width, 76 / logo.height);
         const logoH = logo.height * factor;
         if (Number.isFinite(factor) && Number.isFinite(logoH) && logoH > 0) {
           page.drawImage(logo, {x: 62 * s, y: (height - 56 - logoH) * s, width: logo.width * factor * s, height: logoH * s});
-          brandBottom = 56 + logoH + 10;
+          drewLogo = true;
         }
       }
       const approval = wrap(data.approval || "", bold, 14, 420);
-      approval.forEach((l, i) => rightText(l, right, 69 + i * 18, 14, bold, copper));
+      approval.forEach((l, i) => rightText(l, right, 69 + i * 18, 14, bold, ink));
       const numberY = 69 + approval.length * 18 + 22;
       rightText(data.invoiceNumber, right, numberY, 16, regular, muted);
       rightText("Issued " + dateLabel, right, numberY + 20, 16, regular, muted);
+      if (!drewLogo) {
+        draw(data.fromName || "Ruben Perla", 62, 56, 28, bold, ink);
+      }
       if (!parties) return 205;
       const y = 225;
       function party(label, name, details, x, max) {
@@ -150,8 +153,8 @@
       tableBottom = top + 48 + body;
       page.drawRectangle({x: left * s, y: (height - top - 48) * s, width: width * s, height: 48 * s, color: peach});
       const columns = [left, left + width * .576, left + width * .654, left + width * .818, right];
-      columns.forEach(x => line(x, top, x, tableBottom, .7, lineColor));
-      [top, top + 48, tableBottom].forEach(y => line(left, y, right, y, .7, lineColor));
+      columns.forEach(x => line(x, top, x, tableBottom, 1, lineColor));
+      [top, top + 48, tableBottom].forEach(y => line(left, y, right, y, 1, lineColor));
       ["Description", "QTY", "Price, USD", "Amount, USD"].forEach((label, i) => {
         const x = i === 0 ? left + 8 : (columns[i] + columns[i + 1] - measure(bold, label, 14)) / 2;
         draw(label, x, top + 15, 14, bold, ink);
@@ -159,9 +162,9 @@
       linesAt(chunk, left + 5, top + 66, 16, regular, 20, ink);
       if (index === description.length) {
         page.drawRectangle({x: columns[3] * s, y: (height - tableBottom - 27) * s, width: (right - columns[3]) * s, height: 27 * s, color: peach});
-        line(columns[3], tableBottom, columns[3], tableBottom + 27, .7, lineColor);
-        line(right, tableBottom, right, tableBottom + 27, .7, lineColor);
-        line(columns[3], tableBottom + 27, right, tableBottom + 27, .7, lineColor);
+        line(columns[3], tableBottom, columns[3], tableBottom + 27, 1, lineColor);
+        line(right, tableBottom, right, tableBottom + 27, 1, lineColor);
+        line(columns[3], tableBottom + 27, right, tableBottom + 27, 1, lineColor);
         rightText("Price for materials and labor:", columns[3] - 7, tableBottom + 4, 16, regular, ink);
         const totalText = money(total).replace("$", "$ ");
         const totalSize = Math.min(16, (right - columns[3] - 12) / Math.max(measure(bold, totalText, 1), 0.01));
