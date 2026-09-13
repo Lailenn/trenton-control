@@ -154,7 +154,12 @@
       newPage();
       page.drawRectangle({x: 0, y: pageH - 8, width: pageW, height: 8, color: teal});
       page.drawRectangle({x: 0, y: 0, width: pageW, height: 6, color: copper});
-      if (logo) { const factor = Math.min(220 / logo.width, 70 / logo.height); page.drawImage(logo, {x: (pageW - logo.width * factor) / 2, y: pageH - 48 - logo.height * factor, width: logo.width * factor, height: logo.height * factor}); }
+      if (logo && logo.width > 1 && logo.height > 1) {
+        const factor = Math.min(220 / logo.width, 70 / logo.height);
+        if (Number.isFinite(factor) && factor > 0) {
+          page.drawImage(logo, {x: (pageW - logo.width * factor) / 2, y: pageH - 48 - logo.height * factor, width: logo.width * factor, height: logo.height * factor});
+        }
+      }
       const jobLabel = "JOB:"; const address = pdfSafe(data.jobAddress || ""); const jobSize = 13; const jobWidth = measure(bold, jobLabel, jobSize) + 8 + measure(bold, address, jobSize); const jobX = (pageW - jobWidth) / 2;
       text(jobLabel, jobX, 137, jobSize, bold, teal); text(address, jobX + measure(bold, jobLabel, jobSize) + 8, 137, jobSize, bold, ink); line(jobX + measure(bold, jobLabel, jobSize) + 8, 154, jobX + jobWidth, 154, 1.2, copper);
       centered(fullDate(data.reportDate), 169, 13, bold, copper);

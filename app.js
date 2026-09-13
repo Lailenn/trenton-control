@@ -501,10 +501,11 @@
     updateInvoicePreview();
   }
 
-  function withTimeout(promise, ms, message) {
+  function withTimeout(work, ms, message) {
+    const promise = typeof work === "function" ? work() : work;
     let timer = 0;
     return Promise.race([
-      promise.finally(() => clearTimeout(timer)),
+      Promise.resolve(promise).finally(() => clearTimeout(timer)),
       new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(message)), ms); })
     ]);
   }
@@ -512,19 +513,12 @@
   async function logoBytes(data) {
     const url = typeof data.logoDataUrl === "string" && /^data:image\/(png|jpeg|webp);base64,/i.test(data.logoDataUrl) ? data.logoDataUrl : DEFAULT_LOGO_URL;
     try {
-      const response = await withTimeout(fetch(url), 8000, "El logo tardó demasiado.");
-      if (!response.ok) throw new Error("logo");
-      const blob = await response.blob();
-      if (!blob.size) return null;
-      if (typeof createImageBitmap !== "function") return await blob.arrayBuffer();
-      const bitmap = await withTimeout(createImageBitmap(blob), 8000, "El logo no se pudo leer.");
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.max(1, bitmap.width);
-      canvas.height = Math.max(1, bitmap.height);
-      canvas.getContext("2d").drawImage(bitmap, 0, 0);
-      bitmap.close();
-      const converted = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
-      return converted ? converted.arrayBuffer() : await blob.arrayBuffer();
+      const controller = typeof AbortController === "function" ? new AbortController() : null;
+      const response = await withTimeout(fetch(url, controller ? { signal: controller.signal } : undefined), 4000, "logo");
+      if (!response.ok) return null;
+      const buffer = await withTimeout(response.arrayBuffer(), 4000, "logo");
+      if (!buffer || buffer.byteLength < 32 || buffer.byteLength > 1500000) return null;
+      return buffer;
     } catch (error) {
       console.warn("No se pudo preparar el logo de la invoice", error);
       return null;
@@ -533,7 +527,12 @@
 
   async function attachGeneratedPdf(record, data) {
     const snapshot = {...data, recordId: record.id};
-    record.pdfBlob = await withTimeout(PDFs.generate(snapshot, await logoBytes(snapshot)), 20000, "La generación del PDF se detuvo. Revisa la descripción y vuelve a guardar.");
+    if (!PDFs?.generate) throw new Error("No se cargó el generador de PDF. Recarga la página.");
+    record.pdfBlob = await withTimeout(async () => {
+      const logo = await logoBytes(snapshot);
+      return PDFs.generate(snapshot, logo);
+    }, 12000, "La generación del PDF se detuvo. Vuelve a pulsar Guardar.");
+    if (!record.pdfBlob || record.pdfBlob.size < 80) throw new Error("El PDF salió vacío. Vuelve a intentar.");
     record.pdfHash = await PDFs.hash(record.pdfBlob);
     record.pdfName = Core.fileName(record);
     record.invoiceData = snapshot;
@@ -554,25 +553,25 @@
     $("#saveGeneratedInvoiceButton").textContent = "Generando PDF…";
     try {
       await attachGeneratedPdf(record, data);
+      $("#saveGeneratedInvoiceButton").textContent = "Descargando…";
       try {
-        await saveRecord(record);
+        await download(record.pdfBlob, record.pdfName, { share: alsoDownload });
+      } catch (downloadError) {
+        console.warn(downloadError);
+      }
+      $("#saveGeneratedInvoiceButton").textContent = "Guardando en la nube…";
+      try {
+        await withTimeout(() => saveRecord(record), 15000, "El PDF se descargó, pero la nube tardó demasiado.");
         builderRecordId = record.id;
         replaceInMemory(record);
         render();
-        try {
-          if (alsoDownload) await download(record.pdfBlob, record.pdfName, { share: true });
-          else await download(record.pdfBlob, record.pdfName);
-        } catch (downloadError) {
-          console.warn(downloadError);
-        }
         if (!alsoDownload) navClick("archive");
         showToast(previous
-          ? "Invoice actualizada. El PDF quedó en la nube y se descargó."
-          : "Invoice guardada. El PDF quedó en la nube y se descargó.");
+          ? "Invoice actualizada. El PDF se descargó y quedó en la nube."
+          : "Invoice guardada. El PDF se descargó y quedó en la nube.");
       } catch (cloudError) {
         console.error(cloudError);
-        await download(record.pdfBlob, record.pdfName);
-        showToast("El PDF se generó, pero no se pudo guardar en la nube: " + (cloudError.message || "revisa la conexión."));
+        showToast("El PDF se generó y se descargó, pero no se pudo guardar en la nube: " + (cloudError.message || "revisa la conexión."));
       }
     } catch (error) {
       console.error(error);
@@ -698,7 +697,6 @@
     }
   });
   document.querySelectorAll(".dock-item[data-dock]").forEach(item => item.addEventListener("click", () => navClick(item.dataset.dock)));
-  $("#alertsButton")?.addEventListener("click", () => showToast("No hay avisos nuevos."));
   $("#openArchiveButton").addEventListener("click", () => navClick("archive"));
   $("#openHoursArchiveButton")?.addEventListener("click", () => navClick("hours-archive"));
   $("#openHoursArchiveFromHours")?.addEventListener("click", () => navClick("hours-archive"));

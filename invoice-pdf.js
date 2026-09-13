@@ -67,23 +67,27 @@
     function wrap(value, font, size, max) {
       const result = [];
       const limit = Math.max(40, Number(max) || 40);
+      let chars = 0;
       for (const paragraph of pdfSafe(value).split(/\r?\n/)) {
         let line = "";
         for (const word of paragraph.split(/\s+/).filter(Boolean)) {
-          if (measure(font, (line ? line + " " : "") + word, size) <= limit) line += (line ? " " : "") + word;
+          const next = line ? line + " " + word : word;
+          if (measure(font, next, size) <= limit) line = next;
           else {
-            if (line) result.push(line); line = "";
+            if (line) result.push(line);
+            line = "";
             for (const char of word) {
               if (line && measure(font, line + char, size) > limit) { result.push(line); line = ""; }
               line += char;
-              if (result.length > 400) return result;
+              if (++chars > 8000 || result.length > 200) return result.length ? result : [pdfSafe(value).slice(0, 80)];
             }
           }
+          if (result.length > 200) return result;
         }
         result.push(line);
-        if (result.length > 400) return result;
+        if (result.length > 200) return result;
       }
-      return result;
+      return result.length ? result : [""];
     }
     let page;
     let pageCount = 0;

@@ -108,15 +108,9 @@
     try {
       const response = await fetch("assets/arrento-carpentry.png");
       if (!response.ok) return null;
-      const blob = await response.blob();
-      const bitmap = await createImageBitmap(blob);
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.max(1, bitmap.width);
-      canvas.height = Math.max(1, bitmap.height);
-      canvas.getContext("2d").drawImage(bitmap, 0, 0);
-      bitmap.close();
-      const converted = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
-      return converted ? converted.arrayBuffer() : await blob.arrayBuffer();
+      const buffer = await response.arrayBuffer();
+      if (!buffer || buffer.byteLength < 32 || buffer.byteLength > 1500000) return null;
+      return buffer;
     } catch (error) {
       console.warn("No se pudo preparar el logo de Arrento", error);
       return null;
@@ -182,21 +176,23 @@
     const record = {id: makeId(), jobAddress, reportDate, description, defaultRate, entries: entries.map(entry => ({...entry, rate: Number(entry.rate ?? defaultRate) || 0, hours: HoursPDF.calcHours(entry)})), updatedAt: new Date().toISOString()};
     try {
       record.pdfBlob = await HoursPDF.generate({...record, recordId: record.id}, await logoBytes());
+      if (!record.pdfBlob || record.pdfBlob.size < 80) throw new Error("El PDF salió vacío. Vuelve a intentar.");
       record.pdfHash = await HoursPDF.hash(record.pdfBlob);
       record.pdfName = fileName(record);
+      $("#hoursError").textContent = "Descargando…";
+      try { await download(record.pdfBlob, record.pdfName, { share: downloadAfter }); }
+      catch (downloadError) { console.warn(downloadError); }
+      $("#hoursError").textContent = "Guardando en la nube…";
       try {
         await root.CloudDB.saveHours(record); await load(); renderHistory();
         window.TrentonControl?.hoursArchive?.render?.();
-        if (downloadAfter) await download(record.pdfBlob, record.pdfName, { share: true });
-        else await download(record.pdfBlob, record.pdfName);
         $("#hoursError").textContent = downloadAfter
           ? "PDF guardado en la nube y descargado. También queda en Horas de trabajo / PDFs."
           : "Reporte y PDF guardados en la nube. Si no se bajó al teléfono, ábrelo en Horas de trabajo / PDFs.";
         if (root.TrentonControl?.toast) root.TrentonControl.toast("Reporte de horas guardado");
       } catch (cloudError) {
         console.error(cloudError);
-        await download(record.pdfBlob, record.pdfName, { share: true });
-        $("#hoursError").textContent = "El PDF se generó, pero no se pudo guardar en la nube: " + (cloudError.message || "revisa la conexión.");
+        $("#hoursError").textContent = "El PDF se generó y se descargó, pero no se pudo guardar en la nube: " + (cloudError.message || "revisa la conexión.");
       }
     } catch (error) { console.error(error); $("#hoursError").textContent = error.message || "No se pudo generar el PDF de horas."; }
     finally { saving = false; $("#saveHoursButton").disabled = false; $("#downloadHoursButton").disabled = false; }
