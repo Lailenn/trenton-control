@@ -160,7 +160,7 @@
       URL.revokeObjectURL(preview);
       profile = { ...profile, avatarPath: result.path, avatarUrl: avatarObjectUrl, email: profile.email || sessionEmail() };
       paintProfile();
-      setProfileStatus("Foto de perfil guardada en la nube.");
+      setProfileStatus("Foto de perfil guardada.");
     } catch (error) {
       console.error("No se pudo guardar la foto de perfil", error);
       URL.revokeObjectURL(preview);

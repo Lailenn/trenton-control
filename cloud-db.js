@@ -20,21 +20,23 @@
       })
     ]);
   }
-  async function requireUser() {
-    const cached = currentUser || root.TrentonSupabase?.sessionUser?.();
+  async function requireSession() {
+    const cachedUser = currentUser || root.TrentonSupabase?.sessionUser?.();
     try {
-      const { data } = await withTimeout(sb().auth.getUser(), 4000, "La sesión tardó demasiado.");
-      if (data?.user?.id) {
-        currentUser = data.user;
-        root.TrentonSupabase?.setSessionUser?.(data.user);
-        return data.user;
+      const { data } = await withTimeout(sb().auth.getSession(), 2000, "sesión local lenta");
+      if (data?.session?.user?.id) {
+        currentUser = data.session.user;
+        root.TrentonSupabase?.setSessionUser?.(data.session.user);
+        return data.session;
       }
     } catch (error) {
-      console.warn("No se pudo refrescar la sesión", error);
-      if (cached?.id) return cached;
+      console.warn("No se pudo leer la sesión local", error);
     }
-    if (cached?.id) return cached;
+    if (cachedUser?.id) return { user: cachedUser, access_token: "" };
     throw new Error("No hay sesión. Vuelve a entrar.");
+  }
+  async function requireUser() {
+    return (await requireSession()).user;
   }
   async function requireOwnerId() {
     return (await requireUser()).id;
@@ -544,9 +546,86 @@
     if (!file) throw new Error("Selecciona una foto de perfil.");
     if (file.size > 12 * 1024 * 1024) throw new Error("La foto pesa demasiado. Elige otra más liviana.");
     const mime = avatarMime(file);
-    const name = file.name || (mime.includes("png") ? "avatar.png" : "avatar.jpg");
+    const name = file.name || "avatar.jpg";
     const buffer = await withTimeout(file.arrayBuffer(), 8000, "El teléfono no soltó la foto. Tómalo de nuevo o usa la cámara.");
     return new File([buffer], name, { type: mime });
+  }
+
+  async function shrinkAvatar(file) {
+    const source = file instanceof Blob ? file : await clonePickedFile(file);
+    if (typeof createImageBitmap !== "function") {
+      if (source.size <= 250000) return source;
+      throw new Error("Este navegador no pudo preparar la foto. Prueba en Chrome o Safari.");
+    }
+    let bitmap;
+    try {
+      bitmap = await withTimeout(createImageBitmap(source), 4000, "No se pudo abrir la foto.");
+    } catch (error) {
+      if (source.size <= 250000) return source;
+      throw new Error("No se pudo leer esa foto. Toma una con la cámara.");
+    }
+    try {
+      const max = 384;
+      const scale = Math.min(1, max / Math.max(bitmap.width || 1, bitmap.height || 1));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round((bitmap.width || max) * scale));
+      canvas.height = Math.max(1, Math.round((bitmap.height || max) * scale));
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const blob = await withTimeout(new Promise((resolve, reject) => {
+        canvas.toBlob(result => result ? resolve(result) : reject(new Error("bad-image")), "image/jpeg", 0.72);
+      }), 4000, "No se pudo preparar la foto.");
+      return blob;
+    } finally {
+      try { bitmap.close(); } catch (_) { /* ignore */ }
+    }
+  }
+
+  function blobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(reader.error || new Error("No se pudo leer la foto."));
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  async function dataUrlToBlob(url) {
+    const response = await fetch(url);
+    return response.blob();
+  }
+
+  async function uploadAvatarFetch(path, blob, mime, accessToken) {
+    const config = root.TrentonConfig.get();
+    const endpoint = `${config.url.replace(/\/$/, "")}/storage/v1/object/avatars/${path}`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          apikey: config.anonKey,
+          "Content-Type": mime,
+          "x-upsert": "true",
+          "cache-control": "3600"
+        },
+        body: blob,
+        signal: controller.signal
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text.slice(0, 180) || `Storage ${response.status}`);
+      }
+    } catch (error) {
+      if (error.name === "AbortError") throw new Error("La subida a Storage se trabó.");
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
+    return path;
   }
 
   async function getProfile() {
@@ -603,46 +682,54 @@
   }
 
   async function saveAvatar(file) {
-    const user = currentUser?.id ? currentUser : await requireUser();
-    if (!user?.id) throw new Error("No hay sesión. Vuelve a entrar.");
-    const picked = file instanceof Blob ? file : await clonePickedFile(file);
-    const mime = avatarMime(picked);
-    const blob = picked.type === mime ? picked : new Blob([picked], { type: mime });
-    const ext = mime.includes("png") ? "png" : mime.includes("webp") ? "webp" : "jpg";
-    const path = `${user.id}/avatar.${ext}`;
-    const result = await withTimeout(
-      sb().storage.from("avatars").upload(path, blob, { upsert: true, contentType: mime, cacheControl: "3600" }),
-      20000,
-      "La subida tardó demasiado. Revisa la conexión."
-    );
-    fail(result.error, "No se pudo subir la foto.");
+    const session = await requireSession();
+    const user = session.user;
+    const blob = await shrinkAvatar(file);
+    const path = `${user.id}/avatar.jpg`;
+    let storedPath = path;
+    let uploaded = false;
+    if (session.access_token) {
+      try {
+        await uploadAvatarFetch(path, blob, "image/jpeg", session.access_token);
+        uploaded = true;
+      } catch (error) {
+        console.warn("Storage de avatares no respondió, se guarda en el perfil.", error);
+      }
+    }
+    if (!uploaded) {
+      const dataUrl = await blobToDataUrl(blob);
+      if (dataUrl.length > 180000) throw new Error("La foto sigue siendo muy pesada. Toma otra más cercana o con menos zoom.");
+      storedPath = dataUrl;
+    }
     try {
       await withTimeout(root.LocalCache.put("avatar", user.id, "", blob), 2500, "cache");
     } catch (error) {
-      console.warn("La foto subió, pero no quedó en la caché local", error);
+      console.warn("La foto no quedó en la caché local", error);
     }
-    try {
-      const patched = await withTimeout(
-        sb().from("profiles").update({ avatar_path: path }).eq("id", user.id).select("id"),
-        8000,
-        "perfil-lento"
-      );
-      if (patched.error || !patched.data?.length) {
-        await sb().from("profiles").upsert({ id: user.id, display_name: "Lilian", avatar_path: path });
-      }
-    } catch (error) {
-      console.warn("Foto subida; no se pudo anotar la ruta en profiles", error);
+    let patched = await withTimeout(
+      sb().from("profiles").update({ avatar_path: storedPath }).eq("id", user.id).select("id"),
+      8000,
+      "No se pudo anotar la foto en el perfil."
+    );
+    if (patched.error || !patched.data?.length) {
+      patched = await sb().from("profiles").upsert({
+        id: user.id,
+        display_name: user.user_metadata?.display_name || "Lilian",
+        avatar_path: storedPath
+      }).select("id");
     }
-    return { path, blob };
+    fail(patched.error, "La foto se vio aquí, pero no se pudo guardar en la nube.");
+    return { path: storedPath, blob };
   }
 
   async function ensureAvatar(profile) {
     const id = currentUser?.id || root.TrentonSupabase.userId();
     const cached = id ? await root.LocalCache.get("avatar", id) : null;
     if (cached) return cached;
-    if (!profile?.avatarPath) return null;
+    const path = profile?.avatarPath || "";
+    if (!path) return null;
     try {
-      const blob = await download("avatars", profile.avatarPath);
+      const blob = path.startsWith("data:") ? await dataUrlToBlob(path) : await download("avatars", path);
       if (blob && id) await root.LocalCache.put("avatar", id, "", blob);
       return blob;
     } catch (error) {
