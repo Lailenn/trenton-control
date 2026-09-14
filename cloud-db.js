@@ -20,18 +20,26 @@
       })
     ]);
   }
-  async function requireSession() {
-    const cachedUser = currentUser || root.TrentonSupabase?.sessionUser?.();
+  function readStoredSession() {
     try {
-      const { data } = await withTimeout(sb().auth.getSession(), 2000, "sesión local lenta");
-      if (data?.session?.user?.id) {
-        currentUser = data.session.user;
-        root.TrentonSupabase?.setSessionUser?.(data.session.user);
-        return data.session;
-      }
-    } catch (error) {
-      console.warn("No se pudo leer la sesión local", error);
+      const config = root.TrentonConfig.get();
+      const ref = new URL(config.url).hostname.split(".")[0];
+      const raw = localStorage.getItem(`sb-${ref}-auth-token`);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      const session = parsed?.currentSession?.access_token ? parsed.currentSession : parsed;
+      if (session?.access_token && session?.user?.id) return session;
+    } catch (_) { /* ignore */ }
+    return null;
+  }
+  async function requireSession() {
+    const stored = readStoredSession();
+    if (stored?.user?.id) {
+      currentUser = stored.user;
+      root.TrentonSupabase?.setSessionUser?.(stored.user);
+      return stored;
     }
+    const cachedUser = currentUser || root.TrentonSupabase?.sessionUser?.();
     if (cachedUser?.id) return { user: cachedUser, access_token: "" };
     throw new Error("No hay sesión. Vuelve a entrar.");
   }
@@ -40,6 +48,41 @@
   }
   async function requireOwnerId() {
     return (await requireUser()).id;
+  }
+  async function rest(path, options = {}) {
+    const session = readStoredSession() || await requireSession();
+    const config = root.TrentonConfig.get();
+    const token = session.access_token || config.anonKey;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10000);
+    try {
+      const response = await fetch(`${config.url.replace(/\/$/, "")}/rest/v1/${path}`, {
+        method: options.method || "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          apikey: config.anonKey,
+          "Content-Type": "application/json",
+          Prefer: options.prefer || "return=representation"
+        },
+        body: options.body != null ? JSON.stringify(options.body) : undefined,
+        signal: controller.signal
+      });
+      const text = await response.text();
+      let data = null;
+      try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+      if (!response.ok) {
+        const msg = data?.message || data?.details || data?.hint || (typeof data === "string" ? data : text) || String(response.status);
+        const error = new Error(String(msg).slice(0, 220));
+        error.code = data?.code;
+        throw error;
+      }
+      return data;
+    } catch (error) {
+      if (error.name === "AbortError") throw new Error("Supabase no respondió a tiempo.");
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
   }
   function emailFromUser(user) {
     if (!user) return "";
@@ -629,55 +672,78 @@
   }
 
   async function getProfile() {
-    const user = await requireUser();
+    const user = (await requireSession()).user;
     const id = user.id;
     const email = emailFromUser(user);
     let row = null;
-    let result = await sb().from("profiles").select("*").eq("id", id).maybeSingle();
-    if (result.error && isMissingColumn(result.error)) {
-      result = await sb().from("profiles").select("id, display_name, created_at").eq("id", id).maybeSingle();
+    try {
+      const rows = await rest(`profiles?id=eq.${encodeURIComponent(id)}&select=*`);
+      row = Array.isArray(rows) ? rows[0] : rows;
+    } catch (error) {
+      if (!isMissingColumn(error)) throw error;
+      const rows = await rest(`profiles?id=eq.${encodeURIComponent(id)}&select=id,display_name,created_at`);
+      row = Array.isArray(rows) ? rows[0] : rows;
     }
-    if (result.error) fail(result.error, "No se pudo leer el perfil.");
-    row = result.data;
     if (!row) {
-      const seed = { id, display_name: user.user_metadata?.display_name || "Lilian", email };
-      let insert = await sb().from("profiles").insert(seed);
-      if (insert.error && isMissingColumn(insert.error)) {
-        insert = await sb().from("profiles").insert({ id, display_name: seed.display_name });
+      try {
+        const inserted = await rest("profiles", {
+          method: "POST",
+          body: { id, display_name: user.user_metadata?.display_name || "Lilian", email }
+        });
+        row = Array.isArray(inserted) ? inserted[0] : inserted;
+      } catch (error) {
+        if (error.code !== "23505" && !/duplicate/i.test(error.message || "")) {
+          const inserted = await rest("profiles", {
+            method: "POST",
+            body: { id, display_name: user.user_metadata?.display_name || "Lilian" }
+          });
+          row = Array.isArray(inserted) ? inserted[0] : inserted;
+        }
       }
-      if (insert.error && insert.error.code !== "23505") fail(insert.error, "No se pudo crear el perfil. Corre supabase/schema-update-profile.sql");
-      const again = await sb().from("profiles").select("*").eq("id", id).maybeSingle();
-      row = again.data;
     } else if (email && !row.email) {
-      const patched = await sb().from("profiles").update({ email }).eq("id", id);
-      if (!patched.error) row = { ...row, email };
+      try {
+        await rest(`profiles?id=eq.${encodeURIComponent(id)}`, { method: "PATCH", body: { email } });
+        row = { ...row, email };
+      } catch (_) { /* columna email puede faltar */ }
     }
     return profileFrom(row, user);
   }
 
   async function saveProfile(profile) {
-    const user = await requireUser();
+    const user = (await requireSession()).user;
     const id = user.id;
     const name = String(profile.displayName || "").trim() || "Lilian";
     const job = String(profile.jobTitle || "").trim() || "Secretaria";
     const email = emailFromUser(user) || String(profile.email || "").trim();
     const row = { id, display_name: name, job_title: job, email };
     if (profile.avatarPath !== undefined) row.avatar_path = profile.avatarPath;
-    let result = await sb().from("profiles").upsert(row).select("id").maybeSingle();
-    if (result.error && isMissingColumn(result.error)) {
+    try {
+      await rest("profiles?on_conflict=id", {
+        method: "POST",
+        body: row,
+        prefer: "return=representation,resolution=merge-duplicates"
+      });
+    } catch (error) {
+      if (!isMissingColumn(error)) throw error;
       const fallback = { id, display_name: name };
       if (email) fallback.email = email;
       if (profile.avatarPath !== undefined) fallback.avatar_path = profile.avatarPath;
-      result = await sb().from("profiles").upsert(fallback).select("id").maybeSingle();
-      if (result.error && isMissingColumn(result.error)) {
-        result = await sb().from("profiles").upsert({ id, display_name: name }).select("id").maybeSingle();
-        if (!result.error) {
-          fail(result.error);
-          throw new Error("Falta actualizar Supabase para foto, correo y cargo. En SQL Editor pega supabase/schema-update-profile.sql y vuelve a guardar.");
-        }
+      try {
+        await rest("profiles?on_conflict=id", {
+          method: "POST",
+          body: fallback,
+          prefer: "return=representation,resolution=merge-duplicates"
+        });
+      } catch (inner) {
+        if (!isMissingColumn(inner)) throw inner;
+        await rest("profiles?on_conflict=id", {
+          method: "POST",
+          body: { id, display_name: name },
+          prefer: "return=representation,resolution=merge-duplicates"
+        });
+        throw new Error("Se guardó el nombre. Falta una columna de perfil; corre supabase/schema-update-profile.sql si foto o cargo no quedan.");
       }
     }
-    fail(result.error, "No se pudo guardar el perfil.");
     return getProfile();
   }
 
@@ -706,19 +772,25 @@
     } catch (error) {
       console.warn("La foto no quedó en la caché local", error);
     }
-    let patched = await withTimeout(
-      sb().from("profiles").update({ avatar_path: storedPath }).eq("id", user.id).select("id"),
-      8000,
-      "No se pudo anotar la foto en el perfil."
-    );
-    if (patched.error || !patched.data?.length) {
-      patched = await sb().from("profiles").upsert({
-        id: user.id,
-        display_name: user.user_metadata?.display_name || "Lilian",
-        avatar_path: storedPath
-      }).select("id");
+    try {
+      const updated = await rest(`profiles?id=eq.${encodeURIComponent(user.id)}`, {
+        method: "PATCH",
+        body: { avatar_path: storedPath }
+      });
+      if (!updated || (Array.isArray(updated) && !updated.length)) {
+        await rest("profiles?on_conflict=id", {
+          method: "POST",
+          body: {
+            id: user.id,
+            display_name: user.user_metadata?.display_name || "Lilian",
+            avatar_path: storedPath
+          },
+          prefer: "return=representation,resolution=merge-duplicates"
+        });
+      }
+    } catch (error) {
+      throw new Error(error.message || "La foto se vio aquí, pero no se pudo guardar en la nube.");
     }
-    fail(patched.error, "La foto se vio aquí, pero no se pudo guardar en la nube.");
     return { path: storedPath, blob };
   }
 

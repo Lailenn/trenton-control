@@ -8,14 +8,21 @@
     if (!root.supabase?.createClient) throw new Error("No se cargó la librería de Supabase. Revisa la conexión.");
     if (!root.TrentonConfig?.ready()) throw new Error("Falta la URL y la anon key del proyecto Supabase.");
     const url = config.url.replace(/\/$/, "");
-    client = root.supabase.createClient(url, config.anonKey, {
+    const options = {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
+        lock: async (_name, _timeout, fn) => fn(),
         experimental: { passkey: true }
       }
-    });
+    };
+    try {
+      client = root.supabase.createClient(url, config.anonKey, options);
+    } catch (_error) {
+      delete options.auth.lock;
+      client = root.supabase.createClient(url, config.anonKey, options);
+    }
     return client;
   }
 
