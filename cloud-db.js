@@ -11,9 +11,19 @@
     if (!id) throw new Error("No hay sesión. Vuelve a entrar.");
     return id;
   }
+  function withTimeout(promise, ms, message) {
+    let timer;
+    return Promise.race([
+      Promise.resolve(promise).finally(() => clearTimeout(timer)),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(message)), ms);
+      })
+    ]);
+  }
   async function requireUser() {
+    const cached = currentUser || root.TrentonSupabase?.sessionUser?.();
     try {
-      const { data } = await sb().auth.getUser();
+      const { data } = await withTimeout(sb().auth.getUser(), 4000, "La sesión tardó demasiado.");
       if (data?.user?.id) {
         currentUser = data.user;
         root.TrentonSupabase?.setSessionUser?.(data.user);
@@ -21,10 +31,10 @@
       }
     } catch (error) {
       console.warn("No se pudo refrescar la sesión", error);
+      if (cached?.id) return cached;
     }
-    const user = currentUser || root.TrentonSupabase?.sessionUser?.();
-    if (!user?.id) throw new Error("No hay sesión. Vuelve a entrar.");
-    return user;
+    if (cached?.id) return cached;
+    throw new Error("No hay sesión. Vuelve a entrar.");
   }
   async function requireOwnerId() {
     return (await requireUser()).id;
@@ -84,10 +94,11 @@
   }
 
   async function upload(bucket, path, blob, type) {
-    const result = await Promise.race([
+    const result = await withTimeout(
       sb().storage.from(bucket).upload(path, blob, { upsert: true, contentType: type, cacheControl: "3600" }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error("La subida a la nube tardó demasiado. Revisa la conexión e intenta de nuevo.")), 45000))
-    ]);
+      20000,
+      "La subida a la nube tardó demasiado. Revisa la conexión e intenta de nuevo."
+    );
     fail(result.error, "No se pudo subir el archivo.");
     return path;
   }
@@ -526,8 +537,9 @@
     try {
       const source = await new Promise((resolve, reject) => {
         const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = () => reject(new Error("bad-image"));
+        const timer = setTimeout(() => reject(new Error("bad-image")), 5000);
+        img.onload = () => { clearTimeout(timer); resolve(img); };
+        img.onerror = () => { clearTimeout(timer); reject(new Error("bad-image")); };
         img.src = url;
       });
       const width = source.naturalWidth || source.width || 0;
@@ -542,12 +554,27 @@
       ctx.fillStyle = "#fff";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
-      const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.88));
-      if (!blob) throw new Error("bad-image");
+      const blob = await new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error("bad-image")), 5000);
+        canvas.toBlob(result => {
+          clearTimeout(timer);
+          if (result) resolve(result);
+          else reject(new Error("bad-image"));
+        }, "image/jpeg", 0.85);
+      });
       return new File([blob], "avatar.jpg", { type: "image/jpeg" });
     } finally {
       URL.revokeObjectURL(url);
     }
+  }
+
+  function avatarMime(file) {
+    const type = String(file.type || "").toLowerCase();
+    const name = String(file.name || "").toLowerCase();
+    if (type === "image/png" || name.endsWith(".png")) return "image/png";
+    if (type === "image/webp" || name.endsWith(".webp")) return "image/webp";
+    if (type === "image/jpeg" || type === "image/jpg" || /\.jpe?g$/.test(name)) return "image/jpeg";
+    return type || "image/jpeg";
   }
 
   async function prepareAvatarFile(file) {
@@ -560,17 +587,17 @@
       || /\.(jpe?g|png|webp|heic|heif|gif|bmp)$/.test(name);
     if (!looksImage) throw new Error("Usa una foto de la cámara o de la galería.");
     if (file.size > 12 * 1024 * 1024) throw new Error("La foto pesa demasiado. Elige otra más liviana.");
-    if (/image\/(jpeg|jpg|png|webp)/.test(type) && file.size <= 1.8 * 1024 * 1024) {
-      return { blob: file, type, name: file.name || `avatar.${type.includes("png") ? "png" : type.includes("webp") ? "webp" : "jpg"}` };
+    const mime = avatarMime(file);
+    const webSafe = /image\/(jpeg|png|webp)/.test(mime);
+    if (webSafe && file.size <= 8 * 1024 * 1024) {
+      return { blob: file, type: mime, name: file.name || "avatar.jpg" };
     }
     try {
-      const converted = await rasterToJpeg(file);
+      const converted = await withTimeout(rasterToJpeg(file), 8000, "La foto tardó demasiado en abrirse.");
       return { blob: converted, type: "image/jpeg", name: "avatar.jpg" };
     } catch (error) {
-      if (/image\/(jpeg|jpg|png|webp)/.test(type)) {
-        return { blob: file, type, name: file.name || "avatar.jpg" };
-      }
-      throw new Error("No se pudo leer esa foto. En el iPhone elige “Opciones” → “Más compatible”, o toma una con la cámara.");
+      if (webSafe) return { blob: file, type: mime, name: file.name || "avatar.jpg" };
+      throw new Error("No se pudo leer esa foto. En el iPhone, al compartir elige JPG o toma una con la cámara.");
     }
   }
 
@@ -630,19 +657,24 @@
   async function saveAvatar(file) {
     const user = await requireUser();
     const prepared = await prepareAvatarFile(file);
-    const path = `${user.id}/avatar.jpg`;
+    const ext = prepared.type.includes("png") ? "png" : prepared.type.includes("webp") ? "webp" : "jpg";
+    const path = `${user.id}/avatar.${ext}`;
     try {
       await upload("avatars", path, prepared.blob, prepared.type);
     } catch (error) {
       const text = String(error.message || "");
-      if (/bucket|not found|row-level security|unauthorized|malformed/i.test(text)) {
+      if (/bucket|not found|row-level security|unauthorized|malformed|mime/i.test(text)) {
         throw new Error("No se pudo subir la foto. Corre supabase/schema-update-profile.sql en SQL Editor y vuelve a intentar.");
       }
       throw error;
     }
-    await root.LocalCache.put("avatar", user.id, "", prepared.blob);
-    const current = await getProfile();
     try {
+      await withTimeout(root.LocalCache.put("avatar", user.id, "", prepared.blob), 2500, "cache");
+    } catch (error) {
+      console.warn("La foto subió, pero no quedó en la caché local", error);
+    }
+    try {
+      const current = await withTimeout(getProfile(), 6000, "No se pudo actualizar el perfil tras la foto.");
       await saveProfile({ ...current, avatarPath: path });
     } catch (error) {
       console.warn("Foto subida; no se pudo anotar la ruta en profiles", error);

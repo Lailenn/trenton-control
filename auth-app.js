@@ -148,12 +148,25 @@
 
   async function saveAvatarNow(file) {
     setProfileStatus("Subiendo foto…");
-    const result = await root.CloudDB.saveAvatar(file);
-    if (avatarObjectUrl) URL.revokeObjectURL(avatarObjectUrl);
-    avatarObjectUrl = URL.createObjectURL(result.blob);
-    profile = { ...profile, avatarPath: result.path, avatarUrl: avatarObjectUrl, email: profile.email || sessionEmail() };
-    paintProfile();
-    setProfileStatus("Foto de perfil guardada en la nube.");
+    const preview = URL.createObjectURL(file);
+    paintAvatarSlots(preview);
+    try {
+      const result = await Promise.race([
+        root.CloudDB.saveAvatar(file),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("La subida se trabó. Revisa la conexión, corre supabase/schema-update-profile.sql y vuelve a intentar.")), 22000))
+      ]);
+      if (avatarObjectUrl) URL.revokeObjectURL(avatarObjectUrl);
+      avatarObjectUrl = URL.createObjectURL(result.blob);
+      URL.revokeObjectURL(preview);
+      profile = { ...profile, avatarPath: result.path, avatarUrl: avatarObjectUrl, email: profile.email || sessionEmail() };
+      paintProfile();
+      setProfileStatus("Foto de perfil guardada en la nube.");
+    } catch (error) {
+      console.error("No se pudo guardar la foto de perfil", error);
+      URL.revokeObjectURL(preview);
+      paintAvatarSlots(profile.avatarUrl);
+      throw error;
+    }
   }
 
   function bindProfile() {
