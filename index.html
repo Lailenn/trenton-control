@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet" />
     <link rel="icon" href="favicon.ico" sizes="any" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=sidebar-plus-3" />
+    <link rel="stylesheet" href="styles.css?v=sidebar-plus-6" />
   </head>
   <body>
     <div id="authGate" class="auth-gate auth-play login-screen" data-mode="login">
@@ -86,62 +86,75 @@
     </div>
     <div class="app-shell app-locked" id="appShell" hidden>
       <aside class="sidebar" id="sidebar">
-        <div class="sidebar-glow" aria-hidden="true"></div>
-        <div class="sidebar-sheet-bar" aria-hidden="true"></div>
         <div class="sidebar-head">
           <button class="sidebar-profile" id="sidebarProfileButton" type="button" title="Tu perfil">
-            <span class="sidebar-avatar">
-              <img id="sidebarAvatarImg" alt="" hidden>
-              <span id="sidebarAvatarInitials">LP</span>
-            </span>
             <span class="sidebar-profile-copy">
               <strong id="sidebarProfileName">Lilian</strong>
               <small id="sidebarRole">Secretaria</small>
             </span>
-            <span class="sidebar-profile-go">Perfil</span>
+            <span class="sidebar-avatar">
+              <img id="sidebarAvatarImg" alt="" hidden>
+              <span id="sidebarAvatarInitials">LP</span>
+            </span>
           </button>
           <button class="sidebar-close" id="sidebarClose" type="button" aria-label="Cerrar menú">
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4 17.6 5 12 10.6z"/></svg>
           </button>
         </div>
         <div class="sidebar-scroll">
-          <p class="nav-label">Hoy</p>
+          <div class="nav-kicker">
+            <span class="nav-kicker-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 4.2 3.8 11h2.4v8.2h4.4v-5.2h3.8v5.2h4.4V11h2.4z"/></svg></span>
+            <span class="nav-label">Principal</span>
+            <i></i>
+            <small>Todo en un solo lugar</small>
+          </div>
           <nav class="main-nav" aria-label="Trabajo de hoy">
             <button class="nav-item active" type="button" data-nav="board">
               <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 4.2 3.8 11h2.4v8.2h4.4v-5.2h3.8v5.2h4.4V11h2.4z"/></svg></span>
-              <span class="nav-copy"><strong>Inicio</strong><small>Tablero y cheques</small></span>
+              <span class="nav-copy"><span class="nav-title">Inicio</span><span class="nav-sub">Tablero y cheques</span></span>
+              <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M9.4 6.4 15 12l-5.6 5.6-1.4-1.4 4.2-4.2-4.2-4.2z"/></svg></span>
             </button>
             <button class="nav-item" type="button" data-nav="invoice">
               <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M7 3h8l4 4v14H7zm8 1.8V8h3.2z"/><path fill="currentColor" d="M9.2 11.2h5.6v1.6H9.2zm0 3.2h5.6v1.6H9.2z"/></svg></span>
-              <span class="nav-copy"><strong>Crear invoice</strong><small>Nueva factura PDF</small></span>
+              <span class="nav-copy"><span class="nav-title">Crear invoice</span><span class="nav-sub">Nueva factura PDF</span></span>
+              <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M9.4 6.4 15 12l-5.6 5.6-1.4-1.4 4.2-4.2-4.2-4.2z"/></svg></span>
             </button>
             <button class="nav-item" type="button" data-nav="hours">
-              <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 3.2A8.8 8.8 0 1 0 20.8 12 8.8 8.8 0 0 0 12 3.2zm.7 4.6h-1.6v5.1l4.2 2.5.8-1.3-3.4-2z"/></svg></span>
-              <span class="nav-copy"><strong>Horas trabajadas</strong><small>Jornada y reporte</small></span>
+              <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="7.2" stroke="currentColor" stroke-width="1.9"/><path d="M12 8v4.1l3 1.8" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              <span class="nav-copy"><span class="nav-title">Horas trabajadas</span><span class="nav-sub">Jornada y reporte</span></span>
+              <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M9.4 6.4 15 12l-5.6 5.6-1.4-1.4 4.2-4.2-4.2-4.2z"/></svg></span>
             </button>
           </nav>
-          <p class="nav-label">Archivo</p>
+          <div class="nav-kicker">
+            <span class="nav-kicker-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M10.2 4 12 6.2h7.8v2.2H4.2V6.2h6zm-6 5.8h15.6V19H4.2z"/></svg></span>
+            <span class="nav-label">Archivo</span>
+            <i></i>
+            <small>Tu información segura</small>
+          </div>
           <nav class="main-nav" aria-label="Archivo de PDFs">
             <button class="nav-item" type="button" data-nav="archive">
               <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 6.2h16v3.1H4zm1.4 4.6h13.2V18H5.4zm3.2 2.1v1.6h6.8v-1.6z"/></svg></span>
-              <span class="nav-copy"><strong>Invoices / PDFs</strong><small>Facturas guardadas</small></span>
+              <span class="nav-copy"><span class="nav-title">Invoices / PDFs</span><span class="nav-sub">Facturas guardadas</span></span>
+              <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M9.4 6.4 15 12l-5.6 5.6-1.4-1.4 4.2-4.2-4.2-4.2z"/></svg></span>
             </button>
             <button class="nav-item" type="button" data-nav="hours-archive">
               <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M5 18.5V10h2.8v8.5zm5.6 0V6h2.8v12.5zm5.6 0v-7.2H19v7.2z"/></svg></span>
-              <span class="nav-copy"><strong>Horas / PDFs</strong><small>Reportes de jornada</small></span>
+              <span class="nav-copy"><span class="nav-title">Horas / PDFs</span><span class="nav-sub">Reportes de jornada</span></span>
+              <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M9.4 6.4 15 12l-5.6 5.6-1.4-1.4 4.2-4.2-4.2-4.2z"/></svg></span>
+            </button>
+            <button class="nav-item sidebar-passkey js-register-passkey" type="button">
+              <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.8c-3.6 0-6.5 2.8-6.5 7.1 0 2.7 1.3 5.1 3.1 7.6l.7.9.9-1.2C8.6 15.1 7.5 13.1 7.5 9.9c0-3.2 2-5.1 4.5-5.1s4.5 1.9 4.5 5.1c0 3.2-1.1 5.2-2.7 7.2l.9 1.2.7-.9c1.8-2.5 3.1-4.9 3.1-7.6 0-4.3-2.9-7.1-6.5-7.1zm0 4.2c-1.8 0-3.2 1.4-3.2 3.7 0 1.8.8 3.3 2 4.9l1.2 1.5 1.2-1.5c1.2-1.6 2-3.1 2-4.9 0-2.3-1.4-3.7-3.2-3.7zm0 2.1c.8 0 1.4.7 1.4 1.7 0 1.1-.5 1.9-1.4 3.1-.9-1.2-1.4-2-1.4-3.1 0-1 .6-1.7 1.4-1.7z"/></svg></span>
+              <span class="nav-copy"><span class="nav-title">Huella en este aparato</span><span class="nav-sub">Windows Hello o Face ID</span></span>
+              <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M9.4 6.4 15 12l-5.6 5.6-1.4-1.4 4.2-4.2-4.2-4.2z"/></svg></span>
             </button>
           </nav>
         </div>
         <div class="sidebar-footer">
-          <button class="sidebar-passkey js-register-passkey" type="button">
-            <span class="sidebar-mini-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.8A5.2 5.2 0 0 0 6.8 8v2.1H5.4v11.1h13.2V10.1h-1.4V8A5.2 5.2 0 0 0 12 2.8zm0 1.7A3.5 3.5 0 0 1 15.5 8v2.1h-7V8A3.5 3.5 0 0 1 12 4.5zM12 13.2a1.6 1.6 0 0 1 .8 3v2.2h-1.6V16.2a1.6 1.6 0 0 1 .8-3z"/></svg></span>
-            <span class="sidebar-passkey-copy"><strong>Huella en este aparato</strong><small>Windows Hello o Face ID</small></span>
-          </button>
           <button class="sidebar-logout js-logout" type="button" id="logoutButton">
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M10 4v2H6v12h4v2H4V4zm4.8 4.1 1.4-1.4L21 11.5l-4.8 4.8-1.4-1.4 2.4-2.4H10v-2h7.2z"/></svg>
             Salir
           </button>
-          <p class="sidebar-motto">Trabajo organizado, mejores resultados. <span class="sidebar-paw" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M8.2 8.4a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2zm7.6 0a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2zM5.6 12.2a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm12.8 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM12 20.2c-2.8 0-5-1.7-5-3.8 0-1.6 1.3-2.7 5-2.7s5 1.1 5 2.7c0 2.1-2.2 3.8-5 3.8z"/></svg></span></p>
+          <p class="sidebar-motto">Trabajo organizado, mejores resultados.</p>
         </div>
       </aside>
       <div class="sidebar-scrim" id="sidebarScrim" aria-hidden="true"></div>
@@ -645,6 +658,6 @@
     <script src="hours-archive.js?v=hours-import-1" defer></script>
     <script src="translator.js?v=4" defer></script>
     <script src="auth-app.js?v=profile-hours-1" defer></script>
-    <script src="app.js?v=sidebar-nav-1" defer></script>
+    <script src="app.js?v=sidebar-plus-6" defer></script>
   </body>
 </html>
