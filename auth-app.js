@@ -88,6 +88,23 @@
     $("#sidebarProfileButton")?.setAttribute("aria-expanded", String(open));
   }
 
+  function restoreLocalProfile(userId) {
+    const snap = root.CloudDB?.readProfileSnap?.();
+    if (!snap?.id) return false;
+    if (userId && snap.id !== userId) return false;
+    profile = {
+      ...profile,
+      displayName: snap.displayName || profile.displayName,
+      jobTitle: snap.jobTitle || profile.jobTitle,
+      email: snap.email || profile.email,
+      avatarPath: snap.avatarPath || profile.avatarPath || null,
+      createdAt: snap.createdAt || profile.createdAt,
+      avatarUrl: snap.avatarDataUrl || profile.avatarUrl
+    };
+    paintProfile();
+    return true;
+  }
+
   function sessionEmail() {
     const user = root.TrentonSupabase?.sessionUser?.();
     const identityEmail = (user?.identities || [])
@@ -554,13 +571,7 @@
       }
       showApp(true);
       paintLoginHello();
-      try {
-        const { data } = await root.TrentonSupabase.client.auth.getUser();
-        if (data?.user) {
-          root.TrentonSupabase.setSessionUser(data.user);
-          root.CloudDB.setUser(data.user);
-        }
-      } catch (_) { /* session.user still used */ }
+      restoreLocalProfile(user.id);
       profile = { ...profile, email: sessionEmail() || profile.email };
       paintProfile();
       await loadProfile();
@@ -657,6 +668,7 @@
 
     bindLogoutButtons();
     bindProfile();
+    restoreLocalProfile();
     watchAuth(onReady, onLogout);
   }
 

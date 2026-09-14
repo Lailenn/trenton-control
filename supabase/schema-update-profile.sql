@@ -64,7 +64,7 @@ values ('avatars', 'avatars', false)
 on conflict (id) do nothing;
 
 update storage.buckets
-set public = false,
+set public = true,
     file_size_limit = 12582912
 where id = 'avatars';
 

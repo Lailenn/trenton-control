@@ -20,27 +20,108 @@
       })
     ]);
   }
+  const PROFILE_SNAP = "trenton.profile.snap";
+
+  function authStorageKeys() {
+    const keys = [];
+    try {
+      const ref = new URL(root.TrentonConfig.get().url).hostname.split(".")[0];
+      keys.push(`sb-${ref}-auth-token`);
+    } catch (_) { /* ignore */ }
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && /^sb-[\w-]+-auth-token$/.test(key) && !keys.includes(key)) keys.push(key);
+      }
+    } catch (_) { /* ignore */ }
+    return keys;
+  }
+  function sessionFromRaw(raw) {
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const session = parsed?.currentSession?.access_token ? parsed.currentSession : parsed;
+    if (!session?.access_token || !session?.user?.id) return null;
+    return { session, parsed, wrapped: Boolean(parsed?.currentSession?.access_token) };
+  }
   function readStoredSession() {
     try {
-      const config = root.TrentonConfig.get();
-      const ref = new URL(config.url).hostname.split(".")[0];
-      const raw = localStorage.getItem(`sb-${ref}-auth-token`);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      const session = parsed?.currentSession?.access_token ? parsed.currentSession : parsed;
-      if (session?.access_token && session?.user?.id) return session;
+      for (const key of authStorageKeys()) {
+        const found = sessionFromRaw(localStorage.getItem(key));
+        if (found) {
+          found.session._storageKey = key;
+          found.session._wrapped = found.wrapped;
+          found.session._parsed = found.parsed;
+          return found.session;
+        }
+      }
     } catch (_) { /* ignore */ }
     return null;
   }
+  function writeStoredSession(next) {
+    if (!next?.access_token) return;
+    try {
+      const key = next._storageKey || authStorageKeys()[0];
+      if (!key) return;
+      const body = next._wrapped
+        ? { ...next._parsed, currentSession: { ...next._parsed?.currentSession, ...next, user: next.user } }
+        : {
+            access_token: next.access_token,
+            refresh_token: next.refresh_token,
+            expires_at: next.expires_at,
+            expires_in: next.expires_in,
+            token_type: next.token_type || "bearer",
+            user: next.user
+          };
+      localStorage.setItem(key, JSON.stringify(body));
+    } catch (_) { /* ignore */ }
+  }
+  async function refreshStoredSession(session) {
+    if (!session?.refresh_token) return session;
+    const expiresAtMs = Number(session.expires_at || 0) * 1000;
+    if (session.access_token && expiresAtMs && expiresAtMs > Date.now() + 20000) return session;
+    const config = root.TrentonConfig.get();
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    try {
+      const response = await fetch(`${config.url.replace(/\/$/, "")}/auth/v1/token?grant_type=refresh_token`, {
+        method: "POST",
+        headers: {
+          apikey: config.anonKey,
+          Authorization: `Bearer ${config.anonKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ refresh_token: session.refresh_token }),
+        signal: controller.signal
+      });
+      if (!response.ok) return session;
+      const data = await response.json();
+      const next = {
+        ...session,
+        access_token: data.access_token || session.access_token,
+        refresh_token: data.refresh_token || session.refresh_token,
+        expires_at: data.expires_at || session.expires_at,
+        expires_in: data.expires_in || session.expires_in,
+        token_type: data.token_type || "bearer",
+        user: data.user || session.user
+      };
+      writeStoredSession(next);
+      currentUser = next.user;
+      root.TrentonSupabase?.setSessionUser?.(next.user);
+      return next;
+    } catch (_) {
+      return session;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
   async function requireSession() {
-    const stored = readStoredSession();
-    if (stored?.user?.id) {
+    let stored = readStoredSession();
+    if (stored?.user?.id) stored = await refreshStoredSession(stored);
+    if (stored?.user?.id && stored.access_token) {
       currentUser = stored.user;
       root.TrentonSupabase?.setSessionUser?.(stored.user);
       return stored;
     }
-    const cachedUser = currentUser || root.TrentonSupabase?.sessionUser?.();
-    if (cachedUser?.id) return { user: cachedUser, access_token: "" };
     throw new Error("No hay sesión. Vuelve a entrar.");
   }
   async function requireUser() {
@@ -49,39 +130,80 @@
   async function requireOwnerId() {
     return (await requireUser()).id;
   }
-  async function rest(path, options = {}) {
-    const session = readStoredSession() || await requireSession();
-    const config = root.TrentonConfig.get();
-    const token = session.access_token || config.anonKey;
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 10000);
+  function readProfileSnap() {
     try {
-      const response = await fetch(`${config.url.replace(/\/$/, "")}/rest/v1/${path}`, {
-        method: options.method || "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          apikey: config.anonKey,
-          "Content-Type": "application/json",
-          Prefer: options.prefer || "return=representation"
-        },
-        body: options.body != null ? JSON.stringify(options.body) : undefined,
-        signal: controller.signal
-      });
-      const text = await response.text();
-      let data = null;
-      try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+      const snap = JSON.parse(localStorage.getItem(PROFILE_SNAP) || "null");
+      return snap?.id ? snap : null;
+    } catch (_) {
+      return null;
+    }
+  }
+  function persistProfileSnap(profile, extra = {}) {
+    try {
+      const id = extra.id || profile?.id || currentUser?.id;
+      if (!id) return;
+      const prev = readProfileSnap();
+      const snap = {
+        id,
+        displayName: profile?.displayName || prev?.displayName || "",
+        jobTitle: profile?.jobTitle || prev?.jobTitle || "",
+        email: profile?.email || prev?.email || "",
+        avatarPath: extra.avatarPath !== undefined ? extra.avatarPath : (profile?.avatarPath ?? prev?.avatarPath ?? null),
+        avatarDataUrl: extra.avatarDataUrl !== undefined ? extra.avatarDataUrl : (prev?.avatarDataUrl || null),
+        createdAt: profile?.createdAt || prev?.createdAt || "",
+        savedAt: Date.now()
+      };
+      const json = JSON.stringify(snap);
+      if (json.length > 3500000) snap.avatarDataUrl = extra.avatarDataUrl && extra.avatarDataUrl.length < 3500000 ? extra.avatarDataUrl : null;
+      localStorage.setItem(PROFILE_SNAP, JSON.stringify(snap));
+    } catch (error) {
+      console.warn("No se pudo guardar la copia local del perfil", error);
+    }
+  }
+  async function rest(path, options = {}) {
+    let session = await requireSession();
+    const config = root.TrentonConfig.get();
+    const url = `${config.url.replace(/\/$/, "")}/rest/v1/${path}`;
+    async function once(token) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 10000);
+      try {
+        const response = await fetch(url, {
+          method: options.method || "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            apikey: config.anonKey,
+            "Content-Type": "application/json",
+            Prefer: options.prefer || "return=representation"
+          },
+          body: options.body != null ? JSON.stringify(options.body) : undefined,
+          signal: controller.signal
+        });
+        const text = await response.text();
+        let data = null;
+        try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+        return { response, data, text };
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+    try {
+      let { response, data, text } = await once(session.access_token);
+      if (response.status === 401 && session.refresh_token) {
+        session = await refreshStoredSession({ ...session, expires_at: 0 });
+        if (session.access_token) ({ response, data, text } = await once(session.access_token));
+      }
       if (!response.ok) {
         const msg = data?.message || data?.details || data?.hint || (typeof data === "string" ? data : text) || String(response.status);
         const error = new Error(String(msg).slice(0, 220));
         error.code = data?.code;
+        error.status = response.status;
         throw error;
       }
       return data;
     } catch (error) {
       if (error.name === "AbortError") throw new Error("Supabase no respondió a tiempo.");
       throw error;
-    } finally {
-      clearTimeout(timer);
     }
   }
   function emailFromUser(user) {
@@ -640,35 +762,89 @@
     return response.blob();
   }
 
-  async function uploadAvatarFetch(path, blob, mime, accessToken) {
+  async function storageFetch(path, options = {}) {
+    const session = await requireSession();
     const config = root.TrentonConfig.get();
-    const endpoint = `${config.url.replace(/\/$/, "")}/storage/v1/object/avatars/${path}`;
+    const endpoint = `${config.url.replace(/\/$/, "")}/storage/v1/object/${path}`;
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 12000);
+    const timer = setTimeout(() => controller.abort(), options.timeout || 12000);
     try {
       const response = await fetch(endpoint, {
-        method: "POST",
+        method: options.method || "GET",
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${session.access_token}`,
           apikey: config.anonKey,
-          "Content-Type": mime,
-          "x-upsert": "true",
-          "cache-control": "3600"
+          ...(options.headers || {})
         },
-        body: blob,
+        body: options.body,
         signal: controller.signal
       });
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text.slice(0, 180) || `Storage ${response.status}`);
-      }
+      return response;
     } catch (error) {
-      if (error.name === "AbortError") throw new Error("La subida a Storage se trabó.");
+      if (error.name === "AbortError") throw new Error(options.timeoutMessage || "Storage no respondió.");
       throw error;
     } finally {
       clearTimeout(timer);
     }
+  }
+
+  async function uploadAvatarFetch(path, blob, mime) {
+    const headers = {
+      "Content-Type": mime || "image/jpeg",
+      "x-upsert": "true",
+      "cache-control": "3600"
+    };
+    let response = await storageFetch(`avatars/${path}`, { method: "POST", headers, body: blob, timeoutMessage: "La subida a Storage se trabó." });
+    if (!response.ok && (response.status === 409 || response.status === 400 || response.status === 405)) {
+      response = await storageFetch(`avatars/${path}`, { method: "PUT", headers, body: blob, timeoutMessage: "La subida a Storage se trabó." });
+    }
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(text.slice(0, 180) || `Storage ${response.status}`);
+    }
     return path;
+  }
+
+  async function downloadAvatarFetch(path) {
+    const config = root.TrentonConfig.get();
+    const base = config.url.replace(/\/$/, "");
+    const publicUrl = `${base}/storage/v1/object/public/avatars/${path}`;
+    try {
+      const publicResponse = await fetch(`${publicUrl}?t=${Date.now()}`, { cache: "no-store" });
+      if (publicResponse.ok) return publicResponse.blob();
+    } catch (_) { /* bucket privado: seguir con JWT */ }
+    const response = await storageFetch(`avatars/${path}`, { method: "GET", timeout: 10000, timeoutMessage: "No se pudo bajar la foto de la nube." });
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(text.slice(0, 180) || `Storage ${response.status}`);
+    }
+    return response.blob();
+  }
+
+  function rowFrom(data) {
+    return Array.isArray(data) ? data[0] : data;
+  }
+
+  async function writeAvatarPath(user, storedPath) {
+    const id = user.id;
+    const body = { avatar_path: storedPath };
+    let row = rowFrom(await rest(`profiles?id=eq.${encodeURIComponent(id)}`, { method: "PATCH", body }));
+    if (!row?.avatar_path) {
+      row = rowFrom(await rest("profiles?on_conflict=id", {
+        method: "POST",
+        body: {
+          id,
+          display_name: user.user_metadata?.display_name || "Lilian",
+          avatar_path: storedPath
+        },
+        prefer: "return=representation,resolution=merge-duplicates"
+      }));
+    }
+    const check = rowFrom(await rest(`profiles?id=eq.${encodeURIComponent(id)}&select=id,avatar_path`));
+    if (!check?.avatar_path) {
+      throw new Error("La foto no quedó en la base de datos. Corre supabase/schema-update-profile.sql y vuelve a entrar.");
+    }
+    return check.avatar_path;
   }
 
   async function getProfile() {
@@ -678,11 +854,11 @@
     let row = null;
     try {
       const rows = await rest(`profiles?id=eq.${encodeURIComponent(id)}&select=*`);
-      row = Array.isArray(rows) ? rows[0] : rows;
+      row = rowFrom(rows);
     } catch (error) {
       if (!isMissingColumn(error)) throw error;
       const rows = await rest(`profiles?id=eq.${encodeURIComponent(id)}&select=id,display_name,created_at`);
-      row = Array.isArray(rows) ? rows[0] : rows;
+      row = rowFrom(rows);
     }
     if (!row) {
       try {
@@ -690,14 +866,14 @@
           method: "POST",
           body: { id, display_name: user.user_metadata?.display_name || "Lilian", email }
         });
-        row = Array.isArray(inserted) ? inserted[0] : inserted;
+        row = rowFrom(inserted);
       } catch (error) {
         if (error.code !== "23505" && !/duplicate/i.test(error.message || "")) {
           const inserted = await rest("profiles", {
             method: "POST",
             body: { id, display_name: user.user_metadata?.display_name || "Lilian" }
           });
-          row = Array.isArray(inserted) ? inserted[0] : inserted;
+          row = rowFrom(inserted);
         }
       }
     } else if (email && !row.email) {
@@ -706,7 +882,9 @@
         row = { ...row, email };
       } catch (_) { /* columna email puede faltar */ }
     }
-    return profileFrom(row, user);
+    const profile = profileFrom(row, user);
+    persistProfileSnap(profile);
+    return profile;
   }
 
   async function saveProfile(profile) {
@@ -716,7 +894,7 @@
     const job = String(profile.jobTitle || "").trim() || "Secretaria";
     const email = emailFromUser(user) || String(profile.email || "").trim();
     const row = { id, display_name: name, job_title: job, email };
-    if (profile.avatarPath !== undefined) row.avatar_path = profile.avatarPath;
+    if (profile.avatarPath) row.avatar_path = profile.avatarPath;
     try {
       await rest("profiles?on_conflict=id", {
         method: "POST",
@@ -727,7 +905,7 @@
       if (!isMissingColumn(error)) throw error;
       const fallback = { id, display_name: name };
       if (email) fallback.email = email;
-      if (profile.avatarPath !== undefined) fallback.avatar_path = profile.avatarPath;
+      if (profile.avatarPath) fallback.avatar_path = profile.avatarPath;
       try {
         await rest("profiles?on_conflict=id", {
           method: "POST",
@@ -748,22 +926,19 @@
   }
 
   async function saveAvatar(file) {
-    const session = await requireSession();
-    const user = session.user;
+    const user = (await requireSession()).user;
     const blob = await shrinkAvatar(file);
     const path = `${user.id}/avatar.jpg`;
     let storedPath = path;
     let uploaded = false;
-    if (session.access_token) {
-      try {
-        await uploadAvatarFetch(path, blob, "image/jpeg", session.access_token);
-        uploaded = true;
-      } catch (error) {
-        console.warn("Storage de avatares no respondió, se guarda en el perfil.", error);
-      }
+    try {
+      await uploadAvatarFetch(path, blob, "image/jpeg");
+      uploaded = true;
+    } catch (error) {
+      console.warn("Storage de avatares no respondió, se guarda en el perfil.", error);
     }
+    const dataUrl = await blobToDataUrl(blob);
     if (!uploaded) {
-      const dataUrl = await blobToDataUrl(blob);
       if (dataUrl.length > 180000) throw new Error("La foto sigue siendo muy pesada. Toma otra más cercana o con menos zoom.");
       storedPath = dataUrl;
     }
@@ -772,42 +947,42 @@
     } catch (error) {
       console.warn("La foto no quedó en la caché local", error);
     }
+    persistProfileSnap({ id: user.id, avatarPath: storedPath }, { id: user.id, avatarPath: storedPath, avatarDataUrl: dataUrl });
     try {
-      const updated = await rest(`profiles?id=eq.${encodeURIComponent(user.id)}`, {
-        method: "PATCH",
-        body: { avatar_path: storedPath }
-      });
-      if (!updated || (Array.isArray(updated) && !updated.length)) {
-        await rest("profiles?on_conflict=id", {
-          method: "POST",
-          body: {
-            id: user.id,
-            display_name: user.user_metadata?.display_name || "Lilian",
-            avatar_path: storedPath
-          },
-          prefer: "return=representation,resolution=merge-duplicates"
-        });
-      }
+      storedPath = await writeAvatarPath(user, storedPath);
     } catch (error) {
       throw new Error(error.message || "La foto se vio aquí, pero no se pudo guardar en la nube.");
     }
+    persistProfileSnap({ id: user.id, avatarPath: storedPath }, { id: user.id, avatarPath: storedPath, avatarDataUrl: dataUrl });
     return { path: storedPath, blob };
   }
 
   async function ensureAvatar(profile) {
-    const id = currentUser?.id || root.TrentonSupabase.userId();
-    const cached = id ? await root.LocalCache.get("avatar", id) : null;
-    if (cached) return cached;
-    const path = profile?.avatarPath || "";
-    if (!path) return null;
-    try {
-      const blob = path.startsWith("data:") ? await dataUrlToBlob(path) : await download("avatars", path);
-      if (blob && id) await root.LocalCache.put("avatar", id, "", blob);
-      return blob;
-    } catch (error) {
-      console.warn("No se pudo descargar la foto de perfil", error);
-      return null;
+    const id = currentUser?.id || profile?.id || root.TrentonSupabase.userId();
+    const path = profile?.avatarPath || readProfileSnap()?.avatarPath || "";
+    if (path) {
+      try {
+        const blob = path.startsWith("data:") ? await dataUrlToBlob(path) : await downloadAvatarFetch(path);
+        if (blob && id) {
+          try { await root.LocalCache.put("avatar", id, "", blob); } catch (_) { /* ignore */ }
+          const dataUrl = path.startsWith("data:") ? path : await blobToDataUrl(blob);
+          persistProfileSnap(profile, { id, avatarPath: path, avatarDataUrl: dataUrl });
+        }
+        if (blob) return blob;
+      } catch (error) {
+        console.warn("No se pudo bajar la foto de la nube", error);
+      }
     }
+    try {
+      const cached = id ? await root.LocalCache.get("avatar", id) : null;
+      if (cached) return cached;
+    } catch (_) { /* ignore */ }
+    const snap = readProfileSnap();
+    if (snap?.avatarDataUrl && (!id || snap.id === id)) {
+      try { return await dataUrlToBlob(snap.avatarDataUrl); }
+      catch (_) { /* ignore */ }
+    }
+    return null;
   }
 
   root.CloudDB = {
@@ -815,6 +990,7 @@
       currentUser = user;
       root.TrentonSupabase?.setSessionUser?.(user);
     },
+    readProfileSnap,
     listInvoices,
     saveInvoice,
     saveMany,
