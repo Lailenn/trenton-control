@@ -182,11 +182,26 @@
     $("#sidebarProfileButton")?.addEventListener("click", openProfile);
     $("#profileScrim")?.addEventListener("click", () => setProfileOpen(false));
     $("#profilePhotoFile")?.addEventListener("change", async event => {
-      const file = event.target.files?.[0];
+      const picked = event.target.files?.[0];
+      if (!picked) return;
+      let file = picked;
+      try {
+        const buffer = await Promise.race([
+          picked.arrayBuffer(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("El teléfono no soltó la foto. Tómalo de nuevo o usa la cámara.")), 8000))
+        ]);
+        file = new File([buffer], picked.name || "avatar.jpg", { type: picked.type || "image/jpeg" });
+      } catch (error) {
+        event.target.value = "";
+        setProfileStatus(error.message || "No se pudo leer la foto del teléfono.", true);
+        return;
+      }
       event.target.value = "";
-      if (!file) return;
       try { await saveAvatarNow(file); }
-      catch (error) { setProfileStatus(error.message || "No se pudo guardar la foto. Corre supabase/schema-update-profile.sql en Supabase.", true); }
+      catch (error) {
+        console.error("No se pudo guardar la foto de perfil", error);
+        setProfileStatus(error.message || "No se pudo guardar la foto.", true);
+      }
     });
     $("#saveProfileButton")?.addEventListener("click", async () => {
       const button = $("#saveProfileButton");
