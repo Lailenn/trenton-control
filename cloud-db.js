@@ -893,36 +893,47 @@
     const name = String(profile.displayName || "").trim() || "Lilian";
     const job = String(profile.jobTitle || "").trim() || "Secretaria";
     const email = emailFromUser(user) || String(profile.email || "").trim();
-    const row = { id, display_name: name, job_title: job, email };
-    if (profile.avatarPath) row.avatar_path = profile.avatarPath;
+    const year = Number(profile.memberYear || String(profile.createdAt || "").slice(0, 4));
+    const body = { display_name: name, job_title: job, email };
+    if (profile.avatarPath) body.avatar_path = profile.avatarPath;
+    const bodyWithYear = year >= 1990 && year <= 2099 ? { ...body, created_at: `${year}-01-01T12:00:00.000Z` } : body;
+    async function patch(payload) {
+      let row = rowFrom(await rest(`profiles?id=eq.${encodeURIComponent(id)}`, { method: "PATCH", body: payload }));
+      if (!row?.id) {
+        row = rowFrom(await rest("profiles?on_conflict=id", {
+          method: "POST",
+          body: { id, ...payload },
+          prefer: "return=representation,resolution=merge-duplicates"
+        }));
+      }
+      return row;
+    }
     try {
-      await rest("profiles?on_conflict=id", {
-        method: "POST",
-        body: row,
-        prefer: "return=representation,resolution=merge-duplicates"
-      });
-    } catch (error) {
-      if (!isMissingColumn(error)) throw error;
-      const fallback = { id, display_name: name };
-      if (email) fallback.email = email;
-      if (profile.avatarPath) fallback.avatar_path = profile.avatarPath;
+      await patch(bodyWithYear);
+    } catch (_yearError) {
       try {
-        await rest("profiles?on_conflict=id", {
-          method: "POST",
-          body: fallback,
-          prefer: "return=representation,resolution=merge-duplicates"
-        });
-      } catch (inner) {
-        if (!isMissingColumn(inner)) throw inner;
-        await rest("profiles?on_conflict=id", {
-          method: "POST",
-          body: { id, display_name: name },
-          prefer: "return=representation,resolution=merge-duplicates"
-        });
-        throw new Error("Se guardó el nombre. Falta una columna de perfil; corre supabase/schema-update-profile.sql si foto o cargo no quedan.");
+        await patch(body);
+      } catch (error) {
+        if (!isMissingColumn(error)) throw error;
+        const fallback = { display_name: name };
+        if (email) fallback.email = email;
+        if (profile.avatarPath) fallback.avatar_path = profile.avatarPath;
+        try {
+          await patch(fallback);
+        } catch (inner) {
+          if (!isMissingColumn(inner)) throw inner;
+          await patch({ display_name: name });
+        }
+        throw new Error("Se guardó el nombre. Corre supabase/schema-update-profile.sql para poder guardar cargo y año.");
       }
     }
-    return getProfile();
+    const saved = await getProfile();
+    if (saved.displayName !== name) throw new Error("El nombre no quedó en la base de datos. Vuelve a entrar e intenta de nuevo.");
+    if (saved.jobTitle && saved.jobTitle !== job && body.job_title) {
+      throw new Error("El cargo no quedó en la base de datos. Corre supabase/schema-update-profile.sql y vuelve a guardar.");
+    }
+    persistProfileSnap(saved);
+    return saved;
   }
 
   async function saveAvatar(file) {

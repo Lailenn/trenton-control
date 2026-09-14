@@ -59,14 +59,60 @@
     });
   }
 
+  function memberYearFrom(value) {
+    const year = Number(String(value || "").slice(0, 4));
+    return year >= 1990 && year <= 2099 ? String(year) : "2026";
+  }
+
+  function profileDraft() {
+    return {
+      displayName: ($("#profileNameInput")?.value || "").trim() || "Lilian",
+      jobTitle: ($("#profileRoleInput")?.value || "").trim() || "Secretaria",
+      memberYear: memberYearFrom($("#profileSinceInput")?.value || profile.createdAt)
+    };
+  }
+
+  function savedProfileMark() {
+    return {
+      displayName: String(profile.displayName || "Lilian").trim() || "Lilian",
+      jobTitle: String(profile.jobTitle || "Secretaria").trim() || "Secretaria",
+      memberYear: memberYearFrom(profile.createdAt)
+    };
+  }
+
+  function isProfileDirty() {
+    const draft = profileDraft();
+    const saved = savedProfileMark();
+    return draft.displayName !== saved.displayName
+      || draft.jobTitle !== saved.jobTitle
+      || draft.memberYear !== saved.memberYear;
+  }
+
+  function syncProfileSaveState() {
+    const button = $("#saveProfileButton");
+    const dirty = isProfileDirty();
+    if (button) {
+      button.disabled = !dirty;
+      button.textContent = dirty ? "Guardar cambios" : "Guardar perfil";
+    }
+    const status = $("#profileError");
+    if (!status) return;
+    if (dirty) {
+      status.textContent = "Tienes cambios sin guardar.";
+      status.classList.remove("is-ok");
+    } else if (!status.textContent || status.textContent === "Tienes cambios sin guardar.") {
+      status.textContent = "";
+    }
+  }
+
   function paintProfile() {
-    const year = String(profile.createdAt || "2026").slice(0, 4);
+    const year = memberYearFrom(profile.createdAt);
     if ($("#profileDisplayName")) $("#profileDisplayName").textContent = profile.displayName || "Lilian";
     if ($("#profileNameInput")) $("#profileNameInput").value = profile.displayName || "Lilian";
     if ($("#profileRoleInput")) $("#profileRoleInput").value = profile.jobTitle || "Secretaria";
+    if ($("#profileSinceInput")) $("#profileSinceInput").value = year;
     if ($("#profileEmail")) $("#profileEmail").textContent = profile.email || sessionEmail() || "—";
     if ($("#profileEmailLine")) $("#profileEmailLine").textContent = profile.email || sessionEmail() || "";
-    if ($("#profileSince")) $("#profileSince").textContent = year;
     if ($("#profileHello")) $("#profileHello").textContent = helloLine().replace(",", "");
     if ($("#profileQuote")) $("#profileQuote").textContent = `“${phraseFor()}”`;
     if ($("#sidebarProfileName")) $("#sidebarProfileName").textContent = profile.displayName || "Lilian";
@@ -79,6 +125,7 @@
       if (button) button.title = profile.displayName || "Tu perfil";
     });
     paintAvatarSlots(profile.avatarUrl);
+    syncProfileSaveState();
   }
 
   function setProfileOpen(open) {
@@ -154,13 +201,26 @@
   }
 
   async function saveProfileNow() {
-    const displayName = $("#profileNameInput")?.value.trim() || "Lilian";
-    const jobTitle = $("#profileRoleInput")?.value.trim() || "Secretaria";
+    const draft = profileDraft();
+    if (!isProfileDirty()) {
+      setProfileStatus("No hay cambios que guardar.");
+      syncProfileSaveState();
+      return;
+    }
     setProfileStatus("Guardando perfil…");
-    const saved = await root.CloudDB.saveProfile({ ...profile, displayName, jobTitle, avatarPath: profile.avatarPath, email: profile.email || sessionEmail() });
-    profile = { ...profile, ...saved, displayName: saved.displayName, jobTitle: saved.jobTitle, email: saved.email || sessionEmail() };
+    const saved = await root.CloudDB.saveProfile({
+      ...profile,
+      displayName: draft.displayName,
+      jobTitle: draft.jobTitle,
+      memberYear: draft.memberYear,
+      avatarPath: profile.avatarPath,
+      email: profile.email || sessionEmail()
+    });
+    const avatarUrl = profile.avatarUrl;
+    profile = { ...profile, ...saved, displayName: saved.displayName, jobTitle: saved.jobTitle, email: saved.email || sessionEmail(), avatarUrl };
     paintProfile();
-    setProfileStatus("Perfil guardado en la nube.");
+    setProfileStatus("Nombre, cargo y año guardados en la nube.");
+    syncProfileSaveState();
   }
 
   async function saveAvatarNow(file) {
@@ -191,7 +251,7 @@
       setProfileStatus("");
       paintProfile();
       setProfileOpen(true);
-      try { await loadProfile(); }
+      try { await loadProfile(); syncProfileSaveState(); }
       catch (error) { setProfileStatus(error.message || "No se pudo leer el perfil.", true); }
     };
     $("#profileAvatarButton")?.addEventListener("click", openProfile);
@@ -224,8 +284,11 @@
       const button = $("#saveProfileButton");
       button.disabled = true;
       try { await saveProfileNow(); }
-      catch (error) { setProfileStatus(error.message || "No se pudo guardar el perfil.", true); }
-      finally { button.disabled = false; }
+      catch (error) { setProfileStatus(error.message || "No se pudo guardar el perfil.", true); syncProfileSaveState(); }
+      finally { if (isProfileDirty()) button.disabled = false; }
+    });
+    ["profileNameInput", "profileRoleInput", "profileSinceInput"].forEach(id => {
+      $(`#${id}`)?.addEventListener("input", syncProfileSaveState);
     });
     document.addEventListener("keydown", event => {
       if (event.key === "Escape") setProfileOpen(false);

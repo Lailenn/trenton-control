@@ -140,5 +140,212 @@ window.HoursArchive = function (app) {
   $("#hoursArchiveSearch")?.addEventListener("input", render);
   $("#backupHoursButton")?.addEventListener("click", backup);
   $("#openHoursFormButton")?.addEventListener("click", () => app.openHours?.());
-  return {open, render, view};
+
+  const MAX_FILE = 15 * 1024 * 1024;
+  let importRows = [], importBusy = false;
+
+  function closeHoursImport() {
+    if (importBusy) return;
+    importRows.forEach(row => { if (row.url) URL.revokeObjectURL(row.url); });
+    importRows = [];
+    $("#hoursImportPanel")?.classList.add("hidden");
+    if ($("#hoursImportReviewGrid")) $("#hoursImportReviewGrid").innerHTML = "";
+    if ($("#importHoursFiles")) $("#importHoursFiles").value = "";
+    if ($("#importHoursPdfFile")) $("#importHoursPdfFile").value = "";
+  }
+
+  function hoursDuplicate(row, seen) {
+    const existing = app.records().find(record =>
+      (row.pdfHash && row.pdfHash === record.pdfHash)
+      || (row.sourceId && (row.sourceId === record.id || row.sourceId === record.sourceId))
+      || (row.jobAddress && row.reportDate && row.jobAddress === record.jobAddress && row.reportDate === record.reportDate)
+    );
+    if (existing) return `Ya guardado: ${existing.jobAddress || "reporte"}, ${dateLabel(reportDate(existing))}.`;
+    if (seen.some(item => (row.pdfHash && row.pdfHash === item.pdfHash) || (row.jobAddress && row.reportDate && row.jobAddress === item.jobAddress && row.reportDate === item.reportDate))) {
+      return "Repetido dentro de esta carga.";
+    }
+    return "";
+  }
+
+  function hoursRowReady(row) {
+    return Boolean(row.jobAddress?.trim() && isoDate(row.reportDate) && row.entries?.length && row.entries.every(entry =>
+      String(entry.employee || "").trim() && (Number(entry.hours) > 0 || Number(entry.hoursOverride) > 0)
+    ));
+  }
+
+  function updateHoursReview() {
+    let included = 0, invalid = 0;
+    const seen = [];
+    importRows.forEach((row, index) => {
+      row.duplicate = hoursDuplicate(row, seen);
+      if (row.included && !row.error && !row.duplicate) {
+        seen.push(row);
+        included++;
+        if (!hoursRowReady(row)) invalid++;
+      }
+      const status = $("#hoursImportRowStatus" + index);
+      if (status) {
+        status.textContent = row.error || row.duplicate || (!hoursRowReady(row) ? "Completa dirección, fecha y al menos un empleado con horas." : `${row.entries.length} empleado(s). Listo para guardar en la nube.`);
+        status.classList.toggle("needs-review", Boolean(row.error || row.duplicate || !hoursRowReady(row)));
+      }
+    });
+    if ($("#hoursImportTotal")) $("#hoursImportTotal").textContent = `${included} reportes nuevos seleccionados` + (invalid ? ` · ${invalid} por completar` : "");
+    if ($("#confirmHoursImportButton")) $("#confirmHoursImportButton").disabled = importBusy || !included || Boolean(invalid);
+  }
+
+  function renderHoursReview() {
+    if (!$("#hoursImportReviewGrid")) return;
+    $("#hoursImportReviewGrid").innerHTML = importRows.map((row, index) => `<article class="import-row">
+      <div class="import-row-head"><label><input type="checkbox" data-hours-row="${index}" data-hours-field="included" ${row.included ? "checked" : ""} ${row.error ? "disabled" : ""}> ${esc(row.name)}</label>${row.url ? `<a href="${row.url}" target="_blank" rel="noopener">Ver original ↗</a>` : ""}</div>
+      <div class="import-fields">
+        <label class="field import-address"><span>Dirección del trabajo</span><input data-hours-row="${index}" data-hours-field="jobAddress" value="${esc(row.jobAddress)}" maxlength="500"></label>
+        <label class="field"><span>Fecha del reporte</span><input type="date" data-hours-row="${index}" data-hours-field="reportDate" value="${esc(row.reportDate)}"></label>
+        <label class="field"><span>Tarifa USD/h</span><input inputmode="decimal" data-hours-row="${index}" data-hours-field="defaultRate" value="${esc(row.defaultRate ?? "")}"></label>
+      </div>
+      ${row.warnings.length ? `<p class="import-warning">${row.warnings.map(esc).join(" ")}</p>` : ""}
+      <p class="import-row-status" id="hoursImportRowStatus${index}" role="status"></p>
+    </article>`).join("");
+    updateHoursReview();
+  }
+
+  async function unpackHours(files) {
+    const entries = [];
+    let bytes = 0;
+    const add = (file, metadata = null) => {
+      bytes += file?.size || 0;
+      if (entries.length >= MAX_COUNT || bytes > MAX_BATCH) throw new Error("Carga hasta 500 reportes o 200 MB por vez.");
+      entries.push({ file, metadata });
+    };
+    for (const file of files) {
+      if (!/\.zip$/i.test(file.name)) { add(file); continue; }
+      const zip = await JSZip.loadAsync(file);
+      const manifestEntry = zip.file("trenton-horas-respaldo.json");
+      let manifest;
+      if (manifestEntry) {
+        manifest = JSON.parse(await manifestEntry.async("string"));
+        if (manifest.format !== "trenton-hours-backup" || !Array.isArray(manifest.records)) throw new Error("El ZIP no es un respaldo de horas compatible.");
+      }
+      const items = manifest ? manifest.records : Object.values(zip.files).filter(item => !item.dir && /\.pdf$/i.test(item.name)).map(item => ({ pdfPath: item.name }));
+      for (const item of items) {
+        if (!item.pdfPath && manifest) { add(null, item); continue; }
+        const entry = zip.file(String(item.pdfPath || ""));
+        if (!entry || entry.dir) throw new Error("Falta un PDF referenciado en el respaldo de horas.");
+        const blob = await entry.async("blob");
+        add(new File([blob], entry.name.split("/").pop(), { type: "application/pdf" }), manifest ? item : null);
+      }
+    }
+    return entries;
+  }
+
+  async function startHoursImport(files) {
+    if (importBusy || !files.length) return;
+    closeHoursImport();
+    open();
+    importBusy = true;
+    $("#hoursImportPanel")?.classList.remove("hidden");
+    if ($("#importHoursArchiveButton")) $("#importHoursArchiveButton").disabled = true;
+    if ($("#hoursImportError")) $("#hoursImportError").textContent = "";
+    if ($("#hoursImportProgress")) $("#hoursImportProgress").textContent = "Preparando los archivos…";
+    try {
+      const packed = await unpackHours(files);
+      for (let i = 0; i < packed.length; i++) {
+        const { file, metadata } = packed[i];
+        if ($("#hoursImportProgress")) $("#hoursImportProgress").textContent = `Leyendo ${i + 1} de ${packed.length}…`;
+        const row = {
+          file, name: file?.name || "Reporte sin PDF", url: file ? URL.createObjectURL(file) : "",
+          jobAddress: "", reportDate: "", defaultRate: "", description: "", entries: [],
+          included: true, warnings: [], error: "", sourceId: "", pdfHash: ""
+        };
+        try {
+          if (file) {
+            if (!/\.pdf$/i.test(file.name) || file.size > MAX_FILE) throw new Error("Sube un PDF de hasta 15 MB.");
+            const parsed = await HoursPDF.read(file);
+            const record = window.HoursApp.recordFromImport(file, parsed, parsed.sourceId || "");
+            Object.assign(row, {
+              jobAddress: record.jobAddress,
+              reportDate: record.reportDate,
+              defaultRate: record.defaultRate,
+              description: record.description,
+              entries: record.entries,
+              warnings: parsed.warnings || [],
+              pdfHash: parsed.pdfHash,
+              sourceId: parsed.sourceId || ""
+            });
+          }
+          if (metadata) {
+            if (typeof metadata.jobAddress === "string" && metadata.jobAddress) row.jobAddress = metadata.jobAddress;
+            if (isoDate(metadata.reportDate)) row.reportDate = metadata.reportDate;
+            if (Array.isArray(metadata.entries) && metadata.entries.length) row.entries = metadata.entries;
+          }
+        } catch (error) {
+          row.error = "No se pudo leer este archivo. " + (error.message || "");
+          row.included = false;
+        }
+        importRows.push(row);
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+      if ($("#hoursImportProgress")) $("#hoursImportProgress").textContent = `${importRows.length} archivos preparados. Revisa y guarda; irán a la web y a Supabase.`;
+    } catch (error) {
+      if ($("#hoursImportError")) $("#hoursImportError").textContent = error.message || "No se pudieron preparar los archivos.";
+      if ($("#hoursImportProgress")) $("#hoursImportProgress").textContent = "La carga no se completó.";
+    } finally {
+      importBusy = false;
+      if ($("#importHoursArchiveButton")) $("#importHoursArchiveButton").disabled = false;
+      renderHoursReview();
+    }
+  }
+
+  async function confirmHoursImport() {
+    if (importBusy) return;
+    updateHoursReview();
+    const chosen = importRows.filter(row => row.included && !row.error && !row.duplicate);
+    if (!chosen.length || chosen.some(row => !hoursRowReady(row))) return;
+    importBusy = true;
+    updateHoursReview();
+    if ($("#hoursImportError")) $("#hoursImportError").textContent = "";
+    try {
+      for (const row of chosen) {
+        const parsed = {
+          fields: { jobAddress: row.jobAddress.trim(), reportDate: row.reportDate, description: row.description || "", defaultRate: Number(row.defaultRate) || 0 },
+          entries: row.entries,
+          pdfHash: row.pdfHash,
+          sourceId: row.sourceId,
+          warnings: row.warnings
+        };
+        const record = window.HoursApp.recordFromImport(row.file, parsed, row.sourceId || `hours-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+        record.jobAddress = row.jobAddress.trim();
+        record.reportDate = row.reportDate;
+        record.defaultRate = Number(row.defaultRate) || record.defaultRate;
+        if (!window.HoursApp.hoursReady(record) && record.entries.length) {
+          record.entries = record.entries.map(entry => ({ ...entry, rate: Number(entry.rate) || record.defaultRate || 30 }));
+        }
+        await window.CloudDB.saveHours(record);
+      }
+      await window.HoursApp.boot?.();
+      importBusy = false;
+      closeHoursImport();
+      render();
+      app.toast(`${chosen.length} reportes de horas guardados en la web y en Supabase.`);
+    } catch (error) {
+      if ($("#hoursImportError")) $("#hoursImportError").textContent = error.message || "No se guardó la carga.";
+    } finally {
+      importBusy = false;
+      updateHoursReview();
+    }
+  }
+
+  $("#importHoursArchiveButton")?.addEventListener("click", () => { if (!importBusy) $("#importHoursFiles")?.click(); });
+  $("#importHoursFiles")?.addEventListener("change", event => startHoursImport(Array.from(event.target.files || [])));
+  $("#cancelHoursImportButton")?.addEventListener("click", closeHoursImport);
+  $("#confirmHoursImportButton")?.addEventListener("click", confirmHoursImport);
+  $("#hoursImportReviewGrid")?.addEventListener("input", event => {
+    const field = event.target.dataset.hoursField;
+    const row = importRows[Number(event.target.dataset.hoursRow)];
+    if (!row || !field || importBusy) return;
+    row[field] = field === "included" ? event.target.checked : event.target.value;
+    if (field === "defaultRate") row.entries = (row.entries || []).map(entry => ({ ...entry, rate: Number(event.target.value) || entry.rate }));
+    updateHoursReview();
+  });
+
+  return {open, render, view, importFiles: startHoursImport};
 };

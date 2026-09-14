@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet" />
     <link rel="icon" href="favicon.ico" sizes="any" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=avatar-hang-2" />
+    <link rel="stylesheet" href="styles.css?v=profile-hours-1" />
   </head>
   <body>
     <div id="authGate" class="auth-gate auth-play login-screen" data-mode="login">
@@ -271,7 +271,12 @@
           <section class="page-view hidden hours-view" id="hoursView">
             <div class="hours-page-heading">
               <div><p class="eyebrow">Reporte de jornada</p><h1>Horas trabajadas</h1><p class="hero-copy">Registra los horarios de cada empleado en formato de 24 horas y genera el reporte con el formato de Arrento Carpentry LLC.</p></div>
-              <div class="hours-heading-actions"><button class="button button-ghost" id="resetHoursButton" type="button">Nuevo reporte</button><button class="button button-primary" id="downloadHoursButton" type="button">Guardar y descargar PDF</button></div>
+              <div class="hours-heading-actions">
+                <button class="button button-ghost" id="importHoursPdfButton" type="button">Subir PDF anterior</button>
+                <input id="importHoursPdfFile" type="file" accept="application/pdf,.pdf,application/zip,.zip" multiple hidden>
+                <button class="button button-ghost" id="resetHoursButton" type="button">Nuevo reporte</button>
+                <button class="button button-primary" id="downloadHoursButton" type="button">Guardar y descargar PDF</button>
+              </div>
             </div>
             <section class="whatsapp-import hours-whatsapp-import" aria-labelledby="hoursWhatsappTitle">
               <div class="whatsapp-heading"><div><p class="eyebrow">Desde el mensaje de Rubén</p><h2 id="hoursWhatsappTitle">Pegar texto de WhatsApp</h2></div><span class="whatsapp-badge">Texto → horas</span></div>
@@ -364,7 +369,9 @@
               <div><p class="eyebrow">Reportes de jornada por dirección</p><h1 id="hoursArchiveTitle">Todos los reportes de horas</h1><p>Consulta los PDFs de horas trabajadas. Este archivo es independiente de Invoices / PDFs.</p></div>
               <div class="archive-heading-actions">
                 <button class="button button-ghost" type="button" id="backupHoursButton">Descargar respaldo</button>
-                <button class="button button-primary" type="button" id="openHoursFormButton">＋ Nuevo reporte</button>
+                <button class="button button-primary" type="button" id="importHoursArchiveButton">＋ Subir reportes anteriores</button>
+                <input id="importHoursFiles" type="file" accept="application/pdf,.pdf,application/zip,.zip" multiple hidden>
+                <button class="button button-ghost" type="button" id="openHoursFormButton">＋ Nuevo reporte</button>
               </div>
             </div>
             <div class="archive-filters hours-archive-filters">
@@ -377,6 +384,13 @@
               <div><span>Total a pagar</span><strong id="hoursArchivePay">$0.00</strong></div>
             </div>
             <p class="archive-help" id="hoursArchiveYearHelp">Cada reporte de horas cuenta una sola vez, según la fecha del trabajo. Estos PDFs no se mezclan con las invoices.</p>
+            <section class="import-panel hidden" id="hoursImportPanel" aria-labelledby="hoursImportTitle">
+              <div class="import-heading"><div><h2 id="hoursImportTitle">Revisar reportes de horas anteriores</h2><p id="hoursImportProgress" role="status">Selecciona los PDFs.</p></div><button type="button" class="button button-ghost" id="cancelHoursImportButton">Cerrar importación</button></div>
+              <p>La app lee el formato de Arrento (dirección, fecha, empleados y horas). Confirma los datos; al guardar quedan en la web y en Supabase.</p>
+              <div class="import-review-grid" id="hoursImportReviewGrid"></div>
+              <div class="import-bottom"><p id="hoursImportTotal" aria-live="polite"></p><button type="button" class="button button-primary" id="confirmHoursImportButton" disabled>Guardar reportes seleccionados</button></div>
+              <p id="hoursImportError" class="form-error" role="alert"></p>
+            </section>
             <div class="archive-grid" id="hoursArchiveGrid"></div>
             <p class="archive-help">Los PDFs de horas se guardan en la nube y en este navegador, aparte de las invoices.</p>
           </section>
@@ -597,7 +611,7 @@
           <div class="profile-row"><span>Correo</span><strong id="profileEmail"></strong></div>
           <label class="profile-row profile-edit"><span>Nombre</span><input id="profileNameInput" type="text" maxlength="60" autocomplete="name"></label>
           <label class="profile-row profile-edit"><span>Cargo</span><input id="profileRoleInput" type="text" maxlength="40" placeholder="Secretaria"></label>
-          <div class="profile-row"><span>Miembro desde</span><strong id="profileSince">2026</strong></div>
+          <label class="profile-row profile-edit"><span>Miembro desde</span><input id="profileSinceInput" type="number" min="1990" max="2099" step="1" inputmode="numeric"></label>
         </div>
         <p class="profile-quote" id="profileQuote">“Disciplina hoy, resultados mañana.”</p>
         <p class="form-error" id="profileError" role="status"></p>
@@ -613,15 +627,15 @@
     <script src="vendor/jszip.min.js" defer></script>
     <script src="invoice-core.js?v=price-labor-1" defer></script>
     <script src="invoice-pdf.js?v=orange-bar-2" defer></script>
-    <script src="cloud-db.js?v=avatar-persist-1" defer></script>
+    <script src="cloud-db.js?v=profile-hours-1" defer></script>
     <script src="whatsapp-invoice.js?v=addr-1" defer></script>
     <script src="invoice-archive.js?v=14" defer></script>
-    <script src="hours-pdf.js?v=hours-grid-1" defer></script>
+    <script src="hours-pdf.js?v=hours-import-1" defer></script>
     <script src="hours-whatsapp.js?v=2" defer></script>
-    <script src="hours-app.js?v=hours-cloud-1" defer></script>
-    <script src="hours-archive.js?v=2" defer></script>
+    <script src="hours-app.js?v=hours-import-1" defer></script>
+    <script src="hours-archive.js?v=hours-import-1" defer></script>
     <script src="translator.js?v=4" defer></script>
-    <script src="auth-app.js?v=avatar-persist-1" defer></script>
+    <script src="auth-app.js?v=profile-hours-1" defer></script>
     <script src="app.js?v=sidebar-nav-1" defer></script>
   </body>
 </html>

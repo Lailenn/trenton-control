@@ -237,12 +237,243 @@
     doc.setTitle(pdfSafe(`Work hours - ${data.jobAddress || "Arrento Carpentry"}`));
     doc.setAuthor("Arrento Carpentry LLC");
     try {
-      doc.setSubject(pdfSafe("TrentonControl/hours-v1:" + JSON.stringify({id: data.recordId || "", jobAddress: data.jobAddress || "", reportDate: data.reportDate || "", totalHours, totalPay})));
+      doc.setSubject(pdfSafe(hoursSubject(data, totalHours, totalPay, entries)));
     } catch (_) { /* el asunto interno no debe tumbar el PDF */ }
     doc.setCreator("Trenton Control");
     return new Blob([await doc.save()], {type: "application/pdf"});
   }
-  const api = {generate, hash, calcHours, fullDate, dayName, money, timeLabel};
+
+  const MONTHS = {january:0,february:1,march:2,april:3,may:4,june:5,july:6,august:7,september:8,october:9,november:10,december:11,
+    enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agosto:7,septiembre:8,octubre:9,noviembre:10,diciembre:11};
+  const DAYS = "Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|Lunes|Martes|Miércoles|Miercoles|Jueves|Viernes|Sábado|Sabado|Domingo";
+  let reader;
+
+  function hoursSubject(data, totalHours, totalPay, entries) {
+    const payload = {
+      id: data.recordId || "",
+      jobAddress: data.jobAddress || "",
+      reportDate: data.reportDate || "",
+      totalHours,
+      totalPay,
+      description: String(data.description || "").slice(0, 240),
+      defaultRate: Number(data.defaultRate) || 0,
+      entries: (entries || []).slice(0, 24).map(entry => ({
+        date: entry.date, employee: entry.employee, timeIn: entry.timeIn, timeOut: entry.timeOut,
+        lunch: entry.lunch, rate: entry.rate, hours: entry.hours
+      }))
+    };
+    let raw = "TrentonControl/hours-v1:" + JSON.stringify(payload);
+    while (raw.length > 1800 && payload.entries.length) {
+      payload.entries.pop();
+      raw = "TrentonControl/hours-v1:" + JSON.stringify(payload);
+    }
+    return raw;
+  }
+
+  function to24(time, ampm) {
+    const match = String(time || "").trim().match(/^(\d{1,2}):(\d{2})$/);
+    if (!match) return "";
+    let hour = Number(match[1]);
+    const minute = match[2];
+    const flag = String(ampm || "").toLowerCase();
+    if (flag.startsWith("p") && hour < 12) hour += 12;
+    if (flag.startsWith("a") && hour === 12) hour = 0;
+    if (hour > 23) return "";
+    return `${String(hour).padStart(2, "0")}:${minute}`;
+  }
+
+  function parseEnglishDate(value) {
+    const text = String(value || "").replace(/\s+/g, " ").trim();
+    const iso = text.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+    const us = text.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (us) return `${us[3]}-${String(us[1]).padStart(2, "0")}-${String(us[2]).padStart(2, "0")}`;
+    const named = text.match(/(january|february|march|april|may|june|july|august|september|october|november|december|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\s+(\d{1,2}),?\s+(\d{4})/i);
+    if (!named) return "";
+    const month = MONTHS[named[1].toLowerCase()];
+    if (month == null) return "";
+    return `${named[3]}-${String(month + 1).padStart(2, "0")}-${String(Number(named[2])).padStart(2, "0")}`;
+  }
+
+  function numberValue(value) {
+    const n = Number(String(value || "").replace(/,/g, ""));
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function applyHoursMeta(subject, fields, entries, warnings) {
+    if (!subject || typeof subject !== "string") return "";
+    if (!subject.startsWith("TrentonControl/hours-v1:")) return "";
+    try {
+      const saved = JSON.parse(subject.slice("TrentonControl/hours-v1:".length));
+      if (typeof saved.jobAddress === "string" && saved.jobAddress) fields.jobAddress = saved.jobAddress.slice(0, 500);
+      if (typeof saved.a === "string" && saved.a) fields.jobAddress = saved.a.slice(0, 500);
+      if (saved.reportDate) fields.reportDate = parseEnglishDate(saved.reportDate) || fields.reportDate;
+      if (saved.d) fields.reportDate = parseEnglishDate(saved.d) || fields.reportDate;
+      if (typeof saved.description === "string") fields.description = saved.description.slice(0, 8000);
+      if (typeof saved.n === "string") fields.description = saved.n.slice(0, 8000);
+      if (numberValue(saved.defaultRate) != null) fields.defaultRate = numberValue(saved.defaultRate);
+      if (numberValue(saved.r) != null) fields.defaultRate = numberValue(saved.r);
+      const listed = Array.isArray(saved.entries) ? saved.entries : Array.isArray(saved.e) ? saved.e : [];
+      listed.forEach(item => {
+        const row = Array.isArray(item)
+          ? {date: item[0], employee: item[1], timeIn: item[2], timeOut: item[3], lunch: item[4], rate: item[5], hours: item[6]}
+          : item;
+        if (!row?.employee) return;
+        entries.push({
+          date: parseEnglishDate(row.date) || fields.reportDate || "",
+          employee: String(row.employee).slice(0, 120),
+          timeIn: to24(row.timeIn || row.i, "") || String(row.timeIn || "").slice(0, 5),
+          timeOut: to24(row.timeOut || row.o, "") || String(row.timeOut || "").slice(0, 5),
+          lunch: Number(row.lunch ?? row.l) || 0,
+          rate: Number(row.rate ?? row.r) || fields.defaultRate || 0,
+          hoursOverride: numberValue(row.hours ?? row.h),
+          hours: Number(row.hours ?? row.h) || 0
+        });
+      });
+      return typeof saved.id === "string" ? saved.id.slice(0, 100) : "";
+    } catch (_) {
+      warnings.push("Los datos internos del PDF no se pudieron leer; se usa el texto impreso.");
+      return "";
+    }
+  }
+
+  function parseHoursPdfText(text) {
+    const fields = { jobAddress: "", reportDate: "", description: "", defaultRate: null };
+    const entries = [];
+    const warnings = [];
+    const lines = String(text || "").split(/\r?\n/).map(line => line.replace(/\s+/g, " ").trim()).filter(Boolean);
+    const blob = lines.join("\n");
+    const jobLine = lines.find(line => /^JOB\s*:/i.test(line));
+    if (jobLine) fields.jobAddress = jobLine.replace(/^JOB\s*:/i, "").trim().slice(0, 500);
+    const dateLine = lines.find(line => parseEnglishDate(line));
+    if (dateLine) fields.reportDate = parseEnglishDate(dateLine);
+    const rateMatch = blob.match(/\$?\s*(\d+(?:\.\d+)?)\s*\/\s*HRS?/i);
+    if (rateMatch) fields.defaultRate = Number(rateMatch[1]);
+    const descIndex = lines.findIndex(line => /^description\s*:?\s*$/i.test(line) || /^description\s*:/i.test(line));
+    if (descIndex >= 0) {
+      const same = lines[descIndex].replace(/^description\s*:?\s*/i, "").trim();
+      const rest = lines.slice(descIndex + 1).filter(line => !/^(EMPLOYEE|TOTAL|DATE|JOB)\b/i.test(line));
+      fields.description = [same, ...rest].filter(Boolean).join("\n").slice(0, 8000);
+    }
+    const rowRe = new RegExp(
+      `(?:${DAYS})\\s+(.+?)\\s+(\\d{1,2}:\\d{2})(?:\\s*([AaPp][Mm]))?\\s+(\\d{1,2}:\\d{2})(?:\\s*([AaPp][Mm]))?\\s+(\\d+)\\s*MIN\\s+([\\d.,]+)\\s*HRS`,
+      "gi"
+    );
+    let match;
+    while ((match = rowRe.exec(blob))) {
+      const employee = match[1].replace(/\s+/g, " ").trim();
+      if (!employee || /^(DATE|EMPLOYEE|TOTAL|HOURLY|RATE)$/i.test(employee)) continue;
+      const hours = numberValue(match[7]) || 0;
+      entries.push({
+        date: fields.reportDate,
+        employee: employee.slice(0, 120),
+        timeIn: to24(match[2], match[3]),
+        timeOut: to24(match[4], match[5]),
+        lunch: Number(match[6]) || 0,
+        rate: fields.defaultRate || 0,
+        hoursOverride: hours,
+        hours
+      });
+    }
+    if (!entries.length) {
+      const loose = /([A-ZÁÉÍÓÚÑ][\p{L}'.-]+(?:\s+[A-ZÁÉÍÓÚÑ][\p{L}'.-]+)+)\s+(\d{1,2}:\d{2})(?:\s*([AaPp][Mm]))?\s+(\d{1,2}:\d{2})(?:\s*([AaPp][Mm]))?\s+(\d+)\s*MIN\s+([\d.,]+)\s*HRS/gu;
+      while ((match = loose.exec(blob))) {
+        const employee = match[1].replace(/\s+/g, " ").trim();
+        if (/^(DATE|EMPLOYEE|TOTAL HOURS|HOURLY RATE|TOTAL PAY)$/i.test(employee)) continue;
+        const hours = numberValue(match[7]) || 0;
+        entries.push({
+          date: fields.reportDate,
+          employee: employee.slice(0, 120),
+          timeIn: to24(match[2], match[3]),
+          timeOut: to24(match[4], match[5]),
+          lunch: Number(match[6]) || 0,
+          rate: fields.defaultRate || 0,
+          hoursOverride: hours,
+          hours
+        });
+      }
+    }
+    const summaryRe = /([A-ZÁÉÍÓÚÑ][\p{L}'.-]+(?:\s+[A-ZÁÉÍÓÚÑ][\p{L}'.-]+)+)\s+[\d.,]+\s*HRS\s+\$?\s*([\d.,]+)\s*\/?\s*HRS?/giu;
+    const rates = new Map();
+    while ((match = summaryRe.exec(blob))) {
+      const employee = match[1].replace(/\s+/g, " ").trim();
+      const rate = numberValue(match[2]);
+      if (employee && rate != null) rates.set(employee.toLowerCase(), rate);
+    }
+    entries.forEach(entry => {
+      const rate = rates.get(entry.employee.toLowerCase());
+      if (rate != null) entry.rate = rate;
+    });
+    if (rates.size === 1 && fields.defaultRate == null) fields.defaultRate = [...rates.values()][0];
+    if (!fields.jobAddress) warnings.push("No se leyó la dirección. Complétala.");
+    if (!fields.reportDate) warnings.push("No se leyó la fecha. Complétala.");
+    if (!entries.length) warnings.push("No se leyeron empleados. Si el PDF es una imagen, llena el formulario a mano y guarda.");
+    return { fields, entries, warnings };
+  }
+
+  async function extractPdfText(file) {
+    if (!reader) reader = import("./vendor/pdf.min.mjs");
+    const pdfjs = await reader;
+    pdfjs.GlobalWorkerOptions.workerSrc = new URL("vendor/pdf.worker.min.mjs", document.baseURI).href;
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const task = pdfjs.getDocument({data: bytes, isEvalSupported: false, useWasm: false, disableFontFace: true, standardFontDataUrl: new URL("vendor/standard_fonts/", document.baseURI).href});
+    try {
+      const doc = await task.promise;
+      if (doc.numPages > 40) throw new Error("Este PDF de horas supera las 40 páginas.");
+      let text = "";
+      let subject = "";
+      try {
+        const metadata = await doc.getMetadata();
+        subject = metadata.info?.Subject || "";
+      } catch (_) { /* sin metadatos */ }
+      for (let n = 1; n <= doc.numPages; n++) {
+        const page = await doc.getPage(n);
+        const {items} = await page.getTextContent();
+        const rows = [];
+        for (const item of items.filter(part => part.str)) {
+          const y = item.transform[5];
+          let row = rows.find(line => Math.abs(line.y - y) < 3);
+          if (!row) { row = {y, items: []}; rows.push(row); }
+          row.items.push(item);
+        }
+        text += rows.sort((a, b) => b.y - a.y).map(row => row.items.sort((a, b) => a.transform[4] - b.transform[4]).map(part => part.str).join(" ")).join("\n") + "\n";
+      }
+      return { text, subject };
+    } finally {
+      await task.destroy();
+    }
+  }
+
+  async function read(file) {
+    if (!file) throw new Error("Selecciona un PDF de horas.");
+    const pdfHash = await hash(file);
+    const extracted = { fields: { jobAddress: "", reportDate: "", description: "", defaultRate: null }, entries: [], warnings: [], text: "", pdfHash, sourceId: "" };
+    try {
+      const { text, subject } = await extractPdfText(file);
+      extracted.text = text;
+      const parsed = parseHoursPdfText(text);
+      extracted.fields = parsed.fields;
+      extracted.warnings = parsed.warnings;
+      extracted.entries = [];
+      extracted.sourceId = applyHoursMeta(subject, extracted.fields, extracted.entries, extracted.warnings);
+      if (!extracted.entries.length) extracted.entries = parsed.entries;
+      if (extracted.entries.length > 1) {
+        const seen = new Set();
+        extracted.entries = extracted.entries.filter(entry => {
+          const key = `${entry.employee}|${entry.timeIn}|${entry.timeOut}|${entry.hours}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      }
+      if (String(text || "").trim().length < 10) extracted.warnings.unshift("El PDF es una imagen o no tiene texto. Completa los datos viendo el original.");
+    } catch (error) {
+      extracted.warnings.push(error.message || "No se pudo leer el texto del PDF.");
+    }
+    return extracted;
+  }
+
+  const api = {generate, hash, calcHours, fullDate, dayName, money, timeLabel, read, parseEnglishDate};
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.HoursPDF = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

@@ -167,6 +167,106 @@
     renderEntries(); renderPreview(); showWhatsAppResult(parsed, Boolean(parsed.entries.length || parsed.fields.address || parsed.fields.reportDate || parsed.fields.defaultRate != null || parsed.fields.description));
   }
 
+  function recordFromImport(file, parsed, id) {
+    const fields = parsed.fields || {};
+    const defaultRate = Number(fields.defaultRate) || 0;
+    const reportDate = fields.reportDate || today();
+    const importedEntries = (parsed.entries || []).map(entry => {
+      const hours = HoursPDF.calcHours({ ...entry, hoursOverride: entry.hoursOverride ?? entry.hours });
+      return {
+        date: entry.date || reportDate,
+        employee: String(entry.employee || "").trim(),
+        timeIn: entry.timeIn || "07:00",
+        timeOut: entry.timeOut || "15:30",
+        lunch: Number(entry.lunch) || 0,
+        rate: Number(entry.rate) || defaultRate || 30,
+        hoursOverride: entry.hoursOverride === "" || entry.hoursOverride == null ? hours : Number(entry.hoursOverride),
+        hours
+      };
+    }).filter(entry => entry.employee);
+    return {
+      id,
+      sourceId: parsed.sourceId || "",
+      jobAddress: String(fields.jobAddress || "").trim(),
+      reportDate,
+      description: String(fields.description || "").trim(),
+      defaultRate: defaultRate || (importedEntries[0]?.rate) || 30,
+      entries: importedEntries,
+      pdfBlob: file,
+      pdfName: file?.name || fileName({ jobAddress: fields.jobAddress, reportDate }),
+      pdfHash: parsed.pdfHash || "",
+      updatedAt: new Date().toISOString(),
+      source: "imported"
+    };
+  }
+
+  function applyImported(record) {
+    if (!record) return;
+    $("#hoursJobAddress").value = record.jobAddress || "";
+    $("#hoursReportDate").value = record.reportDate || today();
+    $("#hoursDefaultRate").value = record.defaultRate || 30;
+    $("#hoursDescription").value = record.description || "";
+    entries = record.entries?.length ? record.entries.map(entry => ({ ...entry })) : [{
+      date: record.reportDate || today(), employee: "", timeIn: "07:00", timeOut: "15:30", lunch: 30,
+      rate: record.defaultRate || 30, scheduleAuto: true
+    }];
+    renderEntries();
+    renderPreview();
+  }
+
+  function hoursReady(record) {
+    return Boolean(record?.jobAddress && record?.reportDate && record.entries?.length && record.entries.every(entry =>
+      entry.employee && entry.date && entry.timeIn && entry.timeOut && HoursPDF.calcHours(entry) > 0 && Number(entry.rate) > 0
+    ));
+  }
+
+  async function saveImportedRecord(record) {
+    if (!record.pdfHash && record.pdfBlob) record.pdfHash = await HoursPDF.hash(record.pdfBlob);
+    record.pdfName = record.pdfName || fileName(record);
+    await root.CloudDB.saveHours(record);
+    return record;
+  }
+
+  async function importHoursFiles(fileList) {
+    const files = Array.from(fileList || []).filter(file => file && /\.pdf$/i.test(file.name));
+    if (!files.length) {
+      $("#hoursError").textContent = "Elige un PDF de horas (formato Arrento / este programa).";
+      return [];
+    }
+    $("#hoursError").textContent = `Leyendo ${files.length === 1 ? "el PDF" : files.length + " PDFs"}…`;
+    const saved = [];
+    let lastRecord = null;
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      $("#hoursError").textContent = `Leyendo ${i + 1} de ${files.length}: ${file.name}`;
+      const parsed = await HoursPDF.read(file);
+      const record = recordFromImport(file, parsed, parsed.sourceId || makeId());
+      lastRecord = record;
+      applyImported(record);
+      if (!hoursReady(record)) {
+        $("#hoursError").textContent = (parsed.warnings.join(" ") || "Faltan datos del PDF.") + " Completa el formulario y pulsa Guardar reporte y PDF.";
+        if (root.TrentonControl?.toast) root.TrentonControl.toast("Revisa los datos del PDF antes de guardar.");
+        return saved;
+      }
+      try {
+        await saveImportedRecord(record);
+        saved.push(record);
+      } catch (error) {
+        $("#hoursError").textContent = error.message || "No se pudo guardar el reporte en la nube.";
+        throw error;
+      }
+    }
+    await load();
+    renderHistory();
+    window.TrentonControl?.hoursArchive?.render?.();
+    if (lastRecord) applyImported(lastRecord);
+    $("#hoursError").textContent = saved.length === 1
+      ? "PDF adaptado al formulario y guardado en la nube. También queda en Horas de trabajo / PDFs."
+      : `${saved.length} reportes de horas guardados en la web y en Supabase.`;
+    if (root.TrentonControl?.toast) root.TrentonControl.toast($("#hoursError").textContent);
+    return saved;
+  }
+
   async function save(downloadAfter = false) {
     if (saving) return;
     const jobAddress = $("#hoursJobAddress").value.trim(), reportDate = $("#hoursReportDate").value, description = $("#hoursDescription").value.trim(), defaultRate = Number($("#hoursDefaultRate").value) || 0;
@@ -224,6 +324,18 @@
   $("#parseHoursWhatsAppButton").addEventListener("click", parseHoursWhatsAppText);
   $("#hoursWhatsAppText").addEventListener("paste", () => setTimeout(parseHoursWhatsAppText, 80));
   $("#saveHoursButton").addEventListener("click", () => save(false)); $("#downloadHoursButton").addEventListener("click", () => save(true)); $("#resetHoursButton").addEventListener("click", reset);
+  $("#importHoursPdfButton")?.addEventListener("click", () => $("#importHoursPdfFile")?.click());
+  $("#importHoursPdfFile")?.addEventListener("change", async event => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = "";
+    if (!files.length) return;
+    if (files.some(file => /\.zip$/i.test(file.name))) {
+      window.TrentonControl?.hoursArchive?.importFiles?.(files);
+      return;
+    }
+    try { await importHoursFiles(files); }
+    catch (error) { $("#hoursError").textContent = error.message || "No se pudo importar el PDF de horas."; }
+  });
   $("#hoursHistoryGrid").addEventListener("click", async event => {
     const button = event.target.closest("[data-hours-download]"); if (!button) return;
     const record = reports.find(item => item.id === button.dataset.hoursDownload);
@@ -236,5 +348,5 @@
   });
   function resetSession() { reports = []; renderHistory(); window.TrentonControl?.hoursArchive?.render?.(); }
   reset();
-  root.HoursApp = {open, render, boot, resetSession, reports: () => reports};
+  root.HoursApp = {open, render, boot, resetSession, reports: () => reports, importHoursFiles, applyImported, hoursReady, recordFromImport};
 })(typeof globalThis !== "undefined" ? globalThis : this);

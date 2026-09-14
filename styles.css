@@ -2465,7 +2465,8 @@ body {
   font-size: 13px;
   font-style: italic;
 }
-.profile-card .button { width: 100%; }
+.profile-card .button[disabled] { opacity: 0.55; cursor: default; }
+.hours-heading-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
 #profileError { min-height: 1.2em; margin: 8px 4px 10px; }
 #profileError.is-ok { color: #1f8a5b; }
 @media (max-width: 820px) {
