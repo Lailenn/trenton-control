@@ -377,20 +377,28 @@
     if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) { $("#formError").textContent = "Solo puedes subir archivos PDF."; return; }
     if (file.size > MAX_PDF_BYTES) { $("#formError").textContent = "El PDF supera el límite de 15 MB."; return; }
     selectedPdf = file;
-    readingPdf = true; $("#saveButton").disabled = true;
-    $("#fileStatus").textContent = "Leyendo PDF…";
+    readingPdf = true;
+    if ($("#saveButton")) $("#saveButton").disabled = true;
+    $("#fileStatus").textContent = file.name + " · Leyendo…";
     $("#formError").textContent = "";
     try {
       const result = await PDFs.read(file);
       if (selectedPdf !== file) return;
       if (result.fields.address) $("#address").value = result.fields.address;
       if (result.fields.invoiceNumber) $("#invoiceNumber").value = result.fields.invoiceNumber;
-      $("#amount").value = result.fields.amount ?? "";
+      if (result.fields.amount != null) $("#amount").value = result.fields.amount;
       if (result.fields.issuedDate) $("#recordIssuedDate").value = result.fields.issuedDate;
       $("#fileStatus").textContent = file.name + " · Revisa los datos antes de guardar.";
       $("#formError").textContent = result.warnings.join(" ");
-    } catch (error) { if (selectedPdf === file) { selectedPdf = null; $("#formError").textContent = "No se pudo leer el PDF. Comprueba que sea válido y sin contraseña."; } }
-    finally { readingPdf = false; $("#saveButton").disabled = false; }
+    } catch (error) {
+      if (selectedPdf === file) {
+        $("#fileStatus").textContent = file.name + " · Completa los datos a mano y guarda.";
+        $("#formError").textContent = error.message || "No se pudo leer el texto del PDF. El archivo sí quedó seleccionado.";
+      }
+    } finally {
+      readingPdf = false;
+      if ($("#saveButton")) $("#saveButton").disabled = false;
+    }
   }
 
   function invoiceData() {
@@ -408,7 +416,7 @@
       fromEmail: $("#builderFromEmail").value.trim(),
       fromAddress: $("#builderFromAddress").value.trim(),
       description: split.text || "Trabajo realizado",
-      qty: Number($("#builderQty").value) || 0,
+      qty: Number($("#builderQty").value) > 0 ? Number($("#builderQty").value) : 1,
       price,
       deposit: Math.min(Math.max(Number($("#builderDeposit").value) || 0, 0), 100),
       note: $("#builderNote").value.trim(),
@@ -483,7 +491,6 @@
       return;
     }
     const parsed = WhatsAppInvoiceParser.parse(input.value);
-    if (parsed.fields.price == null) { $("#builderPrice").value = ""; updateInvoicePreview(); }
     result.classList.remove("hidden");
     result.classList.toggle("is-error", Boolean(parsed.error));
     if (parsed.error) { result.textContent = parsed.error; return; }
@@ -513,7 +520,11 @@
     $("#builderDescription").value = split.text;
     if (split.amount != null && !(Number($("#builderPrice").value) > 0)) {
       $("#builderPrice").value = split.amount;
-      if (!(Number($("#builderQty").value) > 0)) $("#builderQty").value = 1;
+    }
+    if (!(Number($("#builderQty").value) > 0)) $("#builderQty").value = 1;
+    if (Number($("#builderPrice").value) > 0 && Number($("#builderQty").value) > 0) {
+      const total = Core.cents(Number($("#builderQty").value) * Number($("#builderPrice").value)) / 100;
+      parsed.detectedTotal = parsed.detectedTotal ?? total;
     }
     updateInvoicePreview();
     const missing = ["billName", "billAddress", "description", "approval", "invoiceNumber", "issuedDate", "price", "deposit"]

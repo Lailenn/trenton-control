@@ -180,7 +180,9 @@ window.InvoiceArchive = function (app) {
             row.hours = C.amount(metadata.hours) || 0;
             row.description = typeof metadata.description === "string" ? metadata.description.slice(0, 16000) : "";
           }
-        } catch (error) { row.error = "No se pudo leer este archivo. Comprueba que sea un PDF válido y sin contraseña. " + (error.message || ""); row.included = false; }
+        } catch (error) {
+          row.warnings.push(error.message || "No se pudo leer el texto. Completa dirección, fecha y total viendo el PDF.");
+        }
         rows.push(row);
         await new Promise(resolve => setTimeout(resolve, 0));
       }

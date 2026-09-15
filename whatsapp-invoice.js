@@ -294,26 +294,15 @@ const WhatsAppInvoiceParser = (() => {
 
     let detectedTotal = fields.total;
     if (fields.total != null) {
-      if (fields.qty != null && fields.price != null && Math.abs(Math.round(fields.qty * fields.price * 100) - Math.round(fields.total * 100)) > 0) {
-        delete fields.total; delete fields.qty; delete fields.price;
-        detectedTotal = undefined;
-        review.push("Cantidad × precio no coincide con el total. Completa esos campos manualmente.");
-      } else if (fields.qty != null && fields.price != null) {
-        delete fields.total;
-      } else {
-        fields.qty = 1; fields.price = fields.total; delete fields.total;
-        review.push("El monto total se cargó como un trabajo completo: cantidad 1.");
+      if (!(fields.qty > 0)) fields.qty = 1;
+      if (fields.price == null) fields.price = Math.round((fields.total / fields.qty) * 100) / 100;
+      else if (Math.abs(Math.round(fields.qty * fields.price * 100) - Math.round(fields.total * 100)) > 0) {
+        fields.price = Math.round((fields.total / fields.qty) * 100) / 100;
+        review.push("Ajusté el precio para que cantidad × precio sume el total.");
       }
-    } else if (fields.price != null && fields.qty == null) {
-      delete fields.price;
-      review.push("Hay un precio por unidad, pero falta la cantidad. Revisa ambos campos.");
-    } else if (fields.qty != null && fields.price == null) {
-      delete fields.qty;
-      review.push("Hay una cantidad, pero falta un precio reconocido. Revisa ambos campos.");
-    }
-    if (rejected.has("total") || rejected.has("price") || rejected.has("qty")) {
-      delete fields.qty; delete fields.price;
-      detectedTotal = undefined;
+      delete fields.total;
+    } else if (fields.price != null) {
+      if (!(fields.qty > 0)) fields.qty = 1;
     }
     return { fields, detectedTotal, review, error: lines.length ? "" : "Pega primero el texto del mensaje." };
   }

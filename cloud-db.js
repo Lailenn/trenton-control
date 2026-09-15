@@ -166,7 +166,7 @@
     const url = `${config.url.replace(/\/$/, "")}/rest/v1/${path}`;
     async function once(token) {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 10000);
+      const timer = setTimeout(() => controller.abort(), options.timeout || 20000);
       try {
         const response = await fetch(url, {
           method: options.method || "GET",
@@ -261,12 +261,31 @@
   }
 
   async function upload(bucket, path, blob, type) {
-    const result = await withTimeout(
-      sb().storage.from(bucket).upload(path, blob, { upsert: true, contentType: type, cacheControl: "3600" }),
-      20000,
-      "La subida a la nube tardó demasiado. Revisa la conexión e intenta de nuevo."
-    );
-    fail(result.error, "No se pudo subir el archivo.");
+    const headers = {
+      "Content-Type": type || "application/octet-stream",
+      "x-upsert": "true",
+      "cache-control": "3600"
+    };
+    let response = await storageFetch(`${bucket}/${path}`, {
+      method: "POST",
+      headers,
+      body: blob,
+      timeout: 30000,
+      timeoutMessage: "La subida a la nube tardó demasiado. Revisa la conexión e intenta de nuevo."
+    });
+    if (!response.ok && (response.status === 409 || response.status === 400 || response.status === 405)) {
+      response = await storageFetch(`${bucket}/${path}`, {
+        method: "PUT",
+        headers,
+        body: blob,
+        timeout: 30000,
+        timeoutMessage: "La subida a la nube tardó demasiado. Revisa la conexión e intenta de nuevo."
+      });
+    }
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error((text || `Storage ${response.status}`).slice(0, 180) || "No se pudo subir el archivo.");
+    }
     return path;
   }
 
@@ -278,9 +297,17 @@
 
   async function download(bucket, path) {
     if (!path) return null;
-    const { data, error } = await sb().storage.from(bucket).download(path);
-    if (error) throw new Error(error.message || "No se pudo descargar el archivo.");
-    return bucket.includes("pdf") ? asPdfBlob(data) : data;
+    const response = await storageFetch(`${bucket}/${path}`, {
+      method: "GET",
+      timeout: 20000,
+      timeoutMessage: "No se pudo descargar el archivo."
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error((text || `Storage ${response.status}`).slice(0, 180) || "No se pudo descargar el archivo.");
+    }
+    const blob = await response.blob();
+    return bucket.includes("pdf") ? asPdfBlob(blob) : blob;
   }
 
   async function cacheBlob(kind, id, hash, blob) {
@@ -372,25 +399,28 @@
   }
 
   async function queryInvoices() {
-    let result = await sb().from("invoices").select("*").is("deleted_at", null).order("updated_at", { ascending: false });
-    if (result.error && isMissingColumn(result.error)) {
-      result = await sb().from("invoices").select("*").order("id", { ascending: false });
+    try {
+      return await rest("invoices?deleted_at=is.null&order=updated_at.desc");
+    } catch (error) {
+      if (isMissingColumn(error)) return await rest("invoices?order=id.desc");
+      throw error;
     }
-    return result;
   }
 
   async function listInvoices() {
-    const { data, error } = await queryInvoices();
-    if (error) fail(error, "No se pudieron leer las invoices.");
+    let data = [];
+    try {
+      data = await queryInvoices();
+    } catch (error) {
+      console.warn("Nube de invoices no disponible; se usan las de este aparato.", error);
+    }
     let photos = [];
     try {
-      const photoResult = await sb().from("check_photos").select("*").order("captured_at", { ascending: false });
-      if (photoResult.error) console.warn(photoResult.error);
-      else photos = photoResult.data || [];
+      photos = await rest("check_photos?order=captured_at.desc") || [];
     } catch (photoError) {
       console.warn("No se pudieron leer las fotos de cheque.", photoError);
     }
-    const cloud = (data || []).map(row => invoiceFrom(row, photos));
+    const cloud = (Array.isArray(data) ? data : []).map(row => invoiceFrom(row, photos));
     const seen = new Set(cloud.map(item => item.id));
     const local = readJson(INVOICE_META).filter(item => item.id && !seen.has(item.id)).map(item => ({
       ...item,
@@ -427,22 +457,32 @@
     if (record.pdfBlob) await cacheBlob("invoice", record.id, record.pdfHash, record.pdfBlob);
     rememberInvoice({ ...record, cloudSynced: false });
     const row = invoiceRow(record, uid);
-    let result = await sb().from("invoices").upsert(row).select("id").maybeSingle();
-    if (result.error && isMissingColumn(result.error)) {
-      result = await sb().from("invoices").upsert({
-        id: row.id,
-        owner_id: uid,
-        address: row.address,
-        invoice_number: row.invoice_number,
-        issued_date: row.issued_date,
-        amount_cents: row.amount_cents,
-        hours: row.hours,
-        stage: row.stage,
-        description: row.description
-      }).select("id").maybeSingle();
+    let saved = null;
+    try {
+      saved = rowFrom(await rest("invoices?on_conflict=id", {
+        method: "POST",
+        body: row,
+        prefer: "return=representation,resolution=merge-duplicates"
+      }));
+    } catch (error) {
+      if (!isMissingColumn(error)) fail(error, "No se pudo guardar la invoice.");
+      saved = rowFrom(await rest("invoices?on_conflict=id", {
+        method: "POST",
+        body: {
+          id: row.id,
+          owner_id: uid,
+          address: row.address,
+          invoice_number: row.invoice_number,
+          issued_date: row.issued_date,
+          amount_cents: row.amount_cents,
+          hours: row.hours,
+          stage: row.stage,
+          description: row.description
+        },
+        prefer: "return=representation,resolution=merge-duplicates"
+      }));
     }
-    fail(result.error, "No se pudo guardar la invoice.");
-    if (!result.data?.id) throw new Error("Supabase no confirmó la invoice. Corre supabase/schema-fix-hours-cloud.sql y vuelve a guardar.");
+    if (!saved?.id) throw new Error("Supabase no confirmó la invoice. Corre supabase/schema.sql y vuelve a guardar.");
     record.cloudSynced = true;
     rememberInvoice(record);
     if (record.pdfBlob) {
@@ -482,18 +522,26 @@
   }
 
   async function softDeleteInvoice(record) {
-    const { error } = await sb().from("invoices").update({ deleted_at: new Date().toISOString() }).eq("id", record.id);
-    fail(error, "No se pudo eliminar la invoice.");
+    try {
+      await rest(`invoices?id=eq.${encodeURIComponent(record.id)}`, {
+        method: "PATCH",
+        body: { deleted_at: new Date().toISOString() }
+      });
+    } catch (error) {
+      fail(error, "No se pudo eliminar la invoice.");
+    }
     await root.LocalCache.remove("invoice", record.id);
   }
 
   async function nextInvoiceNumber(records = []) {
-    const { data, error } = await sb().from("invoices").select("invoice_number").is("deleted_at", null);
-    if (error) {
+    let data = [];
+    try {
+      data = await rest("invoices?deleted_at=is.null&select=invoice_number");
+    } catch (error) {
       const max = records.reduce((value, record) => /^\s*#?\d+\s*$/.test(record.invoiceNumber || "") ? Math.max(value, Number(String(record.invoiceNumber).replace("#", ""))) : value, 0);
       return "#" + String(max + 1).padStart(3, "0");
     }
-    const max = (data || []).reduce((value, row) => {
+    const max = (Array.isArray(data) ? data : []).reduce((value, row) => {
       const number = String(row.invoice_number || "").replace(/^#/, "");
       return /^\d+$/.test(number) ? Math.max(value, Number(number)) : value;
     }, 0);
@@ -528,23 +576,25 @@
   }
 
   async function queryHoursReports() {
-    let result = await sb().from("hours_reports").select("*").is("deleted_at", null).order("updated_at", { ascending: false });
-    if (result.error && isMissingColumn(result.error)) {
-      result = await sb().from("hours_reports").select("*").order("report_date", { ascending: false });
+    try {
+      return await rest("hours_reports?deleted_at=is.null&order=updated_at.desc");
+    } catch (error) {
+      if (isMissingColumn(error)) return await rest("hours_reports?order=report_date.desc");
+      throw error;
     }
-    return result;
   }
 
   async function listHours() {
     let cloud = [];
     try {
-      const { data: reports, error } = await queryHoursReports();
-      if (error) fail(error, "No se pudieron leer los reportes de horas.");
+      const reports = await queryHoursReports();
       let entries = [];
-      const entryResult = await sb().from("hours_entries").select("*");
-      if (entryResult.error) console.warn(entryResult.error);
-      else entries = entryResult.data || [];
-      cloud = (reports || []).map(report => ({ ...hoursFrom(report, entries), cloudSynced: true }));
+      try {
+        entries = await rest("hours_entries?select=*") || [];
+      } catch (entryError) {
+        console.warn(entryError);
+      }
+      cloud = (Array.isArray(reports) ? reports : []).map(report => ({ ...hoursFrom(report, entries), cloudSynced: true }));
     } catch (error) {
       console.warn("Nube de horas no disponible; se usan los reportes de este aparato.", error);
     }
@@ -570,24 +620,37 @@
   }
 
   async function upsertHoursReport(report) {
-    let result = await sb().from("hours_reports").upsert(report).select("id").maybeSingle();
-    if (result.error && isMissingColumn(result.error)) {
-      result = await sb().from("hours_reports").upsert({
-        id: report.id,
-        owner_id: report.owner_id,
-        job_address: report.job_address,
-        report_date: report.report_date,
-        description: report.description
-      }).select("id").maybeSingle();
+    let saved = null;
+    try {
+      saved = rowFrom(await rest("hours_reports?on_conflict=id", {
+        method: "POST",
+        body: report,
+        prefer: "return=representation,resolution=merge-duplicates"
+      }));
+    } catch (error) {
+      if (!isMissingColumn(error)) fail(error, "No se pudo guardar el reporte de horas.");
+      saved = rowFrom(await rest("hours_reports?on_conflict=id", {
+        method: "POST",
+        body: {
+          id: report.id,
+          owner_id: report.owner_id,
+          job_address: report.job_address,
+          report_date: report.report_date,
+          description: report.description
+        },
+        prefer: "return=representation,resolution=merge-duplicates"
+      }));
     }
-    fail(result.error, "No se pudo guardar el reporte de horas.");
-    if (!result.data?.id) throw new Error("Supabase no confirmó el reporte. Corre supabase/schema-fix-hours-cloud.sql y vuelve a guardar.");
-    return result.data;
+    if (!saved?.id) throw new Error("Supabase no confirmó el reporte. Corre supabase/schema-fix-hours-cloud.sql y vuelve a guardar.");
+    return saved;
   }
 
   async function replaceHoursEntries(record, uid) {
-    const { error: clearError } = await sb().from("hours_entries").delete().eq("report_id", record.id);
-    if (clearError && !isMissingColumn(clearError)) fail(clearError, "No se pudieron actualizar las jornadas.");
+    try {
+      await rest(`hours_entries?report_id=eq.${encodeURIComponent(record.id)}`, { method: "DELETE" });
+    } catch (clearError) {
+      if (!isMissingColumn(clearError)) fail(clearError, "No se pudieron actualizar las jornadas.");
+    }
     const rows = (record.entries || []).map((entry, index) => ({
       id: entry.id || `${record.id}-${index + 1}`,
       report_id: record.id,
@@ -603,11 +666,12 @@
       sort_order: index
     }));
     if (!rows.length) return;
-    let result = await sb().from("hours_entries").insert(rows);
-    if (result.error && isMissingColumn(result.error)) {
-      result = await sb().from("hours_entries").insert(rows.map(({ hours_override, ...rest }) => rest));
+    try {
+      await rest("hours_entries", { method: "POST", body: rows });
+    } catch (error) {
+      if (!isMissingColumn(error)) fail(error, "No se pudieron guardar las jornadas.");
+      await rest("hours_entries", { method: "POST", body: rows.map(({ hours_override, ...restRow }) => restRow) });
     }
-    fail(result.error, "No se pudieron guardar las jornadas.");
   }
 
   async function saveHours(record) {
@@ -669,8 +733,11 @@
     await upload("check-photos", path, file, file.type);
     await root.LocalCache.put("check", id, "", file);
     const row = { id, invoice_id: invoiceId, owner_id: uid, storage_path: path, file_name: file.name || `${id}.${ext}`, note: String(note || "").slice(0, 500), captured_at: new Date().toISOString() };
-    const { error } = await sb().from("check_photos").insert(row);
-    fail(error, "No se pudo guardar la foto del cheque.");
+    try {
+      await rest("check_photos", { method: "POST", body: row });
+    } catch (error) {
+      fail(error, "No se pudo guardar la foto del cheque.");
+    }
     return { ...row, blob: file };
   }
 
@@ -682,9 +749,14 @@
   }
 
   async function removeCheckPhoto(photo) {
-    await sb().storage.from("check-photos").remove([photo.storage_path]);
-    const { error } = await sb().from("check_photos").delete().eq("id", photo.id);
-    fail(error, "No se pudo quitar la foto.");
+    try {
+      await storageFetch(`check-photos/${photo.storage_path}`, { method: "DELETE", timeout: 10000, timeoutMessage: "No se pudo quitar la foto." });
+    } catch (_) { /* el archivo puede no existir */ }
+    try {
+      await rest(`check_photos?id=eq.${encodeURIComponent(photo.id)}`, { method: "DELETE" });
+    } catch (error) {
+      fail(error, "No se pudo quitar la foto.");
+    }
     await root.LocalCache.remove("check", photo.id);
   }
 

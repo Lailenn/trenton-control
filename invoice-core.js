@@ -57,7 +57,7 @@
   }
   function extract(text) {
     const lines = String(text || "").replace(/\u00a0/g, " ").split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-    const warnings = [], fields = {address: "", invoiceNumber: "", issuedDate: "", amount: null};
+    const warnings = [], fields = {address: "", invoiceNumber: "", issuedDate: "", amount: null, qty: null};
     const rules = [
       /^(?:price\s+(?:for|per|of)\s+(?:materials?\s+and\s+)?labou?r|precio\s+(?:(?:por|de|para)\s+)?(?:materiales?\s+y\s+)?(?:mano\s+de\s+obra|labou?r))\s*[:.\-=]?\s*(.*)$/i,
       /^(?:grand\s+total|invoice\s+total|total\s+(?:de\s+la\s+factura|factura|facturado|invoice))\s*[:=]?\s*(.*)$/i,
@@ -91,6 +91,19 @@
       }
       const address = line.match(/^(?:work\s+address|job\s+address|direcci[oó]n(?:\s+del\s+trabajo)?)\s*:\s*(.+)$/i);
       if (address) fields.address = address[1];
+      const qtyLine = line.match(/^(?:qty|quantity|cantidad)\s*[:=]?\s*([\d.,]+)\s*$/i);
+      if (qtyLine && fields.qty == null) {
+        const qty = amount(qtyLine[1]);
+        if (qty != null && qty > 0) fields.qty = qty;
+      }
+      const tableRow = line.match(/(?:^|\s)(\d+(?:\.\d+)?)\s+(?:\$\s*)?([\d.,]+)\s+(?:\$\s*)?([\d.,]+)\s*$/);
+      if (tableRow) {
+        const qty = amount(tableRow[1]), price = amount(tableRow[2]), total = amount(tableRow[3]);
+        if (qty != null && qty > 0 && price != null && total != null && cents(qty * price) === cents(total)) {
+          fields.qty = qty;
+          if (fields.amount == null) fields.amount = total;
+        }
+      }
     }
     if (!fields.address) {
       const addresses = lines.filter(l => /^\d{1,6}[A-Za-z]?\s+.+\b(?:st(?:reet)?|ave(?:nue)?|rd|road|dr(?:ive)?|ct|court|blvd|ln|lane|way|pl|place|pkwy|ter|cir)\b/i.test(l));
@@ -98,6 +111,7 @@
       else if (addresses.length > 1) warnings.push("Hay más de una dirección: elige la del trabajo.");
     }
     if (fields.amount == null) warnings.push("No se identificó un total único. Revísalo en el PDF.");
+    if (fields.amount != null && !(fields.qty > 0)) fields.qty = 1;
     if (!fields.issuedDate) warnings.push("Completa la fecha de emisión para incluirla en el año correcto.");
     return {fields, warnings};
   }

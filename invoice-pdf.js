@@ -21,6 +21,24 @@
     }).join("");
   }
   let reader;
+  function appRoot() {
+    const scripts = document.getElementsByTagName("script");
+    for (const script of scripts) {
+      const src = script.src || "";
+      if (/invoice-pdf\.js/i.test(src)) return src.replace(/[^/]+(?:\?.*)?$/, "");
+    }
+    const path = location.pathname;
+    const last = path.split("/").pop() || "";
+    const dir = path.endsWith("/") ? path : /\.[a-z0-9]+$/i.test(last) ? path.replace(/[^/]+$/, "") : path + "/";
+    return location.origin + dir;
+  }
+  function withTimeout(promise, ms, message) {
+    let timer;
+    return Promise.race([
+      Promise.resolve(promise).finally(() => clearTimeout(timer)),
+      new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(message)), ms); })
+    ]);
+  }
   async function hash(blob) {
     const digest = await crypto.subtle.digest("SHA-256", await blob.arrayBuffer());
     return Array.from(new Uint8Array(digest), n => n.toString(16).padStart(2, "0")).join("");
@@ -174,21 +192,41 @@
     doc.setTitle(pdfSafe((data.workAddress || data.billAddress || "Invoice") + " - " + data.invoiceNumber));
     doc.setAuthor(pdfSafe(data.fromName || "Ruben Perla"));
     try {
-      doc.setSubject(pdfSafe("TrentonControl/v1:" + JSON.stringify({id: data.recordId || "", address: data.workAddress || data.billAddress, invoiceNumber: data.invoiceNumber, issuedDate: date, amount: total})));
+      doc.setSubject(pdfSafe("TrentonControl/v1:" + JSON.stringify({id: data.recordId || "", address: data.workAddress || data.billAddress, invoiceNumber: data.invoiceNumber, issuedDate: date, amount: total, qty: Number(data.qty) || 1, price: Number(data.price) || total})));
     } catch (_) { /* el asunto interno no debe tumbar el PDF */ }
     doc.setCreator("Trenton Control");
     return new Blob([await doc.save()], {type: "application/pdf"});
   }
-  async function read(file) {
-    if (!reader) reader = import("./vendor/pdf.min.mjs");
+  async function loadPdfjs() {
+    const root = appRoot();
+    if (!reader) reader = import(root + "vendor/pdf.min.mjs");
     const pdfjs = await reader;
-    pdfjs.GlobalWorkerOptions.workerSrc = new URL("vendor/pdf.worker.min.mjs", document.baseURI).href;
+    pdfjs.GlobalWorkerOptions.workerSrc = root + "vendor/pdf.worker.min.mjs";
+    return pdfjs;
+  }
+  async function openPdfDocument(bytes) {
+    const pdfjs = await loadPdfjs();
+    const root = appRoot();
+    const options = {
+      data: bytes,
+      isEvalSupported: false,
+      useWasm: false,
+      disableFontFace: true,
+      standardFontDataUrl: root + "vendor/standard_fonts/"
+    };
+    try {
+      return pdfjs.getDocument(options);
+    } catch (_) {
+      return pdfjs.getDocument({ ...options, useWorkerFetch: false, disableAutoFetch: true });
+    }
+  }
+  async function read(file) {
     const bytes = new Uint8Array(await file.arrayBuffer());
     const pdfHash = await hash(file);
-    const task = pdfjs.getDocument({data: bytes, isEvalSupported: false, useWasm: false, disableFontFace: true, standardFontDataUrl: new URL("vendor/standard_fonts/", document.baseURI).href});
+    const task = await openPdfDocument(bytes);
     let doc;
     try {
-      doc = await task.promise;
+      doc = await withTimeout(task.promise, 18000, "El PDF tardó demasiado en abrirse. Prueba de nuevo o completa los datos a mano.");
       if (doc.numPages > 100) throw new Error("Este PDF supera las 100 páginas. Sube un archivo por invoice.");
       let text = "";
       for (let n = 1; n <= doc.numPages; n++) {
@@ -213,10 +251,14 @@
           if (typeof saved.invoiceNumber === "string") extracted.fields.invoiceNumber = saved.invoiceNumber.slice(0, 60);
           if (C.isoDate(saved.issuedDate)) extracted.fields.issuedDate = saved.issuedDate;
           if (typeof saved.id === "string") sourceId = saved.id.slice(0, 100);
+          if (C.amount(saved.qty) != null && saved.qty > 0) extracted.fields.qty = C.amount(saved.qty);
           if (extracted.fields.amount != null && C.amount(saved.amount) != null && C.cents(saved.amount) !== C.cents(extracted.fields.amount)) {
-            extracted.fields.amount = null;
-            extracted.warnings.push("Los datos internos y el total impreso no coinciden. Revisa el monto.");
+            extracted.fields.amount = C.amount(saved.amount);
+            extracted.warnings.push("Se usó el total guardado en el PDF. Revísalo si no coincide con lo impreso.");
+          } else if (extracted.fields.amount == null && C.amount(saved.amount) != null) {
+            extracted.fields.amount = C.amount(saved.amount);
           }
+          if (!(extracted.fields.qty > 0) && extracted.fields.amount != null) extracted.fields.qty = 1;
         } catch (_) { /* Regular text extraction remains available. */ }
       }
       if (text.trim().length < 10) extracted.warnings.unshift("El PDF es una imagen o no tiene texto legible. Completa los datos viendo el original.");

@@ -278,8 +278,7 @@ window.HoursArchive = function (app) {
             if (Array.isArray(metadata.entries) && metadata.entries.length) row.entries = metadata.entries;
           }
         } catch (error) {
-          row.error = "No se pudo leer este archivo. " + (error.message || "");
-          row.included = false;
+          row.warnings.push(error.message || "No se pudo leer el texto. Completa dirección, fecha y empleados a mano.");
         }
         importRows.push(row);
         await new Promise(resolve => setTimeout(resolve, 0));

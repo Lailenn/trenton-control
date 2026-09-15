@@ -411,14 +411,33 @@
     return { fields, entries, warnings };
   }
 
+  function appRoot() {
+    const scripts = document.getElementsByTagName("script");
+    for (const script of scripts) {
+      const src = script.src || "";
+      if (/hours-pdf\.js/i.test(src)) return src.replace(/[^/]+(?:\?.*)?$/, "");
+    }
+    const path = location.pathname;
+    const last = path.split("/").pop() || "";
+    const dir = path.endsWith("/") ? path : /\.[a-z0-9]+$/i.test(last) ? path.replace(/[^/]+$/, "") : path + "/";
+    return location.origin + dir;
+  }
+  function withTimeout(promise, ms, message) {
+    let timer;
+    return Promise.race([
+      Promise.resolve(promise).finally(() => clearTimeout(timer)),
+      new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(message)), ms); })
+    ]);
+  }
   async function extractPdfText(file) {
-    if (!reader) reader = import("./vendor/pdf.min.mjs");
+    const root = appRoot();
+    if (!reader) reader = import(root + "vendor/pdf.min.mjs");
     const pdfjs = await reader;
-    pdfjs.GlobalWorkerOptions.workerSrc = new URL("vendor/pdf.worker.min.mjs", document.baseURI).href;
+    pdfjs.GlobalWorkerOptions.workerSrc = root + "vendor/pdf.worker.min.mjs";
     const bytes = new Uint8Array(await file.arrayBuffer());
-    const task = pdfjs.getDocument({data: bytes, isEvalSupported: false, useWasm: false, disableFontFace: true, standardFontDataUrl: new URL("vendor/standard_fonts/", document.baseURI).href});
+    const task = pdfjs.getDocument({data: bytes, isEvalSupported: false, useWasm: false, disableFontFace: true, standardFontDataUrl: root + "vendor/standard_fonts/"});
     try {
-      const doc = await task.promise;
+      const doc = await withTimeout(task.promise, 18000, "El PDF de horas tardó demasiado en abrirse.");
       if (doc.numPages > 40) throw new Error("Este PDF de horas supera las 40 páginas.");
       let text = "";
       let subject = "";
