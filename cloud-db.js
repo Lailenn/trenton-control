@@ -2,6 +2,7 @@
   "use strict";
   let currentUser = null;
   const HOURS_META = "trenton.hours.meta";
+  const JOB_META = "trenton.job.meta";
   const INVOICE_META = "trenton.invoices.meta";
 
   function sb() { return root.TrentonSupabase.client; }
@@ -252,6 +253,12 @@
     const list = readJson(HOURS_META).filter(item => item.id !== record.id);
     list.unshift(slimRecord(record));
     writeJson(HOURS_META, list.slice(0, 300));
+  }
+  function rememberJob(record) {
+    if (!record?.id) return;
+    const list = readJson(JOB_META).filter(item => item.id !== record.id);
+    list.unshift(slimRecord(record));
+    writeJson(JOB_META, list.slice(0, 300));
   }
   function rememberInvoice(record) {
     if (!record?.id) return;
@@ -552,6 +559,24 @@
     await root.LocalCache.remove("hours", id);
   }
 
+  async function softDeleteJob(record) {
+    const id = record?.id;
+    if (!id) return;
+    try {
+      await rest(`job_reports?id=eq.${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        body: { deleted_at: new Date().toISOString() }
+      });
+    } catch (error) {
+      fail(error, "No se pudo eliminar el reporte de job.");
+    }
+    try {
+      await rest(`job_entries?report_id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
+    } catch (_) { /* las filas pueden no existir */ }
+    writeJson(JOB_META, readJson(JOB_META).filter(item => item.id !== id));
+    await root.LocalCache.remove("job", id);
+  }
+
   async function nextInvoiceNumber(records = []) {
     let data = [];
     try {
@@ -738,6 +763,160 @@
       }
     } finally {
       syncingHours = false;
+    }
+  }
+
+  function jobFrom(report, entries) {
+    const rows = (entries || []).filter(entry => entry.report_id === report.id).sort((a, b) => a.sort_order - b.sort_order).map(entry => ({
+      id: entry.id,
+      date: entry.work_date || report.start_date,
+      employee: entry.employee,
+      description: entry.description || "",
+      timeIn: entry.time_in,
+      timeOut: entry.time_out,
+      lunch: Number(entry.lunch_minutes) || 0,
+      rate: Number(entry.rate) || 0,
+      hoursOverride: entry.hours_override == null ? "" : Number(entry.hours_override),
+      hours: Number(entry.hours) || 0
+    }));
+    return {
+      id: report.id,
+      jobAddress: report.job_address,
+      startDate: report.start_date,
+      endDate: report.end_date,
+      defaultRate: Number(report.default_rate) || 0,
+      pdfHash: report.pdf_hash,
+      pdfPath: report.pdf_path,
+      pdfName: report.pdf_name,
+      updatedAt: report.updated_at,
+      cloud: Boolean(report.pdf_path),
+      pdfBlob: null,
+      entries: rows
+    };
+  }
+
+  async function queryJobReports() {
+    try {
+      return await rest("job_reports?deleted_at=is.null&order=updated_at.desc");
+    } catch (error) {
+      if (isMissingColumn(error)) return await rest("job_reports?order=start_date.desc");
+      throw error;
+    }
+  }
+
+  async function listJobs() {
+    let cloud = [];
+    try {
+      const reports = await queryJobReports();
+      let entries = [];
+      try {
+        entries = await rest("job_entries?select=*") || [];
+      } catch (entryError) {
+        console.warn(entryError);
+      }
+      cloud = (Array.isArray(reports) ? reports : []).map(report => ({ ...jobFrom(report, entries), cloudSynced: true }));
+    } catch (error) {
+      console.warn("Nube de jobs no disponible; se usan los reportes de este aparato.", error);
+    }
+    const seen = new Set(cloud.map(item => item.id));
+    const local = readJson(JOB_META).filter(item => item.id && !seen.has(item.id));
+    const merged = cloud.concat(local);
+    await Promise.all(merged.map(async record => {
+      record.pdfBlob = record.pdfBlob || await root.LocalCache.get("job", record.id, record.pdfHash);
+    }));
+    syncPendingJobs().catch(error => console.warn("No se pudieron subir jobs pendientes.", error));
+    return merged;
+  }
+
+  async function ensureJobPdf(record) {
+    if (record.pdfBlob) return record.pdfBlob;
+    if (!record.pdfPath) return null;
+    const blob = await download("job-pdfs", record.pdfPath);
+    if (blob) {
+      record.pdfBlob = asPdfBlob(blob);
+      await cacheBlob("job", record.id, record.pdfHash, record.pdfBlob);
+    }
+    return record.pdfBlob;
+  }
+
+  async function replaceJobEntries(record, uid) {
+    try {
+      await rest(`job_entries?report_id=eq.${encodeURIComponent(record.id)}`, { method: "DELETE" });
+    } catch (clearError) {
+      if (!isMissingColumn(clearError)) fail(clearError, "No se pudieron actualizar las filas del job.");
+    }
+    const rows = (record.entries || []).map((entry, index) => ({
+      id: entry.id || `${record.id}-${index + 1}`,
+      report_id: record.id,
+      owner_id: uid,
+      work_date: entry.date || record.startDate || null,
+      employee: entry.employee,
+      description: entry.description || "",
+      time_in: entry.timeIn || "",
+      time_out: entry.timeOut || "",
+      lunch_minutes: Number(entry.lunch) || 0,
+      rate: Number(entry.rate) || 0,
+      hours_override: entry.hoursOverride === "" || entry.hoursOverride == null ? null : Number(entry.hoursOverride),
+      hours: Number(entry.hours) || 0,
+      sort_order: index
+    }));
+    if (!rows.length) return;
+    await rest("job_entries", { method: "POST", body: rows });
+  }
+
+  async function saveJob(record) {
+    const uid = await requireOwnerId();
+    const dates = [...new Set((record.entries || []).map(entry => entry.date).filter(Boolean))].sort();
+    record.startDate = record.startDate || dates[0] || null;
+    record.endDate = record.endDate || dates[dates.length - 1] || record.startDate || null;
+    record.updatedAt = record.updatedAt || new Date().toISOString();
+    if (record.pdfBlob) record.pdfPath = record.pdfPath || `${uid}/${record.id}.pdf`;
+    if (record.pdfBlob) await cacheBlob("job", record.id, record.pdfHash, record.pdfBlob);
+    rememberJob({ ...record, cloudSynced: false });
+    const saved = rowFrom(await rest("job_reports?on_conflict=id", {
+      method: "POST",
+      body: {
+        id: record.id,
+        owner_id: uid,
+        job_address: record.jobAddress,
+        start_date: record.startDate || null,
+        end_date: record.endDate || null,
+        default_rate: Number(record.defaultRate) || 0,
+        pdf_hash: record.pdfHash || null,
+        pdf_path: record.pdfPath || null,
+        pdf_name: record.pdfName || "",
+        deleted_at: null,
+        updated_at: record.updatedAt
+      },
+      prefer: "return=representation,resolution=merge-duplicates"
+    }));
+    if (!saved?.id) throw new Error("Supabase no confirmó el job. Corre supabase/schema-job-reports.sql y vuelve a guardar.");
+    await replaceJobEntries(record, uid);
+    record.cloudSynced = true;
+    rememberJob(record);
+    if (record.pdfBlob && record.pdfPath) {
+      try { await upload("job-pdfs", record.pdfPath, record.pdfBlob, "application/pdf"); }
+      catch (error) { console.warn("Job guardado; el PDF quedó en este aparato.", error); }
+    }
+    return record;
+  }
+
+  let syncingJobs = false;
+  async function syncPendingJobs() {
+    if (syncingJobs) return;
+    syncingJobs = true;
+    try {
+      const pending = readJson(JOB_META).filter(item => item.id && item.cloudSynced === false);
+      for (const item of pending) {
+        try {
+          item.pdfBlob = item.pdfBlob || await root.LocalCache.get("job", item.id, item.pdfHash);
+          await saveJob(item);
+        } catch (error) {
+          console.warn("Job pendiente no subió a la nube", item.id, error);
+        }
+      }
+    } finally {
+      syncingJobs = false;
     }
   }
 
@@ -1104,6 +1283,11 @@
     softDeleteHours,
     ensureHoursPdf,
     syncPendingHours,
+    listJobs,
+    saveJob,
+    softDeleteJob,
+    ensureJobPdf,
+    syncPendingJobs,
     addCheckPhoto,
     ensureCheckPhoto,
     removeCheckPhoto,

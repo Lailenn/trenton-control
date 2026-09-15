@@ -93,13 +93,24 @@ button.stat-card:hover { box-shadow: 0 8px 28px rgba(59,110,234,.14); transform:
 .hours-entry-row-top .mini-action { flex: 0 0 auto; }
 .hours-entry-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .hours-entry-grid .hours-employee { grid-column: 1 / -1; }
+.job-entry-grid .job-desc-field { grid-column: 1 / -1; }
+.job-work-table th:nth-child(1) { width: 11%; }
+.job-work-table th:nth-child(2) { width: 17%; }
+.job-work-table th:nth-child(3) { width: 22%; }
+.job-work-table th:nth-child(4) { width: 12%; }
+.job-work-table th:nth-child(5) { width: 12%; }
+.job-work-table th:nth-child(6) { width: 10%; }
+.job-work-table th:nth-child(7) { width: 16%; }
+.job-work-table td { white-space: normal; }
+.job-day-title { margin: 28px 0 16px; }
+#jobPaper .hours-summary-table { margin-bottom: 28px; }
 .hours-entry-grid .field { gap: 4px; }
 .hours-entry-grid .field span { font-size: 10px; }
 .hours-entry-grid input { min-height: 34px; padding: 7px 8px; font-size: 12px; }
 .hours-calculated { margin: 10px 0 0; color: var(--blue-dark); font-size: 11px; font-weight: 700; }
 .hours-preview-panel { min-width: 0; overflow-x: auto; overflow-y: visible; }
 .hours-preview-viewport { width: 100%; height: auto !important; overflow-x: auto; overflow-y: visible; background: #e8edf7; padding: 12px; box-sizing: border-box; -webkit-overflow-scrolling: touch; container-type: inline-size; container-name: hours-sheet; }
-.hours-paper, #hoursPaper {
+.hours-paper, #hoursPaper, #jobPaper {
   width: 816px;
   min-width: 816px;
   max-width: none;
@@ -116,7 +127,7 @@ button.stat-card:hover { box-shadow: 0 8px 28px rgba(59,110,234,.14); transform:
   box-shadow: 0 4px 18px rgba(26, 40, 67, .12);
 }
 @container hours-sheet (max-width: 816px) {
-  .hours-paper, #hoursPaper { zoom: calc(100cqi / 816px); }
+  .hours-paper, #hoursPaper, #jobPaper { zoom: calc(100cqi / 816px); }
 }
 .hours-logo { display: block; width: 293px; height: auto; margin: 0 auto 19px; }
 .hours-job-line { margin: 0; text-align: center; font-size: 17px; font-weight: 700; }
