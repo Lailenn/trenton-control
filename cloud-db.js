@@ -568,7 +568,7 @@
         body: { deleted_at: new Date().toISOString() }
       });
     } catch (error) {
-      fail(error, "No se pudo eliminar el reporte de job.");
+      fail(error, "No se pudo eliminar el reporte de otro formato de horas.");
     }
     try {
       await rest(`job_entries?report_id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });

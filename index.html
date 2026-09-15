@@ -126,7 +126,7 @@
             </button>
             <button class="nav-item" type="button" data-nav="job">
               <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4.2 6.2h15.6V8H4.2zm0 3.6h15.6v8.2H4.2zm2.4 2.2v1.6h4.2v-1.6zm0 3.2v1.6h8.6v-1.6z"/></svg></span>
-              <span class="nav-copy"><span class="nav-title">Reporte de job</span><span class="nav-sub">Varios días y descripción</span></span>
+              <span class="nav-copy"><span class="nav-title">Otro formato de horas</span><span class="nav-sub">Varios días y descripción</span></span>
               <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M9.4 6.4 15 12l-5.6 5.6-1.4-1.4 4.2-4.2-4.2-4.2z"/></svg></span>
             </button>
           </nav>
@@ -149,7 +149,7 @@
             </button>
             <button class="nav-item" type="button" data-nav="job-archive">
               <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M7 3.8h10l.8.8v15.6H6.2V4.6zm2 4.4v1.5h6V8.2zm0 3.2v1.5h6v-1.5zm0 3.2v1.5h4.4v-1.5z"/></svg></span>
-              <span class="nav-copy"><span class="nav-title">Jobs / PDFs</span><span class="nav-sub">Reportes de varios días</span></span>
+              <span class="nav-copy"><span class="nav-title">Otro formato / PDFs</span><span class="nav-sub">PDFs de varios días</span></span>
               <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M9.4 6.4 15 12l-5.6 5.6-1.4-1.4 4.2-4.2-4.2-4.2z"/></svg></span>
             </button>
             <button class="nav-item sidebar-passkey js-register-passkey" type="button">
@@ -365,7 +365,7 @@
 
           <section class="page-view hidden hours-view" id="jobView">
             <div class="hours-page-heading">
-              <div><p class="eyebrow">Reporte de varios días</p><h1>Reporte de job</h1><p class="hero-copy">Igual que el PDF de 1117 C St SE: un trabajo, varios días, descripción por fila, totales diarios y gran total.</p></div>
+              <div><p class="eyebrow">Varios días y descripción</p><h1>Otro formato de horas</h1><p class="hero-copy">Igual que el PDF de 1117 C St SE: un trabajo, varios días, descripción por fila, totales diarios y gran total.</p></div>
               <div class="hours-heading-actions">
                 <button class="button button-ghost" id="importJobPdfButton" type="button">Subir PDF anterior</button>
                 <input id="importJobPdfFile" type="file" accept="application/pdf,.pdf" multiple hidden>
@@ -374,7 +374,7 @@
               </div>
             </div>
             <section class="whatsapp-import hours-whatsapp-import" aria-labelledby="jobWhatsappTitle">
-              <div class="whatsapp-heading"><div><p class="eyebrow">Desde el texto del job</p><h2 id="jobWhatsappTitle">Pegar texto o filas del PDF</h2></div><span class="whatsapp-badge">Texto → job</span></div>
+              <div class="whatsapp-heading"><div><p class="eyebrow">Desde el texto del reporte</p><h2 id="jobWhatsappTitle">Pegar texto o filas del PDF</h2></div><span class="whatsapp-badge">Texto → reporte</span></div>
               <label for="jobWhatsAppText">Pega el bloque JOB, las fechas y las filas de empleados. Detecta descripción, horario o solo horas.</label>
               <textarea id="jobWhatsAppText" rows="8" maxlength="20000" placeholder="JOB: 1117 C St SE, Washington, DC 20003&#10;Friday, September 11, 2026&#10;Friday Pablo Matamoros Plywood demolition 11:00 AM 7:00 PM 30 MIN 8 HRS&#10;Friday Rubén Perla Purchase of materials — — — 4 HRS"></textarea>
               <div class="whatsapp-actions"><p>Usa horario de 12 horas (AM/PM) o deja el reloj vacío y escribe las horas. La tarifa sale de $30/HR si está en el texto.</p><button class="button button-primary" id="parseJobWhatsAppButton" type="button">Desglosar job</button></div>
@@ -382,7 +382,7 @@
             </section>
             <div class="hours-layout">
               <section class="hours-form-panel">
-                <div class="builder-panel-heading"><div><p class="eyebrow">Datos editables</p><h2>Información del job</h2></div><span class="builder-step">03</span></div>
+                <div class="builder-panel-heading"><div><p class="eyebrow">Datos editables</p><h2>Información del reporte</h2></div><span class="builder-step">03</span></div>
                 <div class="hours-fields">
                   <label class="field full"><span>Dirección del trabajo <em>*</em></span><input id="jobAddress" type="text" list="addressHistory" placeholder="Ej. 1117 C St SE, Washington, DC 20003" required></label>
                   <label class="field"><span>Tarifa predeterminada (USD/h)</span><div class="money-input"><b>$</b><input id="jobDefaultRate" type="number" min="0" step="0.01" value="30"></div></label>
@@ -405,7 +405,7 @@
                 </div>
               </section>
             </div>
-            <section class="hours-history"><div class="board-toolbar"><div><h2>Reportes de job guardados</h2><p>El archivo completo está en Jobs / PDFs.</p></div><button class="button button-ghost" type="button" id="openJobArchiveFromJob">Ver archivo de jobs →</button></div><div id="jobHistoryGrid" class="hours-history-grid"></div></section>
+            <section class="hours-history"><div class="board-toolbar"><div><h2>Reportes guardados</h2><p>El archivo completo está en Otro formato / PDFs.</p></div><button class="button button-ghost" type="button" id="openJobArchiveFromJob">Ver archivo →</button></div><div id="jobHistoryGrid" class="hours-history-grid"></div></section>
           </section>
 
           <section class="page-view hidden archive-view" id="archiveView">
@@ -474,7 +474,7 @@
 
           <section class="page-view hidden archive-view" id="jobArchiveView">
             <div class="archive-heading">
-              <div><p class="eyebrow">Reportes de job por dirección</p><h1 id="jobArchiveTitle">Todos los reportes de job</h1><p>Consulta los PDFs de varios días. Este archivo es independiente de Invoices / PDFs y de Horas / PDFs.</p></div>
+              <div><p class="eyebrow">Otro formato de horas</p><h1 id="jobArchiveTitle">Todos los reportes de este formato</h1><p>Consulta los PDFs de varios días. Este archivo es independiente de Invoices / PDFs y de Horas / PDFs.</p></div>
               <div class="archive-heading-actions">
                 <button class="button button-primary" type="button" id="importJobArchiveButton">＋ Subir PDF anterior</button>
                 <input id="importJobFiles" type="file" accept="application/pdf,.pdf" multiple hidden>
@@ -727,7 +727,7 @@
     <script src="vendor/jszip.min.js" defer></script>
     <script src="invoice-core.js?v=qty-total-1" defer></script>
     <script src="invoice-pdf.js?v=pdf-read-2" defer></script>
-    <script src="cloud-db.js?v=job-1" defer></script>
+    <script src="cloud-db.js?v=job-name-1" defer></script>
     <script src="whatsapp-invoice.js?v=qty-total-1" defer></script>
     <script src="invoice-archive.js?v=pc-menu-1" defer></script>
     <script src="hours-pdf.js?v=pdf-read-2" defer></script>
@@ -735,10 +735,10 @@
     <script src="hours-app.js?v=pc-menu-1" defer></script>
     <script src="hours-archive.js?v=pc-menu-1" defer></script>
     <script src="job-pdf.js?v=job-a3-1" defer></script>
-    <script src="job-app.js?v=job-1" defer></script>
-    <script src="job-archive.js?v=job-1" defer></script>
+    <script src="job-app.js?v=job-name-1" defer></script>
+    <script src="job-archive.js?v=job-name-1" defer></script>
     <script src="translator.js?v=grow-1" defer></script>
     <script src="auth-app.js?v=profile-hours-1" defer></script>
-    <script src="app.js?v=job-1" defer></script>
+    <script src="app.js?v=job-name-1" defer></script>
   </body>
 </html>

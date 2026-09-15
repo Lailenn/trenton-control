@@ -693,7 +693,7 @@
 
   function navClick(stage) {
     document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.nav === stage));
-    const titles = {board: "Inicio", invoice: "Crear invoice", hours: "Horas trabajadas", job: "Reporte de job", archive: "Invoices / PDFs", "hours-archive": "Horas de trabajo / PDFs", "job-archive": "Jobs / PDFs", created: "Facturas creadas", working: "En trabajo", waiting: "Esperando cheque", paid: "Pagadas"};
+    const titles = {board: "Inicio", invoice: "Crear invoice", hours: "Horas trabajadas", job: "Otro formato de horas", archive: "Invoices / PDFs", "hours-archive": "Horas de trabajo / PDFs", "job-archive": "Otro formato / PDFs", created: "Facturas creadas", working: "En trabajo", waiting: "Esperando cheque", paid: "Pagadas"};
     const label = $("#topbarSection");
     if (label) label.textContent = titles[stage] || "Inicio";
     if (stage === "invoice") { showView("invoice"); setDock("archive"); return; }

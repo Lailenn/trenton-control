@@ -148,7 +148,7 @@
   function parseJobText() {
     const raw = $("#jobWhatsAppText")?.value.trim();
     if (!raw) {
-      $("#jobWhatsAppResult").innerHTML = "<p>Pega primero el texto del job o del PDF.</p>";
+      $("#jobWhatsAppResult").innerHTML = "<p>Pega primero el texto del reporte o del PDF.</p>";
       $("#jobWhatsAppResult").classList.remove("hidden");
       return;
     }
@@ -261,7 +261,7 @@
     renderHistory();
     window.TrentonControl?.jobArchive?.render?.();
     if (lastRecord) applyImported(lastRecord);
-    $("#jobError").textContent = saved.length === 1 ? "PDF de job guardado en la nube." : `${saved.length} reportes de job guardados.`;
+    $("#jobError").textContent = saved.length === 1 ? "PDF de otro formato de horas guardado en la nube." : `${saved.length} reportes de otro formato de horas guardados.`;
     return saved;
   }
 
@@ -288,7 +288,7 @@
         cloudOk = true;
         await load(); renderHistory();
         window.TrentonControl?.jobArchive?.render?.();
-        if (root.TrentonControl?.toast) root.TrentonControl.toast("Reporte de job guardado en la nube");
+        if (root.TrentonControl?.toast) root.TrentonControl.toast("Otro formato de horas guardado en la nube");
       } catch (cloudError) {
         console.error(cloudError);
         try { await load(); renderHistory(); } catch (_) { /* local copy */ }
@@ -299,8 +299,8 @@
       catch (downloadError) { console.warn(downloadError); }
       if (cloudOk) {
         $("#jobError").textContent = downloadAfter
-          ? "PDF guardado en la nube, en este aparato y descargado. También queda en Jobs / PDFs."
-          : "Reporte y PDF guardados en la nube. Si no se bajó, ábrelo en Jobs / PDFs.";
+          ? "PDF guardado en la nube, en este aparato y descargado. También queda en Otro formato / PDFs."
+          : "Reporte y PDF guardados en la nube. Si no se bajó, ábrelo en Otro formato / PDFs.";
       }
     } catch (error) {
       console.error(error);
@@ -320,7 +320,7 @@
       const pay = rows.reduce((sum, entry) => sum + Number(entry.hours || JobPDF.calcHours(entry)) * Number(entry.rate || 0), 0);
       const range = JobPDF.rangeLabel(datesOf(rows)) || record.startDate || "";
       return `<article class="hours-history-card"><div><strong>${esc(record.jobAddress)}</strong><span>${esc(range)}${record.cloudSynced === false ? " · solo en este aparato" : ""}</span></div><b>${esc(formatHours(hours))} HRS · ${esc(money(pay))}</b><div class="hours-history-actions"><button class="button button-ghost" type="button" data-job-download="${esc(record.id)}">Descargar PDF</button><button class="button button-danger" type="button" data-job-delete="${esc(record.id)}">Eliminar</button></div></article>`;
-    }).join("") : '<div class="hours-empty-history">Todavía no hay reportes de job guardados.</div>';
+    }).join("") : '<div class="hours-empty-history">Todavía no hay reportes de este formato guardados.</div>';
   }
 
   async function removeReport(record) {
@@ -331,7 +331,7 @@
     window.TrentonControl?.jobArchive?.render?.();
   }
 
-  async function open() { try { await load(); renderHistory(); } catch (error) { $("#jobError").textContent = error.message || "No se pudo abrir el archivo de jobs."; } renderPreview(); }
+  async function open() { try { await load(); renderHistory(); } catch (error) { $("#jobError").textContent = error.message || "No se pudo abrir el archivo de este formato."; } renderPreview(); }
   async function boot() { await load(); renderHistory(); window.TrentonControl?.jobArchive?.render?.(); }
   function render() { renderHistory(); renderPreview(); }
 
@@ -372,7 +372,7 @@
     const del = event.target.closest("[data-job-delete]");
     if (del) {
       const record = reports.find(item => item.id === del.dataset.jobDelete);
-      if (!record || !confirm(`¿Eliminar el reporte de job de ${record.jobAddress || "esta dirección"}? Saldrá de la web y de la nube.`)) return;
+      if (!record || !confirm(`¿Eliminar el reporte de otro formato de horas de ${record.jobAddress || "esta dirección"}? Saldrá de la web y de la nube.`)) return;
       try { await removeReport(record); }
       catch (error) { $("#jobError").textContent = error.message || "No se pudo eliminar el reporte."; }
       return;

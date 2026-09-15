@@ -48,7 +48,7 @@ window.JobArchive = function (app) {
     const visible = select(records, yearSelect.value, $("#jobArchiveSearch")?.value);
     const hours = visible.reduce((sum, record) => sum + totals(record).hours, 0);
     const pay = visible.reduce((sum, record) => sum + totals(record).pay, 0);
-    $("#jobArchiveTitle").textContent = yearSelect.value === "all" ? "Todos los reportes de job" : yearSelect.value === "undated" ? "Jobs sin fecha" : `Jobs ${yearSelect.value}`;
+    $("#jobArchiveTitle").textContent = yearSelect.value === "all" ? "Todos los reportes de este formato" : yearSelect.value === "undated" ? "Reportes sin fecha" : `Otro formato ${yearSelect.value}`;
     $("#jobArchiveCount").textContent = visible.length;
     $("#jobArchiveHours").textContent = `${formatHours(hours)} HRS`;
     $("#jobArchivePay").textContent = money(pay);
@@ -64,7 +64,7 @@ window.JobArchive = function (app) {
         <p class="archive-file">${esc(record.pdfName || fileName(record))}</p>
         <div class="archive-card-actions">${hasPdf ? `<button type="button" class="button button-primary" data-job-record="${esc(record.id)}" data-task="view">Ver PDF</button><button type="button" class="button button-ghost" data-job-record="${esc(record.id)}" data-task="download">Descargar</button>` : ""}<button type="button" class="button button-danger" data-job-record="${esc(record.id)}" data-task="delete">Eliminar</button></div>
       </article>`;
-    }).join("") : '<div class="archive-empty"><span>◷</span><h2>No hay reportes de job en esta selección</h2><p>Crea uno en Reporte de job. Este archivo no se mezcla con invoices ni con Horas / PDFs.</p></div>';
+    }).join("") : '<div class="archive-empty"><span>◷</span><h2>No hay reportes de este formato en esta selección</h2><p>Crea uno en Otro formato de horas. Este archivo no se mezcla con invoices ni con Horas / PDFs.</p></div>';
   }
 
   function open() {
@@ -83,7 +83,7 @@ window.JobArchive = function (app) {
     $("#pdfDialog").dataset.kind = "job";
     $("#pdfDialog").dataset.recordId = record.id;
     if ($("#pdfDialogEdit")) $("#pdfDialogEdit").hidden = true;
-    $("#pdfDialogTitle").textContent = record.jobAddress || "Reporte de job";
+    $("#pdfDialogTitle").textContent = record.jobAddress || "Otro formato de horas";
     $("#pdfDialogInfo").textContent = `${window.JobPDF?.rangeLabel?.((record.entries || []).map(entry => entry.date)) || ""} · ${formatHours(stats.hours)} HRS · ${money(stats.pay)}`;
     $("#pdfDialogFrame").src = pdfUrl(record);
     $("#pdfDialogFrame").title = "PDF de job";
@@ -101,11 +101,11 @@ window.JobArchive = function (app) {
   }
 
   async function deleteRecord(record) {
-    if (!confirm(`¿Eliminar el reporte de job de ${record.jobAddress || "esta dirección"}? Saldrá de la web y de la nube.`)) return;
+    if (!confirm(`¿Eliminar el reporte de otro formato de horas de ${record.jobAddress || "esta dirección"}? Saldrá de la web y de la nube.`)) return;
     try {
       await app.remove(record);
       render();
-      app.toast("Reporte de job eliminado.");
+      app.toast("Reporte de otro formato de horas eliminado.");
     } catch (error) {
       app.toast(error.message || "No se pudo eliminar el reporte.");
     }
