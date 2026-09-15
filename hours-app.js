@@ -37,6 +37,7 @@
     entries = defaultEntries();
     $("#hoursError").textContent = "";
     renderEntries(); renderPreview();
+    window.growTextareas?.();
   }
 
   function renderEntries() {
@@ -212,6 +213,7 @@
     }];
     renderEntries();
     renderPreview();
+    window.growTextareas?.();
   }
 
   function hoursReady(record) {
@@ -310,17 +312,25 @@
       const rows = record.entries || [];
       const hours = rows.reduce((sum, entry) => sum + Number(entry.hours || 0), 0);
       const pay = rows.reduce((sum, entry) => sum + Number(entry.hours || 0) * Number(entry.rate || 0), 0);
-      return `<article class="hours-history-card"><div><strong>${esc(record.jobAddress)}</strong><span>${esc(dateText(record.reportDate))}${record.cloudSynced === false ? " · solo en este teléfono" : ""}</span></div><b>${esc(formatHours(hours))} HRS · ${esc(money(pay))}</b><button class="button button-ghost" type="button" data-hours-download="${esc(record.id)}">Descargar PDF</button></article>`;
+      return `<article class="hours-history-card"><div><strong>${esc(record.jobAddress)}</strong><span>${esc(dateText(record.reportDate))}${record.cloudSynced === false ? " · solo en este teléfono" : ""}</span></div><b>${esc(formatHours(hours))} HRS · ${esc(money(pay))}</b><div class="hours-history-actions"><button class="button button-ghost" type="button" data-hours-download="${esc(record.id)}">Descargar PDF</button><button class="button button-danger" type="button" data-hours-delete="${esc(record.id)}">Eliminar</button></div></article>`;
     }).join("") : '<div class="hours-empty-history">Todavía no hay reportes guardados.</div>';
   }
 
-  async function open() { try { await load(); renderHistory(); } catch (error) { $("#hoursError").textContent = error.message || "No se pudo abrir el almacenamiento de horas."; } renderPreview(); }
+  async function removeReport(record) {
+    if (!record?.id) return;
+    await root.CloudDB.softDeleteHours(record);
+    reports = reports.filter(item => item.id !== record.id);
+    renderHistory();
+    window.TrentonControl?.hoursArchive?.render?.();
+  }
+
+  async function open() { try { await load(); renderHistory(); } catch (error) { $("#hoursError").textContent = error.message || "No se pudo abrir el almacenamiento de horas."; } renderPreview(); window.growTextareas?.(); }
   async function boot() { await load(); renderHistory(); window.TrentonControl?.hoursArchive?.render?.(); }
   function render() { renderHistory(); renderPreview(); }
   $("#hoursEntries").addEventListener("input", event => { const field = event.target.dataset.hoursField; if (field) updateEntry(Number(event.target.dataset.index), field, event.target.value); });
   $("#hoursEntries").addEventListener("click", event => { const button = event.target.closest("[data-hours-action=remove]"); if (!button || entries.length === 1) return; entries.splice(Number(button.dataset.index), 1); renderEntries(); renderPreview(); });
   $("#addHoursEntryButton").addEventListener("click", () => { entries.push({date: $("#hoursReportDate").value || today(), employee: "", timeIn: "07:00", timeOut: "15:30", lunch: 30, rate: Number($("#hoursDefaultRate").value) || 30, scheduleAuto: true}); renderEntries(); renderPreview(); });
-  ["hoursJobAddress", "hoursReportDate", "hoursDefaultRate", "hoursDescription"].forEach(id => $("#" + id).addEventListener("input", () => { if (id === "hoursDefaultRate") renderEntries(); renderPreview(); }));
+  ["hoursJobAddress", "hoursReportDate", "hoursDefaultRate", "hoursDescription"].forEach(id => $("#" + id).addEventListener("input", () => { if (id === "hoursDefaultRate") renderEntries(); renderPreview(); window.growTextareas?.(); }));
   $("#parseHoursWhatsAppButton").addEventListener("click", parseHoursWhatsAppText);
   $("#hoursWhatsAppText").addEventListener("paste", () => setTimeout(parseHoursWhatsAppText, 80));
   $("#saveHoursButton").addEventListener("click", () => save(false)); $("#downloadHoursButton").addEventListener("click", () => save(true)); $("#resetHoursButton").addEventListener("click", reset);
@@ -337,6 +347,14 @@
     catch (error) { $("#hoursError").textContent = error.message || "No se pudo importar el PDF de horas."; }
   });
   $("#hoursHistoryGrid").addEventListener("click", async event => {
+    const del = event.target.closest("[data-hours-delete]");
+    if (del) {
+      const record = reports.find(item => item.id === del.dataset.hoursDelete);
+      if (!record || !confirm(`¿Eliminar el reporte de horas de ${record.jobAddress || "esta dirección"}? Saldrá de la web y de la nube.`)) return;
+      try { await removeReport(record); }
+      catch (error) { $("#hoursError").textContent = error.message || "No se pudo eliminar el reporte."; }
+      return;
+    }
     const button = event.target.closest("[data-hours-download]"); if (!button) return;
     const record = reports.find(item => item.id === button.dataset.hoursDownload);
     if (!record) return;
@@ -348,5 +366,5 @@
   });
   function resetSession() { reports = []; renderHistory(); window.TrentonControl?.hoursArchive?.render?.(); }
   reset();
-  root.HoursApp = {open, render, boot, resetSession, reports: () => reports, importHoursFiles, applyImported, hoursReady, recordFromImport};
+  root.HoursApp = {open, render, boot, resetSession, reports: () => reports, importHoursFiles, applyImported, hoursReady, recordFromImport, removeReport};
 })(typeof globalThis !== "undefined" ? globalThis : this);

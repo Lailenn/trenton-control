@@ -530,7 +530,26 @@
     } catch (error) {
       fail(error, "No se pudo eliminar la invoice.");
     }
+    writeJson(INVOICE_META, readJson(INVOICE_META).filter(item => item.id !== record.id));
     await root.LocalCache.remove("invoice", record.id);
+  }
+
+  async function softDeleteHours(record) {
+    const id = record?.id;
+    if (!id) return;
+    try {
+      await rest(`hours_reports?id=eq.${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        body: { deleted_at: new Date().toISOString() }
+      });
+    } catch (error) {
+      fail(error, "No se pudo eliminar el reporte de horas.");
+    }
+    try {
+      await rest(`hours_entries?report_id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
+    } catch (_) { /* las jornadas pueden no existir */ }
+    writeJson(HOURS_META, readJson(HOURS_META).filter(item => item.id !== id));
+    await root.LocalCache.remove("hours", id);
   }
 
   async function nextInvoiceNumber(records = []) {
@@ -1082,6 +1101,7 @@
     nextInvoiceNumber,
     listHours,
     saveHours,
+    softDeleteHours,
     ensureHoursPdf,
     syncPendingHours,
     addCheckPhoto,

@@ -82,6 +82,20 @@
     await Cloud.softDeleteInvoice(record);
   }
 
+  function growTextarea(el) {
+    if (!el) return;
+    el.style.height = "auto";
+    const min = Number(el.dataset.minH) || 168;
+    const max = Number(el.dataset.maxH) || 560;
+    const next = Math.min(max, Math.max(min, el.scrollHeight + 2));
+    el.style.height = `${next}px`;
+    el.style.overflowY = el.scrollHeight > max ? "auto" : "hidden";
+  }
+  function growAllTextareas() {
+    document.querySelectorAll("textarea.js-grow").forEach(growTextarea);
+  }
+  window.growTextareas = growAllTextareas;
+
   function updateSaved(text) { $("#savedIndicator").innerHTML = `<i></i> ${esc(text)}`; }
 
   function fillAddressHistory() {
@@ -461,6 +475,7 @@
     if (!sidebar) return;
     sidebar.classList.toggle("open", open);
     $("#sidebarScrim")?.classList.toggle("visible", open);
+    $("#sidebarScrim")?.setAttribute("aria-hidden", String(!open));
     document.body.classList.toggle("sidebar-lock", open);
     const menu = $("#mobileMenu");
     menu?.setAttribute("aria-expanded", String(open));
@@ -542,6 +557,7 @@
     if (missing.length) result.innerHTML += "<p class=\"import-review\"><strong>Revisa estos campos; no se detectaron con seguridad y conservan su valor actual:</strong> " + esc(missing.join(", ")) + ".</p>";
     for (const notice of parsed.review) result.innerHTML += "<p class=\"import-review\">" + esc(notice) + "</p>";
     result.innerHTML += "<p>Comprueba también la nota de pago. La invoice se guarda cuando pulses “Guardar invoice y PDF”.</p>";
+    growAllTextareas();
   }
 
   async function resetInvoiceBuilder() {
@@ -569,6 +585,7 @@
     $("#paperLogo").classList.add("has-image");
     $("#paperLogo").innerHTML = `<img src="${DEFAULT_LOGO_URL}" alt="Logo de Ruben Perla" />`;
     updateInvoicePreview();
+    growAllTextareas();
   }
 
   function withTimeout(work, ms, message) {
@@ -740,7 +757,12 @@
     showView,
     edit: r => openModal(r.stage, r),
     stages, esc, money, makeId, download, toast: showToast,
-    ensurePdf: Cloud.ensureInvoicePdf
+    ensurePdf: Cloud.ensureInvoicePdf,
+    remove: async (record) => {
+      await removeRecord(record);
+      if (pdfUrls.has(record.id)) { URL.revokeObjectURL(pdfUrls.get(record.id)); pdfUrls.delete(record.id); }
+      records = records.filter(item => item.id !== record.id);
+    }
   });
   hoursArchive = window.HoursArchive({
     records: () => window.HoursApp?.reports?.() || [],
@@ -750,7 +772,10 @@
     esc,
     money,
     ensurePdf: Cloud.ensureHoursPdf,
-    openHours: () => navClick("hours")
+    openHours: () => navClick("hours"),
+    remove: async (record) => {
+      await window.HoursApp.removeReport(record);
+    }
   });
   window.TrentonControl = { toast: showToast, records: () => records, hoursArchive, download };
   document.querySelectorAll("[data-archive]").forEach(button => button.addEventListener("click", () => navClick(button.dataset.archive === "all" ? "archive" : button.dataset.archive)));
@@ -813,6 +838,8 @@
   $("#whatsappText").addEventListener("paste", () => setTimeout(fillInvoiceFromText, 0));
   $("#whatsappText").addEventListener("input", () => $("#whatsappResult").classList.add("hidden"));
   ["builderInvoiceNumber", "builderIssuedDate", "builderApproval", "builderFromName", "builderBillName", "builderFromPhone", "builderBillAddress", "builderWorkAddress", "builderFromEmail", "builderFromAddress", "builderDescription", "builderQty", "builderPrice", "builderDeposit", "builderNote"].forEach((id) => $("#" + id).addEventListener("input", updateInvoicePreview));
+  document.querySelectorAll("textarea.js-grow").forEach(el => el.addEventListener("input", () => growTextarea(el)));
+  growAllTextareas();
   $("#builderDescription").addEventListener("blur", () => {
     const split = WhatsAppInvoiceParser.splitPrice($("#builderDescription").value);
     const priceEmpty = !(Number($("#builderPrice").value) > 0);
@@ -905,6 +932,7 @@
       await resetInvoiceBuilder();
       updateSaved("En la nube y en este navegador");
       render();
+      growAllTextareas();
       ready = true;
       recoverExistingPdfs().catch(error => console.warn(error));
       window.HoursApp?.boot?.().catch(error => console.warn(error));

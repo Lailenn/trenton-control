@@ -68,7 +68,7 @@ window.HoursArchive = function (app) {
         <p class="archive-date">${esc(dateLabel(reportDate(record)))} · ${hasPdf ? "PDF de horas guardado" : "Falta el PDF"}</p>
         <strong class="archive-amount">${esc(formatHours(stats.hours))} HRS · ${money(stats.pay)}</strong>
         <p class="archive-file">${esc(record.pdfName || fileName(record))}</p>
-        <div class="archive-card-actions">${hasPdf ? `<button type="button" class="button button-primary" data-hours-record="${esc(record.id)}" data-task="view">Ver PDF</button><button type="button" class="button button-ghost" data-hours-record="${esc(record.id)}" data-task="download">Descargar</button>` : ""}</div>
+        <div class="archive-card-actions">${hasPdf ? `<button type="button" class="button button-primary" data-hours-record="${esc(record.id)}" data-task="view">Ver PDF</button><button type="button" class="button button-ghost" data-hours-record="${esc(record.id)}" data-task="download">Descargar</button>` : ""}<button type="button" class="button button-danger" data-hours-record="${esc(record.id)}" data-task="delete">Eliminar</button></div>
       </article>`;
     }).join("") : '<div class="archive-empty"><span>◷</span><h2>No hay reportes de horas en esta selección</h2><p>Prueba otro año o crea un reporte en Horas trabajadas. Los PDFs de invoices viven en otro archivo.</p></div>';
   }
@@ -130,10 +130,22 @@ window.HoursArchive = function (app) {
     finally { $("#backupHoursButton").disabled = false; }
   }
 
+  async function deleteRecord(record) {
+    if (!confirm(`¿Eliminar el reporte de horas de ${record.jobAddress || "esta dirección"}? Saldrá de la web y de la nube.`)) return;
+    try {
+      await app.remove(record);
+      render();
+      app.toast("Reporte de horas eliminado.");
+    } catch (error) {
+      app.toast(error.message || "No se pudo eliminar el reporte.");
+    }
+  }
+
   $("#hoursArchiveGrid")?.addEventListener("click", event => {
     const button = event.target.closest("[data-hours-record]"); if (!button) return;
     const record = app.records().find(item => item.id === button.dataset.hoursRecord); if (!record) return;
     if (button.dataset.task === "view") view(record);
+    else if (button.dataset.task === "delete") deleteRecord(record);
     else downloadRecord(record);
   });
   $("#hoursArchiveYear")?.addEventListener("change", render);
