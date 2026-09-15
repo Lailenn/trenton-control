@@ -75,9 +75,10 @@ window.JobArchive = function (app) {
   }
 
   async function view(record) {
-    if (app.ensurePdf) {
-      try { await app.ensurePdf(record); } catch (error) { return app.toast(error.message || "No se pudo abrir el PDF de job."); }
-    }
+    try {
+      if (window.JobApp?.rebuildPdf) await window.JobApp.rebuildPdf(record, true);
+      else if (app.ensurePdf) await app.ensurePdf(record);
+    } catch (error) { return app.toast(error.message || "No se pudo abrir el PDF."); }
     if (!record.pdfBlob) return app.toast("Este reporte todavía no tiene PDF.");
     const stats = totals(record);
     $("#pdfDialog").dataset.kind = "job";
@@ -92,11 +93,12 @@ window.JobArchive = function (app) {
 
   async function downloadRecord(record) {
     try {
-      if (app.ensurePdf) await app.ensurePdf(record);
-      if (!record.pdfBlob) return app.toast("No hay PDF de job para descargar.");
+      if (window.JobApp?.rebuildPdf) await window.JobApp.rebuildPdf(record, true);
+      else if (app.ensurePdf) await app.ensurePdf(record);
+      if (!record.pdfBlob) return app.toast("No hay PDF para descargar.");
       await app.download(record.pdfBlob, fileName(record), { share: true });
     } catch (error) {
-      app.toast(error.message || "No se pudo descargar el PDF de job.");
+      app.toast(error.message || "No se pudo descargar el PDF.");
     }
   }
 

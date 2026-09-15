@@ -133,10 +133,9 @@
   async function generate(data, logoBytes) {
     const pdfLib = lib();
     if (!pdfLib) throw new Error("No se cargó el generador de PDF. Recarga la página.");
-    const {PDFDocument, StandardFonts, rgb, PageSizes} = pdfLib;
+    const {PDFDocument, StandardFonts, rgb} = pdfLib;
     const doc = await PDFDocument.create();
-    const a3 = (PageSizes && PageSizes.A3) || [841.89, 1190.55];
-    const pageW = Number(a3[0]) || 841.89, pageH = Number(a3[1]) || 1190.55, left = 48, width = pageW - left * 2;
+    const pageW = 841.89, pageH = 1190.55, left = 48, width = pageW - left * 2;
     const regular = await doc.embedFont(StandardFonts.Helvetica);
     const bold = await doc.embedFont(StandardFonts.HelveticaBold);
     const logo = await embedLogo(doc, logoBytes);
@@ -155,11 +154,16 @@
       try { return font.widthOfTextAtSize(label, size); }
       catch (_) { return font.widthOfTextAtSize(label.normalize("NFD").replace(/[^\x20-\x7e]/g, " "), size); }
     };
+    const applyA3 = sheet => {
+      if (typeof sheet.setSize === "function") sheet.setSize(pageW, pageH);
+      if (typeof sheet.setMediaBox === "function") sheet.setMediaBox(0, 0, pageW, pageH);
+      if (typeof sheet.setCropBox === "function") sheet.setCropBox(0, 0, pageW, pageH);
+      if (typeof sheet.setBleedBox === "function") sheet.setBleedBox(0, 0, pageW, pageH);
+      if (typeof sheet.setTrimBox === "function") sheet.setTrimBox(0, 0, pageW, pageH);
+    };
     const newPage = () => {
       page = doc.addPage([pageW, pageH]);
-      if (typeof page.setSize === "function") page.setSize(pageW, pageH);
-      if (typeof page.setMediaBox === "function") page.setMediaBox(0, 0, pageW, pageH);
-      if (typeof page.setCropBox === "function") page.setCropBox(0, 0, pageW, pageH);
+      applyA3(page);
       cursor = 44;
     };
     const text = (value, x, top, size = 10, font = regular, color = ink) => {
@@ -316,8 +320,11 @@
     text(`GRAND TOTAL - ${rangeLabel(entries.map(row => row.date))}`, left, cursor, 15, bold, ink);
     cursor += 30;
     drawPay(entries);
-    doc.getPages().forEach(sheet => sheet.drawRectangle({x: 0, y: 0, width: pageW, height: 12, color: copper}));
-    doc.setTitle(pdfSafe(`Job report - ${data.jobAddress || "Arrento Carpentry"}`));
+    doc.getPages().forEach(sheet => {
+      applyA3(sheet);
+      sheet.drawRectangle({x: 0, y: 0, width: pageW, height: 12, color: copper});
+    });
+    doc.setTitle(pdfSafe(`Job report A3 - ${data.jobAddress || "Arrento Carpentry"}`));
     doc.setAuthor("Arrento Carpentry LLC");
     try {
       const payload = {
@@ -337,7 +344,7 @@
       doc.setSubject(pdfSafe(raw));
     } catch (_) { /* subject is optional */ }
     doc.setCreator("Trenton Control");
-    return new Blob([await doc.save()], {type: "application/pdf"});
+    return new Blob([await doc.save({useObjectStreams: false})], {type: "application/pdf"});
   }
 
   function to24(time, ampm) {

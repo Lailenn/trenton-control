@@ -265,6 +265,25 @@
     return saved;
   }
 
+  async function rebuildPdf(record, persist = false) {
+    if (!record) return null;
+    const canBuild = (record.entries || []).some(entry => String(entry.employee || "").trim());
+    if (!canBuild) {
+      if (!record.pdfBlob) await root.CloudDB.ensureJobPdf(record);
+      return record.pdfBlob || null;
+    }
+    const blob = await JobPDF.generate({...record, recordId: record.id}, await logoBytes());
+    if (!blob || blob.size < 80) throw new Error("El PDF salió vacío. Vuelve a intentar.");
+    record.pdfBlob = blob;
+    record.pdfHash = await JobPDF.hash(blob);
+    record.pdfName = fileName(record);
+    if (persist) {
+      try { await root.CloudDB.saveJob(record); }
+      catch (error) { console.warn("PDF A3 listo; no se pudo actualizar la nube.", error); }
+    }
+    return blob;
+  }
+
   async function save(downloadAfter = false) {
     if (saving) return;
     const record = recordFromForm();
@@ -277,10 +296,8 @@
     $("#downloadJobButton").disabled = true;
     $("#jobError").textContent = "Generando PDF…";
     try {
-      record.pdfBlob = await JobPDF.generate({...record, recordId: record.id}, await logoBytes());
+      await rebuildPdf(record, false);
       if (!record.pdfBlob || record.pdfBlob.size < 80) throw new Error("El PDF salió vacío. Vuelve a intentar.");
-      record.pdfHash = await JobPDF.hash(record.pdfBlob);
-      record.pdfName = fileName(record);
       $("#jobError").textContent = "Guardando en la nube…";
       let cloudOk = false;
       try {
@@ -381,7 +398,7 @@
     const record = reports.find(item => item.id === button.dataset.jobDownload);
     if (!record) return;
     try {
-      await root.CloudDB.ensureJobPdf(record);
+      await rebuildPdf(record, true);
       if (record.pdfBlob) await download(record.pdfBlob, record.pdfName || fileName(record), { share: true });
       else $("#jobError").textContent = "No hay PDF para descargar.";
     } catch (error) { $("#jobError").textContent = error.message || "No se pudo descargar el PDF."; }
@@ -389,5 +406,5 @@
 
   function resetSession() { reports = []; renderHistory(); window.TrentonControl?.jobArchive?.render?.(); }
   reset();
-  root.JobApp = {open, render, boot, resetSession, reports: () => reports, importJobFiles, applyImported, jobReady, recordFromImport, removeReport, fileName, download};
+  root.JobApp = {open, render, boot, resetSession, reports: () => reports, importJobFiles, applyImported, jobReady, recordFromImport, removeReport, fileName, download, rebuildPdf};
 })(typeof globalThis !== "undefined" ? globalThis : this);

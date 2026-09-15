@@ -816,10 +816,11 @@
       }
       if (kind === "job") {
         const record = window.JobApp?.reports?.().find(item => item.id === id);
-        if (!record) return showToast("No se encontró el PDF de job.");
-        await Cloud.ensureJobPdf(record);
-        if (!record.pdfBlob) return showToast("No hay PDF de job para descargar.");
-        await download(record.pdfBlob, record.pdfName || "job.pdf", { share: true });
+        if (!record) return showToast("No se encontró el PDF.");
+        if (window.JobApp?.rebuildPdf) await window.JobApp.rebuildPdf(record, true);
+        else await Cloud.ensureJobPdf(record);
+        if (!record.pdfBlob) return showToast("No hay PDF para descargar.");
+        await download(record.pdfBlob, record.pdfName || "horas-a3.pdf", { share: true });
         return;
       }
       const record = records.find(item => item.id === id);
