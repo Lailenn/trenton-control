@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet" />
     <link rel="icon" href="favicon.ico" sizes="any" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=job-1" />
+    <link rel="stylesheet" href="styles.css?v=board-under-1" />
   </head>
   <body>
     <div id="authGate" class="auth-gate auth-play login-screen" data-mode="login">
@@ -248,6 +248,19 @@
             </button>
           </section>
 
+          <section class="board-section dash-board">
+            <div class="board-toolbar">
+              <div><h2>Seguimiento de trabajos</h2><p>Arrastra cada tarjeta a la siguiente fase cuando avance.</p></div>
+              <div class="toolbar-controls">
+                <label class="search-control"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M10 3a7 7 0 0 1 5.5 11.3l4.1 4.1-1.4 1.4-4.1-4.1A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg><input id="searchInput" type="search" placeholder="Buscar invoice..." aria-label="Buscar dirección o invoice" /></label>
+                <button class="filter-button" id="clearFilterButton" type="button" aria-label="Limpiar búsqueda" title="Limpiar búsqueda">
+                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M4 6h16v2H4zm3 5h10v2H7zm3 5h4v2h-4z"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="board" id="board" aria-label="Tablero Kanban"></div>
+          </section>
+
           <section class="archive-callout dash-archive">
             <div class="dash-archive-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M10 4 8.6 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8z"/></svg></div>
             <div><h2>Archivo de invoices y resumen anual</h2><p>Al guardar una factura, aquí queda su PDF. Puedes subir facturas viejas y consultar cuánto facturaste por año.</p></div>
@@ -284,19 +297,6 @@
               <div class="check-photo-grid" id="checkDeskGrid"></div>
             </div>
             <input id="checkDeskFile" type="file" accept="image/jpeg,image/png,image/webp,image/*" capture="environment" multiple hidden>
-          </section>
-
-          <section class="board-section dash-board">
-            <div class="board-toolbar">
-              <div><h2>Seguimiento de trabajos</h2><p>Arrastra cada tarjeta a la siguiente fase cuando avance.</p></div>
-              <div class="toolbar-controls">
-                <label class="search-control"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M10 3a7 7 0 0 1 5.5 11.3l4.1 4.1-1.4 1.4-4.1-4.1A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg><input id="searchInput" type="search" placeholder="Buscar invoice..." aria-label="Buscar dirección o invoice" /></label>
-                <button class="filter-button" id="clearFilterButton" type="button" aria-label="Limpiar búsqueda" title="Limpiar búsqueda">
-                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M4 6h16v2H4zm3 5h10v2H7zm3 5h4v2h-4z"/></svg>
-                </button>
-              </div>
-            </div>
-            <div class="board" id="board" aria-label="Tablero Kanban"></div>
           </section>
           </section>
 

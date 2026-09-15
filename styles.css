@@ -1483,6 +1483,7 @@ body {
 }
 
 #boardView .dash-board {
+  margin-bottom: 16px;
   padding: 18px;
   border: 0;
   border-radius: 24px;
