@@ -150,6 +150,14 @@ button.stat-card:hover { box-shadow: 0 8px 28px rgba(59,110,234,.14); transform:
 @container job-sheet (max-width: 1123px) {
   #jobPaper { zoom: calc(100cqi / 1123px); }
 }
+#jobPaper.job-paper-capture {
+  zoom: 1 !important;
+  transform: none !important;
+  width: 1123px !important;
+  min-width: 1123px !important;
+  min-height: 1587px !important;
+  max-width: none !important;
+}
 #jobPaper .hours-logo { width: 320px; margin-bottom: 18px; }
 #jobPaper .hours-job-line { font-size: 18px; }
 #jobPaper .job-day-title,

@@ -100,7 +100,6 @@
     link.href = url;
     link.download = file.name;
     link.rel = "noopener";
-    link.target = "_blank";
     link.style.display = "none";
     document.body.append(link);
     link.click();

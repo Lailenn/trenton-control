@@ -130,12 +130,99 @@
     }
   }
 
-  async function generate(data, logoBytes) {
+  const A3_W = 297 * 72 / 25.4;
+  const A3_H = 420 * 72 / 25.4;
+
+  async function canvasPng(canvas) {
+    const blob = await new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("No se pudo capturar la hoja.")), "image/png"));
+    return new Uint8Array(await blob.arrayBuffer());
+  }
+
+  async function snapshotPaper() {
+    const paper = root.document?.getElementById?.("jobPaper");
+    const html2canvas = root.html2canvas;
+    if (!paper || typeof html2canvas !== "function") return null;
+    const viewport = root.document.getElementById("jobPreviewViewport");
+    const restore = [];
+    const setStyle = (el, prop, value) => {
+      if (!el) return;
+      restore.push([el, prop, el.style[prop]]);
+      el.style[prop] = value;
+    };
+    setStyle(paper, "zoom", "1");
+    setStyle(paper, "transform", "none");
+    setStyle(paper, "width", "1123px");
+    setStyle(paper, "minWidth", "1123px");
+    setStyle(paper, "minHeight", "1587px");
+    setStyle(paper, "maxWidth", "none");
+    paper.classList.add("job-paper-capture");
+    if (viewport) {
+      setStyle(viewport, "overflow", "visible");
+      setStyle(viewport, "width", "1123px");
+    }
+    try {
+      const canvas = await html2canvas(paper, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        logging: false,
+        width: 1123,
+        height: Math.max(1587, paper.scrollHeight),
+        windowWidth: 1123
+      });
+      if (!canvas?.width || !canvas.height) return null;
+      const pdfLib = lib();
+      const {PDFDocument, rgb} = pdfLib;
+      const doc = await PDFDocument.create();
+      const pagePx = Math.round(canvas.width * (A3_H / A3_W));
+      let y = 0;
+      while (y < canvas.height) {
+        const slice = Math.min(pagePx, canvas.height - y);
+        const piece = root.document.createElement("canvas");
+        piece.width = canvas.width;
+        piece.height = pagePx;
+        const ctx = piece.getContext("2d");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, piece.width, piece.height);
+        ctx.drawImage(canvas, 0, y, canvas.width, slice, 0, 0, canvas.width, slice);
+        const page = doc.addPage([A3_W, A3_H]);
+        if (typeof page.setSize === "function") page.setSize(A3_W, A3_H);
+        if (typeof page.setMediaBox === "function") page.setMediaBox(0, 0, A3_W, A3_H);
+        if (typeof page.setCropBox === "function") page.setCropBox(0, 0, A3_W, A3_H);
+        if (typeof page.setBleedBox === "function") page.setBleedBox(0, 0, A3_W, A3_H);
+        if (typeof page.setTrimBox === "function") page.setTrimBox(0, 0, A3_W, A3_H);
+        const img = await doc.embedPng(await canvasPng(piece));
+        page.drawImage(img, {x: 0, y: 0, width: A3_W, height: A3_H});
+        page.drawRectangle({x: 0, y: 0, width: A3_W, height: 12, color: rgb(212 / 255, 101 / 255, 47 / 255)});
+        y += pagePx;
+      }
+      doc.setTitle("Job report A3");
+      doc.setCreator("Trenton Control");
+      return new Blob([await doc.save({useObjectStreams: false})], {type: "application/pdf"});
+    } finally {
+      paper.classList.remove("job-paper-capture");
+      restore.forEach(([el, prop, value]) => { el.style[prop] = value; });
+    }
+  }
+
+  async function generate(data, logoBytes, options = {}) {
+    if (options.fromPaper) {
+      try {
+        const snapped = await snapshotPaper();
+        if (snapped && snapped.size > 80) return snapped;
+      } catch (error) {
+        console.warn("No se pudo capturar la vista previa A3; se genera el PDF vectorial.", error);
+      }
+    }
+    return generateVector(data, logoBytes);
+  }
+
+  async function generateVector(data, logoBytes) {
     const pdfLib = lib();
     if (!pdfLib) throw new Error("No se cargó el generador de PDF. Recarga la página.");
     const {PDFDocument, StandardFonts, rgb} = pdfLib;
     const doc = await PDFDocument.create();
-    const pageW = 841.89, pageH = 1190.55, left = 48, width = pageW - left * 2;
+    const pageW = A3_W, pageH = A3_H, left = 48, width = pageW - left * 2;
     const regular = await doc.embedFont(StandardFonts.Helvetica);
     const bold = await doc.embedFont(StandardFonts.HelveticaBold);
     const logo = await embedLogo(doc, logoBytes);

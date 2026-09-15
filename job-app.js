@@ -265,14 +265,14 @@
     return saved;
   }
 
-  async function rebuildPdf(record, persist = false) {
+  async function rebuildPdf(record, persist = false, fromPaper = false) {
     if (!record) return null;
     const canBuild = (record.entries || []).some(entry => String(entry.employee || "").trim());
     if (!canBuild) {
       if (!record.pdfBlob) await root.CloudDB.ensureJobPdf(record);
       return record.pdfBlob || null;
     }
-    const blob = await JobPDF.generate({...record, recordId: record.id}, await logoBytes());
+    const blob = await JobPDF.generate({...record, recordId: record.id}, await logoBytes(), {fromPaper});
     if (!blob || blob.size < 80) throw new Error("El PDF salió vacío. Vuelve a intentar.");
     record.pdfBlob = blob;
     record.pdfHash = await JobPDF.hash(blob);
@@ -296,7 +296,7 @@
     $("#downloadJobButton").disabled = true;
     $("#jobError").textContent = "Generando PDF…";
     try {
-      await rebuildPdf(record, false);
+      await rebuildPdf(record, false, true);
       if (!record.pdfBlob || record.pdfBlob.size < 80) throw new Error("El PDF salió vacío. Vuelve a intentar.");
       $("#jobError").textContent = "Guardando en la nube…";
       let cloudOk = false;
@@ -316,8 +316,8 @@
       catch (downloadError) { console.warn(downloadError); }
       if (cloudOk) {
         $("#jobError").textContent = downloadAfter
-          ? "PDF guardado en la nube, en este aparato y descargado. También queda en Otro formato / PDFs."
-          : "Reporte y PDF guardados en la nube. Si no se bajó, ábrelo en Otro formato / PDFs.";
+          ? "PDF A3 guardado en la nube, en este aparato y descargado. También queda en Horas / PDFs."
+          : "Reporte y PDF A3 guardados en la nube. Si no se bajó, ábrelo en Horas / PDFs.";
       }
     } catch (error) {
       console.error(error);
@@ -398,7 +398,7 @@
     const record = reports.find(item => item.id === button.dataset.jobDownload);
     if (!record) return;
     try {
-      await rebuildPdf(record, true);
+      await rebuildPdf(record, true, false);
       if (record.pdfBlob) await download(record.pdfBlob, record.pdfName || fileName(record), { share: true });
       else $("#jobError").textContent = "No hay PDF para descargar.";
     } catch (error) { $("#jobError").textContent = error.message || "No se pudo descargar el PDF."; }

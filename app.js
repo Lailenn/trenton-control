@@ -693,14 +693,13 @@
 
   function navClick(stage) {
     document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.nav === stage));
-    const titles = {board: "Inicio", invoice: "Crear invoice", hours: "Horas trabajadas", job: "Otro formato de horas", archive: "Invoices / PDFs", "hours-archive": "Horas de trabajo / PDFs", "job-archive": "Otro formato / PDFs", created: "Facturas creadas", working: "En trabajo", waiting: "Esperando cheque", paid: "Pagadas"};
+    const titles = {board: "Inicio", invoice: "Crear invoice", hours: "Horas trabajadas", job: "Otro formato de horas", archive: "Invoices / PDFs", "hours-archive": "Horas / PDFs", "job-archive": "Horas / PDFs", created: "Facturas creadas", working: "En trabajo", waiting: "Esperando cheque", paid: "Pagadas"};
     const label = $("#topbarSection");
     if (label) label.textContent = titles[stage] || "Inicio";
     if (stage === "invoice") { showView("invoice"); setDock("archive"); return; }
     if (stage === "hours") { showView("hours"); setDock("hours"); return; }
     if (stage === "job") { showView("job"); setDock("hours"); return; }
-    if (stage === "hours-archive") { hoursArchive.open(); setDock("hours"); return; }
-    if (stage === "job-archive") { jobArchive.open(); setDock("hours"); return; }
+    if (stage === "hours-archive" || stage === "job-archive") { hoursArchive.open(); setDock("hours"); return; }
     if (stage === "board") { showView("board"); renderBoard(); setDock("board"); return; }
     archive.open(stage === "archive" ? "all" : stage);
     setDock("archive");
@@ -770,7 +769,18 @@
     }
   });
   hoursArchive = window.HoursArchive({
-    records: () => window.HoursApp?.reports?.() || [],
+    records: () => {
+      const hours = (window.HoursApp?.reports?.() || []).map(record => {
+        record.hoursFormat = "letter";
+        return record;
+      });
+      const jobs = (window.JobApp?.reports?.() || []).map(record => {
+        record.hoursFormat = "a3";
+        record.reportDate = record.reportDate || record.startDate || record.entries?.[0]?.date || "";
+        return record;
+      });
+      return hours.concat(jobs);
+    },
     showView,
     download,
     toast: showToast,
@@ -778,6 +788,7 @@
     money,
     ensurePdf: Cloud.ensureHoursPdf,
     openHours: () => navClick("hours"),
+    openJob: () => navClick("job"),
     remove: async (record) => {
       await window.HoursApp.removeReport(record);
     }
@@ -795,6 +806,9 @@
       await window.JobApp.removeReport(record);
     }
   });
+  const jobRender = jobArchive.render.bind(jobArchive);
+  jobArchive.render = () => { hoursArchive.render(); jobRender(); };
+  jobArchive.open = () => hoursArchive.open();
   window.TrentonControl = { toast: showToast, records: () => records, hoursArchive, jobArchive, download };
   document.querySelectorAll("[data-archive]").forEach(button => button.addEventListener("click", () => navClick(button.dataset.archive === "all" ? "archive" : button.dataset.archive)));
   $("#editGeneratedInvoiceButton").addEventListener("click", editGeneratedInvoice);
@@ -806,21 +820,15 @@
     const kind = $("#pdfDialog")?.dataset.kind;
     const id = $("#pdfDialog")?.dataset.recordId;
     try {
-      if (kind === "hours") {
-        const record = window.HoursApp?.reports?.().find(item => item.id === id);
+      if (kind === "hours" || kind === "job") {
+        const job = window.JobApp?.reports?.().find(item => item.id === id);
+        const hours = window.HoursApp?.reports?.().find(item => item.id === id);
+        const record = job || hours;
         if (!record) return showToast("No se encontró el PDF de horas.");
-        await Cloud.ensureHoursPdf(record);
+        if (job && window.JobApp?.rebuildPdf) await window.JobApp.rebuildPdf(record, true, false);
+        else await Cloud.ensureHoursPdf(record);
         if (!record.pdfBlob) return showToast("No hay PDF de horas para descargar.");
         await download(record.pdfBlob, record.pdfName || "horas.pdf", { share: true });
-        return;
-      }
-      if (kind === "job") {
-        const record = window.JobApp?.reports?.().find(item => item.id === id);
-        if (!record) return showToast("No se encontró el PDF.");
-        if (window.JobApp?.rebuildPdf) await window.JobApp.rebuildPdf(record, true);
-        else await Cloud.ensureJobPdf(record);
-        if (!record.pdfBlob) return showToast("No hay PDF para descargar.");
-        await download(record.pdfBlob, record.pdfName || "horas-a3.pdf", { share: true });
         return;
       }
       const record = records.find(item => item.id === id);
@@ -836,7 +844,7 @@
   $("#openArchiveButton").addEventListener("click", () => navClick("archive"));
   $("#openHoursArchiveButton")?.addEventListener("click", () => navClick("hours-archive"));
   $("#openHoursArchiveFromHours")?.addEventListener("click", () => navClick("hours-archive"));
-  $("#openJobArchiveFromJob")?.addEventListener("click", () => navClick("job-archive"));
+  $("#openJobArchiveFromJob")?.addEventListener("click", () => navClick("hours-archive"));
   $("#closeModalButton").addEventListener("click", closeModal);
   $("#cancelButton").addEventListener("click", closeModal);
   $("#modalBackdrop").addEventListener("click", (event) => { if (event.target === $("#modalBackdrop")) closeModal(); });
