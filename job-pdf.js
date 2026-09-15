@@ -135,7 +135,8 @@
     if (!pdfLib) throw new Error("No se cargó el generador de PDF. Recarga la página.");
     const {PDFDocument, StandardFonts, rgb, PageSizes} = pdfLib;
     const doc = await PDFDocument.create();
-    const letter = (PageSizes && PageSizes.Letter) || [612, 792];
+    const a3 = (PageSizes && PageSizes.A3) || [841.89, 1190.55];
+    const pageW = Number(a3[0]) || 841.89, pageH = Number(a3[1]) || 1190.55, left = 48, width = pageW - left * 2;
     const regular = await doc.embedFont(StandardFonts.Helvetica);
     const bold = await doc.embedFont(StandardFonts.HelveticaBold);
     const logo = await embedLogo(doc, logoBytes);
@@ -144,7 +145,6 @@
     const grand = payRows(entries);
     const totalHours = grand.reduce((sum, row) => sum + row.hours, 0);
     const totalPay = grand.reduce((sum, row) => sum + row.pay, 0);
-    const pageW = Number(letter[0]) || 612, pageH = Number(letter[1]) || 792, left = 32, width = pageW - left * 2;
     const ink = rgb(0, 0, 0);
     const copper = rgb(212 / 255, 101 / 255, 47 / 255);
     const peach = rgb(253 / 255, 233 / 255, 217 / 255);
@@ -198,7 +198,7 @@
       });
     };
     const measureBlock = (columns, headers, rows, totalRow) => {
-      const headerSize = 7.6, bodySize = 8, pad = 10;
+      const headerSize = 10, bodySize = 10.5, pad = 12;
       const headerLines = headers.map((header, i) => cellLines(header, columns[i], headerSize, bold));
       const headerHeight = Math.max(22, Math.max(...headerLines.map(lines => lines.length)) * (headerSize + 3) + pad);
       const rowLineSets = rows.map(row => row.map((value, i) => cellLines(value, columns[i], bodySize, i === 0 ? bold : regular)));
@@ -243,25 +243,25 @@
     const header = () => {
       newPage();
       if (logo && logo.width > 1 && logo.height > 1) {
-        const factor = Math.min(220 / logo.width, 70 / logo.height);
+        const factor = Math.min(320 / logo.width, 96 / logo.height);
         if (Number.isFinite(factor) && factor > 0) {
-          page.drawImage(logo, {x: (pageW - logo.width * factor) / 2, y: pageH - 46 - logo.height * factor, width: logo.width * factor, height: logo.height * factor});
+          page.drawImage(logo, {x: (pageW - logo.width * factor) / 2, y: pageH - 52 - logo.height * factor, width: logo.width * factor, height: logo.height * factor});
         }
       }
-      const jobLabel = "JOB:"; const address = pdfSafe(data.jobAddress || ""); const jobSize = 13;
+      const jobLabel = "JOB:"; const address = pdfSafe(data.jobAddress || ""); const jobSize = 16;
       const jobWidth = measure(bold, jobLabel, jobSize) + 8 + measure(bold, address, jobSize); const jobX = (pageW - jobWidth) / 2;
-      text(jobLabel, jobX, 132, jobSize, bold, ink);
-      text(address, jobX + measure(bold, jobLabel, jobSize) + 8, 132, jobSize, bold, ink);
-      line(jobX + measure(bold, jobLabel, jobSize) + 8, 149, jobX + jobWidth, 149, 1, ink);
-      cursor = 172;
+      text(jobLabel, jobX, 168, jobSize, bold, ink);
+      text(address, jobX + measure(bold, jobLabel, jobSize) + 8, 168, jobSize, bold, ink);
+      line(jobX + measure(bold, jobLabel, jobSize) + 8, 186, jobX + jobWidth, 186, 1, ink);
+      cursor = 214;
     };
-    const pageLimit = pageH - 78;
+    const pageLimit = pageH - 90;
     const need = height => {
       if (cursor + height > pageLimit) header();
     };
     header();
-    const workCols = [64, 108, 136, 62, 62, 46, Math.max(58, width - 64 - 108 - 136 - 62 - 62 - 46)];
-    const payCols = [168, 118, 126, Math.max(70, width - 168 - 118 - 126)];
+    const workCols = [90, 150, 210, 82, 82, 60, Math.max(72, width - 90 - 150 - 210 - 82 - 82 - 60)];
+    const payCols = [230, 150, 170, Math.max(90, width - 230 - 150 - 170)];
     const workHeaders = ["DATE", "EMPLOYEE", "DESCRIPTION", "TIME IN", "TIME OUT", "LUNCH", "TOTAL HOURS"];
     const payHeaders = ["EMPLOYEE", "TOTAL HOURS", "HOURLY RATE", "TOTAL PAY"];
     const drawPay = rows => {
@@ -286,9 +286,9 @@
       ]);
       const dayHours = rows.reduce((sum, row) => sum + row.hours, 0);
       const footer = ["TOTAL", "", "", "", "", "", hoursLabel(dayHours)];
-      need(36 + measureBlock(workCols, workHeaders, tableRows.slice(0, 1), footer).height);
-      text(fullDate(date), left, cursor, 12, bold, ink);
-      cursor += 24;
+      need(42 + measureBlock(workCols, workHeaders, tableRows.slice(0, 1), footer).height);
+      text(fullDate(date), left, cursor, 14, bold, ink);
+      cursor += 26;
       let start = 0;
       while (start < tableRows.length) {
         let take = 0, used = 0;
@@ -306,17 +306,17 @@
         cursor = table(cursor, workCols, workHeaders, chunk, last ? footer : ["(cont.)", "", "", "", "", "", ""]) + (last ? 16 : 10);
         if (!last) {
           header();
-          text(fullDate(date), left, cursor, 12, bold, ink);
-          cursor += 24;
+          text(fullDate(date), left, cursor, 14, bold, ink);
+          cursor += 26;
         }
       }
       drawPay(rows);
     }
     need(40 + 25 + Math.max(1, grand.length) * 24 + 24);
-    text(`GRAND TOTAL - ${rangeLabel(entries.map(row => row.date))}`, left, cursor, 13, bold, ink);
-    cursor += 28;
+    text(`GRAND TOTAL - ${rangeLabel(entries.map(row => row.date))}`, left, cursor, 15, bold, ink);
+    cursor += 30;
     drawPay(entries);
-    doc.getPages().forEach(sheet => sheet.drawRectangle({x: 0, y: 0, width: pageW, height: 10, color: copper}));
+    doc.getPages().forEach(sheet => sheet.drawRectangle({x: 0, y: 0, width: pageW, height: 12, color: copper}));
     doc.setTitle(pdfSafe(`Job report - ${data.jobAddress || "Arrento Carpentry"}`));
     doc.setAuthor("Arrento Carpentry LLC");
     try {
