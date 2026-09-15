@@ -144,7 +144,7 @@
     const grand = payRows(entries);
     const totalHours = grand.reduce((sum, row) => sum + row.hours, 0);
     const totalPay = grand.reduce((sum, row) => sum + row.pay, 0);
-    const pageW = Number(letter[0]) || 612, pageH = Number(letter[1]) || 792, left = 36, width = pageW - left * 2;
+    const pageW = Number(letter[0]) || 612, pageH = Number(letter[1]) || 792, left = 32, width = pageW - left * 2;
     const ink = rgb(0, 0, 0);
     const copper = rgb(212 / 255, 101 / 255, 47 / 255);
     const peach = rgb(253 / 255, 233 / 255, 217 / 255);
@@ -171,47 +171,73 @@
       }
     };
     const line = (x1, y1, x2, y2, thickness = 1, color = lineColor) => page.drawLine({start: {x: x1, y: pageH - y1}, end: {x: x2, y: pageH - y2}, thickness, color});
-    const cell = (value, x, top, w, size = 10, font = regular, align = "left", color = ink) => {
-      const label = pdfSafe(value);
-      let used = size;
-      let measured = measure(font, label, used);
-      while (used > 6.2 && measured > Math.max(10, w - 8)) {
-        used -= 0.35;
-        measured = measure(font, label, used);
+    const wrap = (value, font, size, max) => {
+      const result = [];
+      for (const paragraph of pdfSafe(value).split(/\r?\n/)) {
+        let line = "";
+        for (const word of paragraph.split(/\s+/).filter(Boolean)) {
+          if (measure(font, (line ? line + " " : "") + word, size) <= max) line += (line ? " " : "") + word;
+          else {
+            if (line) result.push(line); line = "";
+            for (const char of word) {
+              if (measure(font, line + char, size) > max && line) { result.push(line); line = ""; }
+              line += char;
+            }
+          }
+        }
+        result.push(line);
       }
-      const px = align === "center" ? x + Math.max(2, (w - measured) / 2) : align === "right" ? x + w - measured - 4 : x + 4;
-      text(label, px, top + 8, used, font, color);
+      return result.filter(Boolean);
+    };
+    const cellLines = (value, w, size, font) => wrap(String(value ?? ""), font, size, Math.max(14, w - 8));
+    const drawLines = (lines, x, top, w, size, font, color = ink) => {
+      let y = top + 5;
+      lines.forEach(lineText => {
+        text(lineText, x + 4, y, size, font, color);
+        y += size + 3;
+      });
+    };
+    const measureBlock = (columns, headers, rows, totalRow) => {
+      const headerSize = 7.6, bodySize = 8, pad = 10;
+      const headerLines = headers.map((header, i) => cellLines(header, columns[i], headerSize, bold));
+      const headerHeight = Math.max(22, Math.max(...headerLines.map(lines => lines.length)) * (headerSize + 3) + pad);
+      const rowLineSets = rows.map(row => row.map((value, i) => cellLines(value, columns[i], bodySize, i === 0 ? bold : regular)));
+      const rowHeights = rowLineSets.map(set => Math.max(20, Math.max(...set.map(lines => lines.length)) * (bodySize + 3) + pad));
+      const totalLines = totalRow.map((value, i) => cellLines(value, columns[i], headerSize, bold));
+      const totalHeight = Math.max(20, Math.max(...totalLines.map(lines => lines.length)) * (headerSize + 3) + pad);
+      const height = headerHeight + rowHeights.reduce((sum, value) => sum + value, 0) + totalHeight;
+      return { headerSize, bodySize, headerLines, headerHeight, rowLineSets, rowHeights, totalLines, totalHeight, height };
     };
     const table = (top, columns, headers, rows, totalRow, peachFirst = false) => {
-      const rowHeight = 24, headerHeight = 25, totalHeight = 24, height = headerHeight + rows.length * rowHeight + totalHeight;
+      const block = measureBlock(columns, headers, rows, totalRow);
+      const { headerSize, bodySize, headerLines, headerHeight, rowLineSets, rowHeights, totalLines, totalHeight, height } = block;
       page.drawRectangle({x: left, y: pageH - top - headerHeight, width, height: headerHeight, color: peach});
       page.drawRectangle({x: left, y: pageH - top - height, width, height: totalHeight, color: peach});
       if (peachFirst) {
-        rows.forEach((_, rowIndex) => {
-          page.drawRectangle({
-            x: left,
-            y: pageH - top - headerHeight - (rowIndex + 1) * rowHeight,
-            width: columns[0],
-            height: rowHeight,
-            color: peach
-          });
+        let y = top + headerHeight;
+        rowHeights.forEach(rowHeight => {
+          page.drawRectangle({ x: left, y: pageH - y - rowHeight, width: columns[0], height: rowHeight, color: peach });
+          y += rowHeight;
         });
       }
       const horizontals = [top, top + headerHeight];
-      for (let i = 1; i <= rows.length; i++) horizontals.push(top + headerHeight + i * rowHeight);
+      let acc = top + headerHeight;
+      rowHeights.forEach(rowHeight => { acc += rowHeight; horizontals.push(acc); });
       horizontals.push(top + height);
       horizontals.forEach(y => line(left, y, left + width, y));
       let x = left;
       columns.forEach(w => { line(x, top, x, top + height); x += w; });
       line(left + width, top, left + width, top + height);
       x = left;
-      headers.forEach((header, i) => { cell(header, x, top, columns[i], 8.4, bold, "left", ink); x += columns[i]; });
-      rows.forEach((row, rowIndex) => {
+      headerLines.forEach((lines, i) => { drawLines(lines, x, top, columns[i], headerSize, bold); x += columns[i]; });
+      let rowTop = top + headerHeight;
+      rowLineSets.forEach((set, rowIndex) => {
         x = left;
-        row.forEach((value, i) => { cell(value, x, top + headerHeight + rowIndex * rowHeight, columns[i], 8.2, i === 0 ? bold : regular, "left", ink); x += columns[i]; });
+        set.forEach((lines, i) => { drawLines(lines, x, rowTop, columns[i], bodySize, i === 0 ? bold : regular); x += columns[i]; });
+        rowTop += rowHeights[rowIndex];
       });
       x = left;
-      totalRow.forEach((value, i) => { cell(value, x, top + height - totalHeight, columns[i], 8.4, bold, "left", ink); x += columns[i]; });
+      totalLines.forEach((lines, i) => { drawLines(lines, x, top + height - totalHeight, columns[i], headerSize, bold); x += columns[i]; });
       return top + height;
     };
     const header = () => {
@@ -234,8 +260,8 @@
       if (cursor + height > pageLimit) header();
     };
     header();
-    const workCols = [62, 92, 118, 68, 68, 52, Math.max(60, width - 62 - 92 - 118 - 68 - 68 - 52)];
-    const payCols = [170, 120, 130, Math.max(70, width - 170 - 120 - 130)];
+    const workCols = [64, 108, 136, 62, 62, 46, Math.max(58, width - 64 - 108 - 136 - 62 - 62 - 46)];
+    const payCols = [168, 118, 126, Math.max(70, width - 168 - 118 - 126)];
     const workHeaders = ["DATE", "EMPLOYEE", "DESCRIPTION", "TIME IN", "TIME OUT", "LUNCH", "TOTAL HOURS"];
     const payHeaders = ["EMPLOYEE", "TOTAL HOURS", "HOURLY RATE", "TOTAL PAY"];
     const drawPay = rows => {
@@ -243,14 +269,12 @@
       const hours = summary.reduce((sum, row) => sum + row.hours, 0);
       const pay = summary.reduce((sum, row) => sum + row.pay, 0);
       const tableRows = summary.map(row => [row.employee, hoursLabel(row.hours), row.rate == null ? "VARIES" : `${money(row.rate)}/HR`, money(row.pay)]);
-      const block = 25 + tableRows.length * 24 + 24;
-      need(block + 8);
-      cursor = table(cursor, payCols, payHeaders, tableRows, ["TOTAL", hoursLabel(hours), "", money(pay)], true) + 22;
+      const footer = ["TOTAL", hoursLabel(hours), "", money(pay)];
+      const block = measureBlock(payCols, payHeaders, tableRows, footer);
+      need(block.height + 8);
+      cursor = table(cursor, payCols, payHeaders, tableRows, footer, true) + 20;
     };
     for (const [date, rows] of days) {
-      need(36 + 25 + 24 + 24);
-      text(fullDate(date), left, cursor, 13, bold, ink);
-      cursor += 28;
       const tableRows = rows.map(row => [
         dayName(row.date),
         row.employee,
@@ -261,18 +285,29 @@
         hoursLabel(row.hours)
       ]);
       const dayHours = rows.reduce((sum, row) => sum + row.hours, 0);
+      const footer = ["TOTAL", "", "", "", "", "", hoursLabel(dayHours)];
+      need(36 + measureBlock(workCols, workHeaders, tableRows.slice(0, 1), footer).height);
+      text(fullDate(date), left, cursor, 12, bold, ink);
+      cursor += 24;
       let start = 0;
       while (start < tableRows.length) {
-        const room = Math.max(1, Math.floor((pageLimit - cursor - 25 - 24) / 24));
-        const chunk = tableRows.slice(start, start + room);
+        let take = 0, used = 0;
+        while (start + take < tableRows.length) {
+          const next = measureBlock(workCols, workHeaders, tableRows.slice(start, start + take + 1), footer);
+          if (take && cursor + next.height > pageLimit) break;
+          used = next.height;
+          take += 1;
+          if (cursor + used > pageLimit && take === 1) break;
+        }
+        take = Math.max(1, take);
+        const chunk = tableRows.slice(start, start + take);
         start += chunk.length;
         const last = start >= tableRows.length;
-        const footer = last ? ["TOTAL", "", "", "", "", "", hoursLabel(dayHours)] : ["(cont.)", "", "", "", "", "", ""];
-        cursor = table(cursor, workCols, workHeaders, chunk, footer) + (last ? 18 : 12);
+        cursor = table(cursor, workCols, workHeaders, chunk, last ? footer : ["(cont.)", "", "", "", "", "", ""]) + (last ? 16 : 10);
         if (!last) {
           header();
-          text(fullDate(date), left, cursor, 13, bold, ink);
-          cursor += 28;
+          text(fullDate(date), left, cursor, 12, bold, ink);
+          cursor += 24;
         }
       }
       drawPay(rows);

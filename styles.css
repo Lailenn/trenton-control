@@ -94,16 +94,6 @@ button.stat-card:hover { box-shadow: 0 8px 28px rgba(59,110,234,.14); transform:
 .hours-entry-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .hours-entry-grid .hours-employee { grid-column: 1 / -1; }
 .job-entry-grid .job-desc-field { grid-column: 1 / -1; }
-.job-work-table th:nth-child(1) { width: 11%; }
-.job-work-table th:nth-child(2) { width: 17%; }
-.job-work-table th:nth-child(3) { width: 22%; }
-.job-work-table th:nth-child(4) { width: 12%; }
-.job-work-table th:nth-child(5) { width: 12%; }
-.job-work-table th:nth-child(6) { width: 10%; }
-.job-work-table th:nth-child(7) { width: 16%; }
-.job-work-table td { white-space: normal; }
-.job-day-title { margin: 28px 0 16px; }
-#jobPaper .hours-summary-table { margin-bottom: 28px; }
 .hours-entry-grid .field { gap: 4px; }
 .hours-entry-grid .field span { font-size: 10px; }
 .hours-entry-grid input { min-height: 34px; padding: 7px 8px; font-size: 12px; }
@@ -140,6 +130,56 @@ button.stat-card:hover { box-shadow: 0 8px 28px rgba(59,110,234,.14); transform:
 .hours-work-table tfoot td, .hours-summary-table tfoot td, .hours-summary-table tbody td:first-child { background: #fde9d9; font-weight: 700; color: #000; }
 .hours-summary-table { margin-bottom: 62px; }
 .hours-summary-table th:nth-child(1) { width: 34.1%; }.hours-summary-table th:nth-child(2) { width: 24.6%; }.hours-summary-table th:nth-child(3) { width: 26.5%; }.hours-summary-table th:nth-child(4) { width: 14.8%; }
+#jobPaper {
+  padding: 46px 28px 48px;
+}
+#jobPaper .hours-logo { width: 240px; margin-bottom: 14px; }
+#jobPaper .hours-job-line { font-size: 15px; }
+#jobPaper .job-day-title,
+#jobPaper .hours-report-date {
+  margin: 22px 0 12px;
+  font-size: 14px;
+}
+#jobPaper .job-work-table,
+#jobPaper .hours-summary-table {
+  table-layout: fixed;
+  width: 100%;
+  margin: 0 0 22px;
+  font-size: 11px;
+}
+#jobPaper .job-work-table th,
+#jobPaper .job-work-table td,
+#jobPaper .hours-summary-table th,
+#jobPaper .hours-summary-table td {
+  height: auto;
+  min-height: 28px;
+  padding: 6px 5px;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+  vertical-align: middle;
+}
+#jobPaper .job-work-table th {
+  font-size: 9.5px;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+#jobPaper .job-work-table th:nth-child(1),
+#jobPaper .job-work-table td:nth-child(1) { width: 11.5%; }
+#jobPaper .job-work-table th:nth-child(2),
+#jobPaper .job-work-table td:nth-child(2) { width: 18%; }
+#jobPaper .job-work-table th:nth-child(3),
+#jobPaper .job-work-table td:nth-child(3) { width: 23%; }
+#jobPaper .job-work-table th:nth-child(4),
+#jobPaper .job-work-table td:nth-child(4) { width: 12%; }
+#jobPaper .job-work-table th:nth-child(5),
+#jobPaper .job-work-table td:nth-child(5) { width: 12%; }
+#jobPaper .job-work-table th:nth-child(6),
+#jobPaper .job-work-table td:nth-child(6) { width: 9.5%; }
+#jobPaper .job-work-table th:nth-child(7),
+#jobPaper .job-work-table td:nth-child(7) { width: 14%; }
+#jobView .hours-layout { grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); }
 .hours-description { font-size: 16px; line-height: 1.5; }
 .hours-description p { min-height: 55px; margin: 18px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .hours-empty-preview { margin: 40px 0 59px; border: 1px dashed #b5bfce; padding: 25px; text-align: center; color: #69778a; }
