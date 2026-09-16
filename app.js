@@ -215,13 +215,18 @@
     if (!select || !status || !grid) return;
     const list = checkableRecords();
     const current = select.value;
+    const empty = !list.length;
+    $("#checkDesk")?.classList.toggle("is-empty", empty);
+    select.disabled = empty;
+    const upload = $("#checkDeskUploadButton");
+    if (upload) upload.disabled = empty;
     select.innerHTML = list.length
       ? list.map(record => `<option value="${esc(record.id)}">${esc(record.invoiceNumber)} · ${esc(record.address)}</option>`).join("")
-      : `<option value="">Sin invoices en Esperando cheque / Pagado</option>`;
+      : `<option value="">Elige una invoice</option>`;
     if (current && list.some(record => record.id === current)) select.value = current;
     const record = records.find(item => item.id === select.value);
     if (!record) {
-      status.textContent = "Cuando una invoice pase a Esperando cheque o Pagado, aquí puedes subir la foto.";
+      status.textContent = "Mueve una invoice a Esperando cheque o Pagado y aquí podrás subir la foto.";
       grid.innerHTML = "";
       return;
     }

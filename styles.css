@@ -2896,17 +2896,70 @@ body {
   align-items: end;
   margin: 14px 0 8px;
 }
-.check-desk-select { display: grid; gap: 4px; min-width: min(100%, 280px); flex: 1; }
-.check-desk-select span { color: #5b6580; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.check-desk-select { display: grid; gap: 6px; min-width: min(100%, 280px); flex: 1; }
+.check-desk-select span { color: #8b93a8; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .check-desk-select select {
-  min-height: 42px;
-  padding: 8px 10px;
-  border: 1px solid #d5dced;
-  border-radius: 10px;
-  background: #f7f9ff;
-  font: inherit;
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 40px 10px 14px;
+  border: 1px solid #e4e9f2;
+  border-radius: 14px;
+  background-color: #f4f6fb;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Cpath fill='%236b7690' d='M7.4 9.4 12 14l4.6-4.6L18 10.8l-6 6-6-6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 18px;
+  color: #1e2a44;
+  font: 600 14px "Plus Jakarta Sans", sans-serif;
+  appearance: none;
+  -webkit-appearance: none;
+  box-shadow: none;
 }
-.check-desk-status { margin: 0; color: #6b7a90; font-size: 12px; }
+.check-desk-select select:focus {
+  outline: none;
+  border-color: #9bb4f3;
+  background-color: #fff;
+  box-shadow: 0 0 0 4px rgba(59, 110, 234, .1);
+}
+.check-desk-status { margin: 0; color: #6b7a90; font-size: 12px; line-height: 1.45; }
+#boardView .check-callout {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 20px 18px 18px;
+}
+#boardView .check-callout .dash-archive-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+  border-radius: 16px;
+  background: #e7f7ee;
+  color: #1f9d6a;
+}
+#boardView .check-callout h2 { margin: 0; }
+#boardView .check-callout p { max-width: 42rem; }
+#boardView .check-callout .check-desk-actions {
+  margin: 16px 0 10px;
+}
+#boardView .check-callout .check-desk-actions .button {
+  min-height: 46px;
+  border-radius: 14px;
+}
+#boardView .check-callout.is-empty .check-desk-actions {
+  display: none;
+}
+#boardView .check-callout.is-empty .check-desk-status {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f4f7fb;
+  color: #6b7690;
+  font-size: 13px;
+}
+#boardView .check-callout .check-desk-status {
+  margin-top: 4px;
+}
 .card-check { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }
 .invoice-card .check-badge { margin-top: 0; }
 .card-check-btn {
@@ -3563,21 +3616,21 @@ body {
     display: none !important;
   }
   body.sidebar-lock .mobile-dock {
-    display: grid !important;
+    display: none !important;
   }
   body.sidebar-lock .sidebar {
     top: 0 !important;
-    bottom: calc(var(--dock-h, 74px) + 8px) !important;
-    height: auto !important;
-    max-height: none !important;
+    bottom: 0 !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
     width: min(360px, 86vw) !important;
     max-width: 86vw !important;
-    border-radius: 0 22px 22px 0;
+    border-radius: 0 22px 0 0;
     z-index: 100 !important;
   }
   body.sidebar-lock .sidebar-scrim {
     top: 0 !important;
-    bottom: var(--dock-h, 74px) !important;
+    bottom: 0 !important;
     z-index: 90 !important;
   }
   body.sidebar-lock .sidebar-head {
@@ -3616,6 +3669,21 @@ body {
   }
   .mobile-dock {
     border-radius: 0 !important;
+  }
+  body.sidebar-lock .mobile-dock {
+    display: none !important;
+  }
+  body.sidebar-lock .sidebar {
+    bottom: 0 !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 22px 0 0;
+  }
+  body.sidebar-lock .sidebar-scrim {
+    bottom: 0 !important;
+  }
+  body.sidebar-lock .sidebar-footer {
+    padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
   }
   #boardView.dash-home { max-width: none; }
   #boardView .dash-hero {

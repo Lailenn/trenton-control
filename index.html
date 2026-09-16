@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet" />
     <link rel="icon" href="favicon.ico" sizes="any" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=phone-fullbleed-1" />
+    <link rel="stylesheet" href="styles.css?v=hide-dock-check-1" />
   </head>
   <body>
     <div id="authGate" class="auth-gate auth-play login-screen" data-mode="login">
@@ -294,11 +294,11 @@
             <button class="button button-primary js-register-passkey" id="registerPasskeyButton" type="button">Registrar este aparato</button>
           </section>
 
-          <section class="archive-callout dash-archive check-callout" id="checkDesk">
-            <div class="dash-archive-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 6h18v12H3zm2 2v8h14V8zm2 2h4v2H7zm6 0h4v1.5h-4zm0 3h4V15h-4zM7 14h4v1H7z"/></svg></div>
+          <section class="archive-callout dash-archive check-callout is-empty" id="checkDesk">
+            <div class="dash-archive-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zm1.2 3.2v1.4h6.2V9.2zm0 3.2V14h4.4v-1.6zm8.4 3.1 1.4 1.4 3.6-3.6-1.4-1.4-2.2 2.2-.8-.8z"/></svg></div>
             <div class="check-desk-copy">
               <h2>Evidencia de cheques pagados</h2>
-              <p>Elige una invoice en Esperando cheque o Pagado y sube la foto del cheque. Queda en la nube junto al PDF.</p>
+              <p>Cuando una invoice pase a Esperando cheque o Pagado, sube aquí la foto. Queda en la nube junto al PDF.</p>
               <div class="check-desk-actions">
                 <label class="check-desk-select">
                   <span>Invoice</span>
@@ -306,7 +306,7 @@
                 </label>
                 <button class="button button-primary" type="button" id="checkDeskUploadButton">Subir foto del cheque</button>
               </div>
-              <p class="check-desk-status" id="checkDeskStatus">Aún no hay invoices en esas fases.</p>
+              <p class="check-desk-status" id="checkDeskStatus">Todavía no hay invoices listas para adjuntar el cheque.</p>
               <div class="check-photo-grid" id="checkDeskGrid"></div>
             </div>
             <input id="checkDeskFile" type="file" accept="image/jpeg,image/png,image/webp,image/*" capture="environment" multiple hidden>
@@ -754,6 +754,6 @@
     <script src="job-archive.js?v=job-a3-3" defer></script>
     <script src="translator.js?v=grow-1" defer></script>
     <script src="auth-app.js?v=profile-hours-1" defer></script>
-    <script src="app.js?v=hours-mix-1" defer></script>
+    <script src="app.js?v=check-desk-1" defer></script>
   </body>
 </html>
