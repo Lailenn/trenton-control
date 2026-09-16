@@ -3568,31 +3568,38 @@ body {
     z-index: 45 !important;
   }
   body.sidebar-lock .topbar {
-    display: flex !important;
+    display: none !important;
   }
   body.sidebar-lock .mobile-dock {
     display: grid !important;
   }
   body.sidebar-lock .sidebar {
-    top: var(--topbar-h, 64px) !important;
+    top: 0 !important;
     bottom: calc(var(--dock-h, 74px) + 8px) !important;
     height: auto !important;
     max-height: none !important;
     width: min(360px, 86vw) !important;
     max-width: 86vw !important;
     border-radius: 0 22px 22px 0;
-    z-index: 50 !important;
+    z-index: 100 !important;
   }
   body.sidebar-lock .sidebar-scrim {
-    top: var(--topbar-h, 64px) !important;
+    top: 0 !important;
     bottom: var(--dock-h, 74px) !important;
-    z-index: 45 !important;
+    z-index: 90 !important;
   }
   body.sidebar-lock .sidebar-head {
     display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
     padding: 16px 16px 6px;
   }
   body.sidebar-lock .sidebar-close {
-    display: none !important;
+    display: grid !important;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 auto;
   }
 }
