@@ -1599,9 +1599,10 @@ body {
 }
 #boardView .dash-art-scene {
   position: relative;
-  width: min(100%, 320px);
-  height: 240px;
+  width: min(100%, 340px);
+  height: 260px;
   margin-left: auto;
+  overflow: visible;
 }
 #boardView .dash-orbit {
   position: absolute;
@@ -1676,8 +1677,9 @@ body {
 }
 #boardView .dash-check {
   position: absolute;
-  right: -14px;
-  top: -14px;
+  right: -10px;
+  top: -16px;
+  z-index: 5;
   width: 42px;
   height: 42px;
   display: grid;
@@ -1735,7 +1737,8 @@ body {
   animation: dashChipDoc 4.4s ease-in-out infinite;
 }
 #boardView .dash-chip-pay {
-  right: 18px;
+  right: auto;
+  left: 8px;
   top: 18px;
   background: #e8f8ef;
   color: #2f9e7a;
@@ -1744,12 +1747,16 @@ body {
 #boardView .dash-script {
   position: absolute;
   right: 0;
-  top: 8px;
+  top: 0;
+  z-index: 1;
+  max-width: 92px;
   margin: 0;
   color: #6b7cff;
-  font: 700 18px Caveat, cursive;
+  font: 700 17px Caveat, cursive;
   line-height: 1.05;
-  transform: rotate(12deg);
+  transform: rotate(10deg);
+  text-shadow: 0 0 10px #eef4ff, 0 1px 0 #fff;
+  pointer-events: none;
   animation: dashScript 6s ease-in-out infinite;
 }
 #boardView .dash-clarity {
@@ -2098,7 +2105,31 @@ body {
 @media (max-width: 900px) {
   #boardView .dash-hero { grid-template-columns: 1fr; }
   #boardView .dash-hero-art { order: -1; }
-  #boardView .dash-art-scene { width: min(260px, 80%); height: 210px; }
+  #boardView .dash-art-scene {
+    width: min(100%, 280px);
+    height: 228px;
+    margin: 0 auto;
+  }
+  #boardView .dash-script,
+  #boardView .dash-dots {
+    display: none;
+  }
+  #boardView .dash-clarity {
+    right: 8px;
+    bottom: 0;
+    font-size: 14px;
+    z-index: 2;
+  }
+  #boardView .dash-check {
+    right: -2px;
+    top: -8px;
+  }
+  #boardView .dash-chip-pay {
+    left: 0;
+    top: 12px;
+    width: 38px;
+    height: 38px;
+  }
   #boardView h1 { max-width: none; }
   #boardView .dash-page-glow { display: none; }
 }
