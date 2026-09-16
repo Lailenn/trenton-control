@@ -138,6 +138,14 @@
     return new Uint8Array(await blob.arrayBuffer());
   }
 
+  function applyA3Boxes(page) {
+    if (typeof page.setSize === "function") page.setSize(A3_W, A3_H);
+    if (typeof page.setMediaBox === "function") page.setMediaBox(0, 0, A3_W, A3_H);
+    if (typeof page.setCropBox === "function") page.setCropBox(0, 0, A3_W, A3_H);
+    if (typeof page.setBleedBox === "function") page.setBleedBox(0, 0, A3_W, A3_H);
+    if (typeof page.setTrimBox === "function") page.setTrimBox(0, 0, A3_W, A3_H);
+  }
+
   async function snapshotPaper() {
     const paper = root.document?.getElementById?.("jobPaper");
     const html2canvas = root.html2canvas;
@@ -174,28 +182,14 @@
       const pdfLib = lib();
       const {PDFDocument, rgb} = pdfLib;
       const doc = await PDFDocument.create();
-      const pagePx = Math.round(canvas.width * (A3_H / A3_W));
-      let y = 0;
-      while (y < canvas.height) {
-        const slice = Math.min(pagePx, canvas.height - y);
-        const piece = root.document.createElement("canvas");
-        piece.width = canvas.width;
-        piece.height = pagePx;
-        const ctx = piece.getContext("2d");
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, piece.width, piece.height);
-        ctx.drawImage(canvas, 0, y, canvas.width, slice, 0, 0, canvas.width, slice);
-        const page = doc.addPage([A3_W, A3_H]);
-        if (typeof page.setSize === "function") page.setSize(A3_W, A3_H);
-        if (typeof page.setMediaBox === "function") page.setMediaBox(0, 0, A3_W, A3_H);
-        if (typeof page.setCropBox === "function") page.setCropBox(0, 0, A3_W, A3_H);
-        if (typeof page.setBleedBox === "function") page.setBleedBox(0, 0, A3_W, A3_H);
-        if (typeof page.setTrimBox === "function") page.setTrimBox(0, 0, A3_W, A3_H);
-        const img = await doc.embedPng(await canvasPng(piece));
-        page.drawImage(img, {x: 0, y: 0, width: A3_W, height: A3_H});
-        page.drawRectangle({x: 0, y: 0, width: A3_W, height: 12, color: rgb(212 / 255, 101 / 255, 47 / 255)});
-        y += pagePx;
-      }
+      const page = doc.addPage([A3_W, A3_H]);
+      applyA3Boxes(page);
+      const img = await doc.embedPng(await canvasPng(canvas));
+      const scale = Math.min(A3_W / img.width, A3_H / img.height);
+      const width = img.width * scale;
+      const height = img.height * scale;
+      page.drawImage(img, {x: (A3_W - width) / 2, y: A3_H - height, width, height});
+      page.drawRectangle({x: 0, y: 0, width: A3_W, height: 12, color: rgb(212 / 255, 101 / 255, 47 / 255)});
       doc.setTitle("Job report A3");
       doc.setCreator("Trenton Control");
       return new Blob([await doc.save({useObjectStreams: false})], {type: "application/pdf"});
@@ -289,13 +283,13 @@
       });
     };
     const measureBlock = (columns, headers, rows, totalRow) => {
-      const headerSize = 10, bodySize = 10.5, pad = 12;
+      const headerSize = 8, bodySize = 8.5, pad = 8;
       const headerLines = headers.map((header, i) => cellLines(header, columns[i], headerSize, bold));
-      const headerHeight = Math.max(22, Math.max(...headerLines.map(lines => lines.length)) * (headerSize + 3) + pad);
+      const headerHeight = Math.max(18, Math.max(...headerLines.map(lines => lines.length)) * (headerSize + 2) + pad);
       const rowLineSets = rows.map(row => row.map((value, i) => cellLines(value, columns[i], bodySize, i === 0 ? bold : regular)));
-      const rowHeights = rowLineSets.map(set => Math.max(20, Math.max(...set.map(lines => lines.length)) * (bodySize + 3) + pad));
+      const rowHeights = rowLineSets.map(set => Math.max(16, Math.max(...set.map(lines => lines.length)) * (bodySize + 2) + pad));
       const totalLines = totalRow.map((value, i) => cellLines(value, columns[i], headerSize, bold));
-      const totalHeight = Math.max(20, Math.max(...totalLines.map(lines => lines.length)) * (headerSize + 3) + pad);
+      const totalHeight = Math.max(16, Math.max(...totalLines.map(lines => lines.length)) * (headerSize + 2) + pad);
       const height = headerHeight + rowHeights.reduce((sum, value) => sum + value, 0) + totalHeight;
       return { headerSize, bodySize, headerLines, headerHeight, rowLineSets, rowHeights, totalLines, totalHeight, height };
     };
@@ -344,9 +338,9 @@
       text(jobLabel, jobX, 168, jobSize, bold, ink);
       text(address, jobX + measure(bold, jobLabel, jobSize) + 8, 168, jobSize, bold, ink);
       line(jobX + measure(bold, jobLabel, jobSize) + 8, 186, jobX + jobWidth, 186, 1, ink);
-      cursor = 214;
+      cursor = 200;
     };
-    const pageLimit = pageH - 90;
+    const pageLimit = pageH - 28;
     const need = height => {
       if (cursor + height > pageLimit) header();
     };
@@ -363,7 +357,7 @@
       const footer = ["TOTAL", hoursLabel(hours), "", money(pay)];
       const block = measureBlock(payCols, payHeaders, tableRows, footer);
       need(block.height + 8);
-      cursor = table(cursor, payCols, payHeaders, tableRows, footer, true) + 20;
+      cursor = table(cursor, payCols, payHeaders, tableRows, footer, true) + 14;
     };
     for (const [date, rows] of days) {
       const tableRows = rows.map(row => [
@@ -377,9 +371,9 @@
       ]);
       const dayHours = rows.reduce((sum, row) => sum + row.hours, 0);
       const footer = ["TOTAL", "", "", "", "", "", hoursLabel(dayHours)];
-      need(42 + measureBlock(workCols, workHeaders, tableRows.slice(0, 1), footer).height);
-      text(fullDate(date), left, cursor, 14, bold, ink);
-      cursor += 26;
+      need(36 + measureBlock(workCols, workHeaders, tableRows.slice(0, 1), footer).height);
+      text(fullDate(date), left, cursor, 12, bold, ink);
+      cursor += 22;
       let start = 0;
       while (start < tableRows.length) {
         let take = 0, used = 0;
@@ -397,16 +391,23 @@
         cursor = table(cursor, workCols, workHeaders, chunk, last ? footer : ["(cont.)", "", "", "", "", "", ""]) + (last ? 16 : 10);
         if (!last) {
           header();
-          text(fullDate(date), left, cursor, 14, bold, ink);
-          cursor += 26;
+          text(fullDate(date), left, cursor, 12, bold, ink);
+          cursor += 22;
         }
       }
       drawPay(rows);
     }
-    need(40 + 25 + Math.max(1, grand.length) * 24 + 24);
-    text(`GRAND TOTAL - ${rangeLabel(entries.map(row => row.date))}`, left, cursor, 15, bold, ink);
-    cursor += 30;
-    drawPay(entries);
+    const grandTitle = `GRAND TOTAL - ${rangeLabel(entries.map(row => row.date))}`;
+    const grandSummary = payRows(entries);
+    const grandHours = grandSummary.reduce((sum, row) => sum + row.hours, 0);
+    const grandPay = grandSummary.reduce((sum, row) => sum + row.pay, 0);
+    const grandRows = grandSummary.map(row => [row.employee, hoursLabel(row.hours), row.rate == null ? "VARIES" : `${money(row.rate)}/HR`, money(row.pay)]);
+    const grandFooter = ["TOTAL", hoursLabel(grandHours), "", money(grandPay)];
+    const grandBlock = measureBlock(payCols, payHeaders, grandRows, grandFooter);
+    need(36 + grandBlock.height);
+    text(grandTitle, left, cursor, 13, bold, ink);
+    cursor += 24;
+    cursor = table(cursor, payCols, payHeaders, grandRows, grandFooter, true) + 14;
     doc.getPages().forEach(sheet => {
       applyA3(sheet);
       sheet.drawRectangle({x: 0, y: 0, width: pageW, height: 12, color: copper});
