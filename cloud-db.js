@@ -922,21 +922,57 @@
 
   async function addCheckPhoto(invoiceId, file, note = "") {
     if (!file) throw new Error("Selecciona una foto del cheque.");
-    if (!/^image\/(jpeg|png|webp)$/i.test(file.type)) throw new Error("Usa una foto JPG, PNG o WebP.");
-    if (file.size > 8 * 1024 * 1024) throw new Error("La foto del cheque supera 8 MB.");
+    const image = await normalizeCheckImage(file);
     const uid = await requireOwnerId();
     const id = `check-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const ext = file.type.includes("png") ? "png" : file.type.includes("webp") ? "webp" : "jpg";
+    const ext = image.type.includes("png") ? "png" : image.type.includes("webp") ? "webp" : "jpg";
     const path = `${uid}/${invoiceId}/${id}.${ext}`;
-    await upload("check-photos", path, file, file.type);
-    await root.LocalCache.put("check", id, "", file);
-    const row = { id, invoice_id: invoiceId, owner_id: uid, storage_path: path, file_name: file.name || `${id}.${ext}`, note: String(note || "").slice(0, 500), captured_at: new Date().toISOString() };
+    await upload("check-photos", path, image, image.type || "image/jpeg");
+    await root.LocalCache.put("check", id, "", image);
+    const row = { id, invoice_id: invoiceId, owner_id: uid, storage_path: path, file_name: image.name || `${id}.${ext}`, note: String(note || "").slice(0, 500), captured_at: new Date().toISOString() };
     try {
       await rest("check_photos", { method: "POST", body: row });
     } catch (error) {
       fail(error, "No se pudo guardar la foto del cheque.");
     }
-    return { ...row, blob: file };
+    return { ...row, blob: image };
+  }
+
+  async function blobToJpeg(file) {
+    if (typeof createImageBitmap !== "function") throw new Error("Este aparato no puede convertir esa foto.");
+    const bitmap = await createImageBitmap(file);
+    const canvas = document.createElement("canvas");
+    const max = 2000;
+    const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    if (bitmap.close) bitmap.close();
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob(result => result ? resolve(result) : reject(new Error("No se pudo convertir la foto.")), "image/jpeg", 0.88);
+    });
+    const name = String(file.name || "cheque.jpg").replace(/\.[^.]+$/, ".jpg");
+    return new File([blob], name, { type: "image/jpeg" });
+  }
+
+  async function normalizeCheckImage(file) {
+    const type = String(file.type || "").toLowerCase();
+    const name = String(file.name || "").toLowerCase();
+    if (file.size > 12 * 1024 * 1024) throw new Error("La foto del cheque supera 12 MB.");
+    const looksImage = type.startsWith("image/") || /\.(jpe?g|png|webp|heic|heif|gif)$/i.test(name);
+    if (!looksImage) throw new Error("Usa una foto de la galería o de la cámara.");
+    const ready = /^image\/(jpeg|jpg|pjpeg|png|webp)$/.test(type) || /\.(jpe?g|png|webp)$/.test(name);
+    const heic = /heic|heif/.test(type) || /\.(heic|heif)$/.test(name);
+    if (ready && !heic && type && file.size <= 8 * 1024 * 1024) return file;
+    try {
+      const converted = await blobToJpeg(file);
+      if (converted.size > 8 * 1024 * 1024) throw new Error("La foto del cheque supera 8 MB.");
+      return converted;
+    } catch (error) {
+      if (ready) return file;
+      throw new Error(error.message || "No se pudo leer esa foto. Prueba JPG o PNG desde la galería.");
+    }
   }
 
   async function ensureCheckPhoto(photo) {

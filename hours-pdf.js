@@ -485,11 +485,25 @@
           return true;
         });
       }
-      if (String(text || "").trim().length < 10) extracted.warnings.unshift("El PDF es una imagen o no tiene texto. Completa los datos viendo el original.");
+      if (String(text || "").trim().length < 10) extracted.warnings.unshift("El PDF es una imagen o no tiene texto. Si completas dirección y fecha, igual se guarda el archivo original.");
     } catch (error) {
       extracted.warnings.push(error.message || "No se pudo leer el texto del PDF.");
     }
+    if (!extracted.fields.jobAddress && file?.name) extracted.fields.jobAddress = guessAddressFromName(file.name);
     return extracted;
+  }
+
+  function guessAddressFromName(name) {
+    return String(name || "")
+      .replace(/\.pdf$/i, "")
+      .replace(/[_]+/g, " ")
+      .replace(/,/g, ", ")
+      .replace(/(\d)(th|st|nd|rd)(?=[A-Z])/gi, "$1$2 ")
+      .replace(/([a-z])([A-Z])/g, "$1 $2")
+      .replace(/\bDC(\d)/i, "DC $1")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 500);
   }
 
   const api = {generate, hash, calcHours, fullDate, dayName, money, timeLabel, read, parseEnglishDate};

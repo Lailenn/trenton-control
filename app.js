@@ -28,6 +28,8 @@
   let selectedPdf = null;
   let draggedId = null;
   let toastTimer;
+  const COLUMN_PREVIEW = 5;
+  const expandedColumns = new Set();
   let archive, hoursArchive, jobArchive, builderRecordId = null, savingBuilder = false, readingPdf = false;
   const DEFAULT_LOGO_URL = "assets/logo-ruben.png";
   let logoDataUrl = DEFAULT_LOGO_URL;
@@ -163,7 +165,13 @@
     const visible = records.filter(matchesSearch);
     $("#board").innerHTML = stages.map((stage) => {
       const items = visible.filter((record) => record.stage === stage.id);
-      return `<section class="kanban-column ${stage.className}" data-stage="${stage.id}"><header class="column-head"><div class="column-title"><span class="column-icon">${stageIcons[stage.id]}</span><h3>${stage.title}</h3></div><span class="column-count">${items.length}</span></header><div class="column-cards">${items.length ? items.map(cardTemplate).join("") : `<div class="empty-column">Sin invoices en esta fase</div>`}</div><button class="add-card-button" type="button" data-action="add" data-stage="${stage.id}">+ Agregar invoice</button></section>`;
+      const expanded = expandedColumns.has(stage.id);
+      const shown = expanded ? items : items.slice(0, COLUMN_PREVIEW);
+      const hiddenCount = Math.max(0, items.length - shown.length);
+      const more = items.length > COLUMN_PREVIEW
+        ? `<button class="column-more" type="button" data-action="toggle-column" data-stage="${stage.id}">${expanded ? "Ver menos" : `Ver más (${hiddenCount})`}</button>`
+        : "";
+      return `<section class="kanban-column ${stage.className}${expanded ? " is-expanded" : ""}" data-stage="${stage.id}"><header class="column-head"><div class="column-title"><span class="column-icon">${stageIcons[stage.id]}</span><h3>${stage.title}</h3></div><span class="column-count">${items.length}</span></header><div class="column-cards">${items.length ? shown.map(cardTemplate).join("") + more : `<div class="empty-column">Sin invoices en esta fase</div>`}</div><button class="add-card-button" type="button" data-action="add" data-stage="${stage.id}">+ Agregar invoice</button></section>`;
     }).join("");
     wireBoardEvents();
   }
@@ -218,8 +226,10 @@
     const empty = !list.length;
     $("#checkDesk")?.classList.toggle("is-empty", empty);
     select.disabled = empty;
-    const upload = $("#checkDeskUploadButton");
-    if (upload) upload.disabled = empty;
+    ["#checkDeskUploadButton", "#checkDeskGalleryButton", "#checkDeskCameraButton"].forEach(id => {
+      const button = $(id);
+      if (button) button.disabled = empty;
+    });
     select.innerHTML = list.length
       ? list.map(record => `<option value="${esc(record.id)}">${esc(record.invoiceNumber)} · ${esc(record.address)}</option>`).join("")
       : `<option value="">Elige una invoice</option>`;
@@ -258,6 +268,13 @@
     }
     replaceInMemory(record);
     return record;
+  }
+
+  function openCheckPicker(invoiceId, camera) {
+    const picker = camera ? $("#checkDeskCamera") : $("#checkDeskFile");
+    if (!picker) return;
+    picker.dataset.invoiceId = invoiceId || "";
+    picker.click();
   }
 
   function openModal(stage = "created", record = null) {
@@ -371,6 +388,13 @@
     const button = event.target.closest("button[data-action]");
     if (!button) return;
     const action = button.dataset.action;
+    if (action === "toggle-column") {
+      const stage = button.dataset.stage;
+      if (expandedColumns.has(stage)) expandedColumns.delete(stage);
+      else expandedColumns.add(stage);
+      renderBoard();
+      return;
+    }
     if (action === "add") openModal(button.dataset.stage);
     if (action === "menu") { const record = records.find((item) => item.id === button.dataset.id); if (record) openModal(record.stage, record); }
     if (action === "open-pdf") { const record = records.find((item) => item.id === button.dataset.id); if (record) await openStoredPdf(record); }
@@ -378,8 +402,7 @@
     if (action === "attach-check") {
       const record = records.find(item => item.id === button.dataset.id);
       if (!record) return;
-      const picker = $("#checkDeskFile");
-      if (picker) { picker.dataset.invoiceId = record.id; picker.click(); }
+      openCheckPicker(record.id, false);
     }
     if (action === "delete") {
       const record = records.find((item) => item.id === button.dataset.id);
@@ -907,7 +930,8 @@
     if (record) renderCheckPhotos({ ...record, stage: $("#stage").value });
   });
   $("#addCheckPhotoButton")?.addEventListener("click", () => $("#checkPhotoFile")?.click());
-  $("#checkPhotoFile")?.addEventListener("change", async event => {
+  $("#addCheckPhotoCameraButton")?.addEventListener("click", () => $("#checkPhotoCamera")?.click());
+  async function onCheckPhotoFiles(event) {
     const files = Array.from(event.target.files || []);
     const record = records.find(item => item.id === editingId);
     if (!record) { showToast("Guarda primero la invoice y luego adjunta el cheque."); event.target.value = ""; return; }
@@ -918,7 +942,9 @@
       showToast("Foto del cheque guardada en la nube.");
     } catch (error) { $("#formError").textContent = error.message || "No se pudo subir la foto."; }
     event.target.value = "";
-  });
+  }
+  $("#checkPhotoFile")?.addEventListener("change", onCheckPhotoFiles);
+  $("#checkPhotoCamera")?.addEventListener("change", onCheckPhotoFiles);
   $("#checkPhotoGrid")?.addEventListener("click", async event => {
     const button = event.target.closest("[data-check-id]");
     if (!button) return;
@@ -932,13 +958,22 @@
     render();
   });
   $("#checkDeskInvoice")?.addEventListener("change", () => renderCheckDesk());
+  $("#checkDeskGalleryButton")?.addEventListener("click", () => {
+    const record = records.find(item => item.id === $("#checkDeskInvoice")?.value);
+    if (!record) { showToast("Mueve una invoice a Esperando cheque o Pagado para adjuntar el cheque."); return; }
+    openCheckPicker(record.id, false);
+  });
+  $("#checkDeskCameraButton")?.addEventListener("click", () => {
+    const record = records.find(item => item.id === $("#checkDeskInvoice")?.value);
+    if (!record) { showToast("Mueve una invoice a Esperando cheque o Pagado para adjuntar el cheque."); return; }
+    openCheckPicker(record.id, true);
+  });
   $("#checkDeskUploadButton")?.addEventListener("click", () => {
     const record = records.find(item => item.id === $("#checkDeskInvoice")?.value);
     if (!record) { showToast("Mueve una invoice a Esperando cheque o Pagado para adjuntar el cheque."); return; }
-    const picker = $("#checkDeskFile");
-    if (picker) { picker.dataset.invoiceId = record.id; picker.click(); }
+    openCheckPicker(record.id, false);
   });
-  $("#checkDeskFile")?.addEventListener("change", async event => {
+  async function onCheckDeskFiles(event) {
     const invoiceId = event.target.dataset.invoiceId || $("#checkDeskInvoice")?.value;
     const record = records.find(item => item.id === invoiceId);
     try {
@@ -949,7 +984,9 @@
     } catch (error) { showToast(error.message || "No se pudo subir la foto del cheque."); }
     event.target.value = "";
     delete event.target.dataset.invoiceId;
-  });
+  }
+  $("#checkDeskFile")?.addEventListener("change", onCheckDeskFiles);
+  $("#checkDeskCamera")?.addEventListener("change", onCheckDeskFiles);
   $("#checkDeskGrid")?.addEventListener("click", async event => {
     const button = event.target.closest("[data-desk-check-id]");
     if (!button) return;

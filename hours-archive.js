@@ -191,10 +191,14 @@ window.HoursArchive = function (app) {
     return "";
   }
 
-  function hoursRowReady(row) {
-    return Boolean(row.jobAddress?.trim() && isoDate(row.reportDate) && row.entries?.length && row.entries.every(entry =>
+  function hoursPeopleReady(row) {
+    return Boolean(row.entries?.length && row.entries.every(entry =>
       String(entry.employee || "").trim() && (Number(entry.hours) > 0 || Number(entry.hoursOverride) > 0)
     ));
+  }
+
+  function hoursRowReady(row) {
+    return Boolean(row.jobAddress?.trim() && isoDate(row.reportDate) && (hoursPeopleReady(row) || row.file));
   }
 
   function updateHoursReview() {
@@ -209,7 +213,11 @@ window.HoursArchive = function (app) {
       }
       const status = $("#hoursImportRowStatus" + index);
       if (status) {
-        status.textContent = row.error || row.duplicate || (!hoursRowReady(row) ? "Completa dirección, fecha y al menos un empleado con horas." : `${row.entries.length} empleado(s). Listo para guardar en la nube.`);
+        status.textContent = row.error || row.duplicate || (!row.jobAddress?.trim() || !isoDate(row.reportDate)
+          ? "Completa dirección y fecha. El PDF original se guarda aunque no se hayan leído empleados."
+          : hoursPeopleReady(row)
+            ? `${row.entries.length} empleado(s). Listo para guardar en la nube.`
+            : "Listo: se guardará el PDF original con esa dirección y fecha.");
         status.classList.toggle("needs-review", Boolean(row.error || row.duplicate || !hoursRowReady(row)));
       }
     });
@@ -287,7 +295,7 @@ window.HoursArchive = function (app) {
             const record = window.HoursApp.recordFromImport(file, parsed, parsed.sourceId || "");
             Object.assign(row, {
               jobAddress: record.jobAddress,
-              reportDate: record.reportDate,
+              reportDate: isoDate(parsed.fields?.reportDate) ? parsed.fields.reportDate : "",
               defaultRate: record.defaultRate,
               description: record.description,
               entries: record.entries,
@@ -295,6 +303,7 @@ window.HoursArchive = function (app) {
               pdfHash: parsed.pdfHash,
               sourceId: parsed.sourceId || ""
             });
+            if (!row.jobAddress && file?.name) row.jobAddress = String(file.name).replace(/\.pdf$/i, "").replace(/,/g, ", ");
           }
           if (metadata) {
             if (typeof metadata.jobAddress === "string" && metadata.jobAddress) row.jobAddress = metadata.jobAddress;
@@ -327,28 +336,44 @@ window.HoursArchive = function (app) {
     updateHoursReview();
     if ($("#hoursImportError")) $("#hoursImportError").textContent = "";
     try {
+      let saved = 0;
+      const failed = [];
       for (const row of chosen) {
-        const parsed = {
-          fields: { jobAddress: row.jobAddress.trim(), reportDate: row.reportDate, description: row.description || "", defaultRate: Number(row.defaultRate) || 0 },
-          entries: row.entries,
-          pdfHash: row.pdfHash,
-          sourceId: row.sourceId,
-          warnings: row.warnings
-        };
-        const record = window.HoursApp.recordFromImport(row.file, parsed, row.sourceId || `hours-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
-        record.jobAddress = row.jobAddress.trim();
-        record.reportDate = row.reportDate;
-        record.defaultRate = Number(row.defaultRate) || record.defaultRate;
-        if (!window.HoursApp.hoursReady(record) && record.entries.length) {
-          record.entries = record.entries.map(entry => ({ ...entry, rate: Number(entry.rate) || record.defaultRate || 30 }));
+        try {
+          const parsed = {
+            fields: { jobAddress: row.jobAddress.trim(), reportDate: row.reportDate, description: row.description || "", defaultRate: Number(row.defaultRate) || 0 },
+            entries: row.entries || [],
+            pdfHash: row.pdfHash,
+            sourceId: row.sourceId,
+            warnings: row.warnings
+          };
+          const record = window.HoursApp.recordFromImport(row.file, parsed, row.sourceId || `hours-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+          record.jobAddress = row.jobAddress.trim();
+          record.reportDate = row.reportDate;
+          record.defaultRate = Number(row.defaultRate) || record.defaultRate || 30;
+          record.pdfBlob = row.file || record.pdfBlob;
+          record.pdfName = row.name || record.pdfName;
+          if (!record.pdfHash && record.pdfBlob && window.HoursPDF?.hash) record.pdfHash = await window.HoursPDF.hash(record.pdfBlob);
+          if (!record.entries.length) {
+            record.description = record.description || "PDF anterior importado. Se conservó el archivo original.";
+          } else {
+            record.entries = record.entries.map(entry => ({ ...entry, rate: Number(entry.rate) || record.defaultRate || 30 }));
+          }
+          await window.CloudDB.saveHours(record);
+          saved++;
+        } catch (error) {
+          failed.push(`${row.name}: ${error.message || "no se guardó"}`);
         }
-        await window.CloudDB.saveHours(record);
       }
       await window.HoursApp.boot?.();
       importBusy = false;
-      closeHoursImport();
-      render();
-      app.toast(`${chosen.length} reportes de horas guardados en la web y en Supabase.`);
+      if (saved) {
+        closeHoursImport();
+        render();
+        app.toast(failed.length ? `${saved} guardados. ${failed.length} no: ${failed[0]}` : `${saved} reportes de horas guardados en la web y en Supabase.`);
+      } else if ($("#hoursImportError")) {
+        $("#hoursImportError").textContent = failed[0] || "No se guardó la carga.";
+      }
     } catch (error) {
       if ($("#hoursImportError")) $("#hoursImportError").textContent = error.message || "No se guardó la carga.";
     } finally {

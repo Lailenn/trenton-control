@@ -245,10 +245,16 @@
       const record = recordFromImport(file, parsed, parsed.sourceId || makeId());
       lastRecord = record;
       applyImported(record);
-      if (!hoursReady(record)) {
-        $("#hoursError").textContent = (parsed.warnings.join(" ") || "Faltan datos del PDF.") + " Completa el formulario y pulsa Guardar reporte y PDF.";
+      const parsedDate = /^\d{4}-\d{2}-\d{2}$/.test(String(parsed.fields?.reportDate || "")) ? parsed.fields.reportDate : "";
+      if (parsedDate) record.reportDate = parsedDate;
+      const canArchive = Boolean(record.jobAddress && parsedDate && record.pdfBlob);
+      if (!hoursReady(record) && !canArchive) {
+        $("#hoursError").textContent = (parsed.warnings.join(" ") || "Faltan datos del PDF.") + " Completa dirección y fecha en Horas / PDFs y pulsa Guardar reportes seleccionados.";
         if (root.TrentonControl?.toast) root.TrentonControl.toast("Revisa los datos del PDF antes de guardar.");
         return saved;
+      }
+      if (!hoursReady(record) && canArchive) {
+        record.description = record.description || "PDF anterior importado. Se conservó el archivo original.";
       }
       try {
         await saveImportedRecord(record);
