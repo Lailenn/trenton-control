@@ -12,7 +12,7 @@
     <link rel="icon" href="favicon.ico" sizes="any" />
     <link rel="icon" href="assets/app-icon.png?v=1" type="image/png" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-    <link rel="stylesheet" href="styles.css?v=login-anim-4" />
+    <link rel="stylesheet" href="styles.css?v=invoice-draft-1" />
   </head>
   <body>
     <div id="authGate" class="auth-gate auth-play login-screen" data-mode="login">
@@ -528,6 +528,16 @@
               <div><p class="eyebrow">Generador de documentos</p><h1>Crear una invoice</h1><p class="hero-copy">Llena los campos y revisa la factura en tiempo real con el formato de Rubén.</p></div>
               <div class="invoice-page-actions"><button class="button button-ghost" id="resetInvoiceButton" type="button">Limpiar campos</button><button class="button button-primary" id="printInvoiceButton" type="button">Guardar y descargar PDF</button></div>
             </div>
+            <div id="invoiceDraftBanner" class="draft-banner hidden" role="status">
+              <div>
+                <strong>Tienes trabajo sin guardar</strong>
+                <p>Dejamos esta invoice aquí para que no se pierda si cambias de pestaña.</p>
+              </div>
+              <div class="draft-banner-actions">
+                <button class="button button-primary" id="keepInvoiceDraftButton" type="button">Continuar</button>
+                <button class="button button-ghost" id="discardInvoiceDraftButton" type="button">Descartar</button>
+              </div>
+            </div>
             <section class="whatsapp-import" aria-labelledby="whatsappTitle">
               <div class="whatsapp-heading"><div><p class="eyebrow">Desde el mensaje de Rubén</p><h2 id="whatsappTitle">Pegar mensaje de WhatsApp</h2></div><span class="whatsapp-badge">Texto → invoice</span></div>
               <label for="whatsappText">Copia un mensaje completo, pégalo aquí y pulsa “Completar invoice”.</label>
@@ -772,6 +782,6 @@
     <script src="job-archive.js?v=job-a3-3" defer></script>
     <script src="translator.js?v=grow-1" defer></script>
     <script src="auth-app.js?v=profile-hours-1" defer></script>
-    <script src="app.js?v=hours-kanban-check-1" defer></script>
+    <script src="app.js?v=invoice-draft-1" defer></script>
   </body>
 </html>

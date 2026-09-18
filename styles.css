@@ -495,6 +495,25 @@ h1 span { color: var(--blue); }
 .upload-area { min-height: 76px; margin-top: 18px; padding: 12px 14px; display: flex; align-items: center; gap: 11px; border: 1px dashed #b9c8dc; border-radius: 10px; background: #fbfcff; }.upload-area.dragging { border-color: var(--blue); background: var(--blue-soft); }.upload-symbol { width: 36px; height: 36px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 10px; background: var(--blue-soft); color: var(--blue); font-size: 21px; }.upload-area strong { display: block; color: #44546c; font-size: 12px; }.upload-area p { margin: 3px 0 0; color: #8997a9; font-size: 11px; }.upload-area p button { padding: 0; border: 0; background: transparent; color: var(--blue); font-size: 11px; font-weight: 700; }.upload-area small { display: block; margin-top: 4px; color: #a6b1c0; font-size: 9px; }.current-file { margin: 8px 0 0; color: #c95664; font-size: 11px; }.form-error { min-height: 18px; margin: 10px 0 0; color: var(--red); font-size: 11px; }.modal-footer { padding: 14px 25px 21px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--line); }
 .toast { position: fixed; right: 22px; bottom: 22px; z-index: 140; max-width: min(340px, calc(100% - 44px)); padding: 12px 15px; border-radius: 9px; background: var(--navy); color: #fff; font-size: 12px; box-shadow: 0 12px 30px rgba(11,19,35,.25); opacity: 0; pointer-events: none; transform: translateY(12px); transition: opacity .2s ease, transform .2s ease; }.toast.show { opacity: 1; transform: translateY(0); }
 .invoice-page-heading { margin-bottom: 28px; display: flex; align-items: flex-end; justify-content: space-between; gap: 25px; }
+.draft-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: -8px 0 20px;
+  padding: 14px 16px;
+  border: 1px solid #f0d4a4;
+  border-radius: 16px;
+  background: #fff7e8;
+}
+.draft-banner.hidden { display: none; }
+.draft-banner strong { display: block; color: #5c4314; font-size: 14px; }
+.draft-banner p { margin: 4px 0 0; color: #7a6240; font-size: 13px; line-height: 1.4; }
+.draft-banner-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 700px) {
+  .draft-banner { align-items: stretch; flex-direction: column; }
+  .draft-banner-actions .button { flex: 1; }
+}
 .invoice-page-heading h1 { font-size: clamp(30px, 3.5vw, 43px); }
 .invoice-page-actions { display: flex; gap: 8px; }
 .whatsapp-import { padding: 22px; margin-bottom: 22px; border: 1px solid #e4d2b8; border-left: 4px solid var(--orange); border-radius: 14px; background: var(--surface); }
@@ -551,7 +570,7 @@ h1 span { color: var(--blue); }
 @media (max-width: 1250px) { .invoice-builder { grid-template-columns: minmax(300px, 370px) minmax(0, 1fr); }.invoice-paper { padding-inline: 35px; }.paper-parties { gap: 25px; } }
 @media (max-width: 950px) { .invoice-page-heading { align-items: flex-start; flex-direction: column; }.invoice-builder { grid-template-columns: 1fr; }.invoice-preview-panel { order: -1; }.invoice-paper { min-height: 0; } }
 @media (max-width: 570px) { .invoice-page-actions { width: 100%; flex-direction: column; }.invoice-page-actions .button { width: 100%; }.invoice-form-panel { padding: 16px; }.invoice-fields { grid-template-columns: 1fr; }.invoice-fields .field.full { grid-column: auto; }.invoice-paper { padding: 26px 16px 30px; transform-origin: top left; }.paper-brand strong { font-size: 18px; }.paper-logo { width: 53px; height: 37px; }.paper-meta { min-width: 145px; }.paper-meta strong { font-size: 9px; }.paper-meta span { font-size: 12px; }.paper-parties { gap: 18px; margin-top: 55px; }.paper-parties span { margin-bottom: 15px; font-size: 11px; }.paper-parties strong { font-size: 14px; }.paper-parties p { font-size: 10px; }.paper-table { margin-top: 31px; font-size: 10px; }.paper-table th { height: 38px; padding: 4px; font-size: 8px; }.paper-table td { height: 180px; padding: 6px 4px; }.paper-total { gap: 5px; font-size: 10px; }.paper-total strong { min-width: 86px; padding: 5px; font-size: 10px; }.paper-note { margin-top: 32px; font-size: 10px; } }
-@media print { @page { size: letter; margin: 0; } body { background: #fff; } body * { visibility: hidden !important; } #invoiceView, #invoiceView * { visibility: visible !important; } #invoiceView { position: absolute; inset: 0; display: block !important; padding: 0; } #invoiceView .invoice-page-heading, #invoiceView .invoice-form-panel, #invoiceView .preview-toolbar { display: none !important; } #invoiceView .invoice-builder { display: block; } #invoiceView .invoice-preview-panel { border: 0; box-shadow: none; } #invoiceView .invoice-paper { width: 100%; min-height: 0; padding: 52px 50px 46px; box-shadow: none; } }
+@media print { @page { size: letter; margin: 0; } body { background: #fff; } body * { visibility: hidden !important; } #invoiceView, #invoiceView * { visibility: visible !important; } #invoiceView { position: absolute; inset: 0; display: block !important; padding: 0; } #invoiceView .invoice-page-heading, #invoiceView #invoiceDraftBanner, #invoiceView .invoice-form-panel, #invoiceView .preview-toolbar { display: none !important; } #invoiceView .invoice-builder { display: block; } #invoiceView .invoice-preview-panel { border: 0; box-shadow: none; } #invoiceView .invoice-paper { width: 100%; min-height: 0; padding: 52px 50px 46px; box-shadow: none; } }
 @media print { @page { size: letter; margin: 0; } body * { visibility: hidden !important; } #hoursView, #hoursView * { visibility: visible !important; } #hoursView { position: absolute; inset: 0; display: block !important; padding: 0; } #hoursView .hours-page-heading, #hoursView .hours-form-panel, #hoursView .hours-history, #hoursView .preview-toolbar { display: none !important; } #hoursView .hours-layout { display: block; } #hoursView .hours-preview-panel { border: 0; box-shadow: none; } #hoursView .hours-preview-viewport { padding: 0; overflow: visible; } #hoursView .hours-paper, #hoursView #hoursPaper { width: 816px; max-width: 816px; min-height: 1056px; padding: 60px 40px 58px; transform: none !important; zoom: 1 !important; box-shadow: none; margin: 0 auto; } }
 @page job-a3 { size: A3 portrait; margin: 0; }
 @media print { #jobView { page: job-a3; } body * { visibility: hidden !important; } #jobView, #jobView * { visibility: visible !important; } #jobView { position: absolute; inset: 0; display: block !important; padding: 0; } #jobView .hours-page-heading, #jobView .hours-form-panel, #jobView .hours-history, #jobView .preview-toolbar { display: none !important; } #jobView .hours-layout { display: block; } #jobView .hours-preview-panel { border: 0; box-shadow: none; } #jobView .hours-preview-viewport { padding: 0; overflow: visible; } #jobView #jobPaper { width: 1123px; max-width: 1123px; min-height: 1587px; padding: 56px 48px 52px; transform: none !important; zoom: 1 !important; box-shadow: none; margin: 0 auto; } }
@@ -870,6 +889,7 @@ h1 span { color: var(--blue); }
 
   .sidebar, .topbar, #boardView, .modal-backdrop, .toast,
   #invoiceView .invoice-page-heading,
+  #invoiceView #invoiceDraftBanner,
   #invoiceView .whatsapp-import,
   #invoiceView .invoice-form-panel,
   #invoiceView .preview-toolbar {

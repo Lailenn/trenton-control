@@ -34,6 +34,10 @@
   const DEFAULT_LOGO_URL = "assets/logo-ruben.png";
   let logoDataUrl = DEFAULT_LOGO_URL;
   const pdfUrls = new Map();
+  const INVOICE_DRAFT_KEY = "trenton.draft.invoice";
+  const INVOICE_DRAFT_FIELDS = ["builderInvoiceNumber", "builderIssuedDate", "builderApproval", "builderFromName", "builderBillName", "builderFromPhone", "builderBillAddress", "builderWorkAddress", "builderFromEmail", "builderFromAddress", "builderDescription", "builderQty", "builderPrice", "builderDeposit", "builderNote"];
+  let invoiceDraftTimer = 0;
+  let applyingInvoiceDraft = false;
 
   async function loadRecords() {
     records = await Cloud.listInvoices();
@@ -467,6 +471,114 @@
     };
   }
 
+  function invoiceDraftDefaults() {
+    return {
+      builderIssuedDate: WhatsAppInvoiceParser.dateValue(),
+      builderApproval: "ESTIMATED AND APPROVED BY DIEGO",
+      builderFromName: "Ruben Perla",
+      builderBillName: "Trenton Builders LLC",
+      builderFromPhone: "+1 (469) 650-4958",
+      builderBillAddress: "1117 C St SE, Washington, DC 20003",
+      builderWorkAddress: "",
+      builderFromEmail: "pr391665@gmail.com",
+      builderFromAddress: "Birchview Ct Clinton MD 20735",
+      builderDescription: "Preparation and installation of stucco",
+      builderQty: "1",
+      builderPrice: "",
+      builderDeposit: "50",
+      builderNote: "",
+      whatsappText: ""
+    };
+  }
+
+  function collectInvoiceDraft() {
+    const fields = {};
+    INVOICE_DRAFT_FIELDS.forEach((id) => { fields[id] = $("#" + id)?.value || ""; });
+    const customLogo = typeof logoDataUrl === "string" && logoDataUrl.startsWith("data:image/") && logoDataUrl.length < 350000;
+    return {
+      savedAt: Date.now(),
+      recordId: builderRecordId,
+      whatsappText: $("#whatsappText")?.value || "",
+      fields,
+      logoDataUrl: customLogo ? logoDataUrl : ""
+    };
+  }
+
+  function invoiceDraftIsDirty(draft) {
+    if (!draft?.fields) return false;
+    if ((draft.whatsappText || "").trim()) return true;
+    if (draft.recordId) return true;
+    if ((draft.logoDataUrl || "").startsWith("data:image/")) return true;
+    const defaults = invoiceDraftDefaults();
+    return INVOICE_DRAFT_FIELDS
+      .filter((id) => id !== "builderInvoiceNumber" && id !== "builderIssuedDate")
+      .some((id) => String(draft.fields[id] ?? "").trim() !== String(defaults[id] ?? "").trim());
+  }
+
+  function readInvoiceDraft() {
+    try { return JSON.parse(localStorage.getItem(INVOICE_DRAFT_KEY) || "null"); }
+    catch (_) { return null; }
+  }
+
+  function clearInvoiceDraft() {
+    try { localStorage.removeItem(INVOICE_DRAFT_KEY); } catch (_) { /* ignore */ }
+    $("#invoiceDraftBanner")?.classList.add("hidden");
+  }
+
+  function persistInvoiceDraft(immediate) {
+    if (applyingInvoiceDraft) return;
+    const write = () => {
+      const draft = collectInvoiceDraft();
+      if (!invoiceDraftIsDirty(draft)) {
+        clearInvoiceDraft();
+        return;
+      }
+      try { localStorage.setItem(INVOICE_DRAFT_KEY, JSON.stringify(draft)); }
+      catch (error) { console.warn("No se pudo guardar el borrador de la invoice", error); }
+    };
+    if (immediate) {
+      clearTimeout(invoiceDraftTimer);
+      write();
+      return;
+    }
+    clearTimeout(invoiceDraftTimer);
+    invoiceDraftTimer = setTimeout(write, 280);
+  }
+
+  function showInvoiceDraftBanner() {
+    $("#invoiceDraftBanner")?.classList.remove("hidden");
+  }
+
+  function applyInvoiceDraft(draft) {
+    if (!draft?.fields) return false;
+    applyingInvoiceDraft = true;
+    INVOICE_DRAFT_FIELDS.forEach((id) => {
+      if (draft.fields[id] != null && $("#" + id)) $("#" + id).value = draft.fields[id];
+    });
+    if ($("#whatsappText") && draft.whatsappText != null) $("#whatsappText").value = draft.whatsappText;
+    if (draft.recordId) builderRecordId = draft.recordId;
+    if ((draft.logoDataUrl || "").startsWith("data:image/")) {
+      logoDataUrl = draft.logoDataUrl;
+      $("#paperLogo")?.classList.add("has-image");
+      if ($("#paperLogo")) $("#paperLogo").innerHTML = `<img src="${logoDataUrl}" alt="Logo" />`;
+    }
+    applyingInvoiceDraft = false;
+    updateInvoicePreview();
+    growAllTextareas();
+    return true;
+  }
+
+  function restoreInvoiceDraft() {
+    const draft = readInvoiceDraft();
+    if (!invoiceDraftIsDirty(draft)) {
+      clearInvoiceDraft();
+      return false;
+    }
+    applyInvoiceDraft(draft);
+    showInvoiceDraftBanner();
+    return true;
+  }
+
   function invoiceDateLabel(date) {
     const parsed = new Date(`${date}T12:00:00`);
     return Number.isNaN(parsed.getTime()) ? date : parsed.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
@@ -589,9 +701,10 @@
     for (const notice of parsed.review) result.innerHTML += "<p class=\"import-review\">" + esc(notice) + "</p>";
     result.innerHTML += "<p>Comprueba también la nota de pago. La invoice se guarda cuando pulses “Guardar invoice y PDF”.</p>";
     growAllTextareas();
+    persistInvoiceDraft(true);
   }
 
-  async function resetInvoiceBuilder() {
+  async function resetInvoiceBuilder(options = {}) {
     builderRecordId = null;
     $("#builderInvoiceNumber").value = await Cloud.nextInvoiceNumber(records);
     $("#builderIssuedDate").value = WhatsAppInvoiceParser.dateValue();
@@ -617,6 +730,7 @@
     $("#paperLogo").innerHTML = `<img src="${DEFAULT_LOGO_URL}" alt="Logo de Ruben Perla" />`;
     updateInvoicePreview();
     growAllTextareas();
+    if (!options.keepDraft) clearInvoiceDraft();
   }
 
   function withTimeout(work, ms, message) {
@@ -696,6 +810,7 @@
         try { await download(record.pdfBlob, record.pdfName, { share: true }); }
         catch (downloadError) { console.warn(downloadError); }
         if (!alsoDownload) navClick("archive");
+        clearInvoiceDraft();
         showToast(previous
           ? "Invoice actualizada. El PDF quedó en la nube, en este teléfono y se descargó."
           : "Invoice guardada. El PDF quedó en la nube, en este teléfono y se descargó.");
@@ -746,6 +861,8 @@
     const img = document.createElement("img"); img.src = logoDataUrl; img.alt = "Logo de Ruben Perla";
     $("#paperLogo").replaceChildren(img);
     closeModal(); navClick("invoice");
+    persistInvoiceDraft(true);
+    showInvoiceDraftBanner();
   }
 
   async function recoverExistingPdfs() {
@@ -895,13 +1012,21 @@
   document.addEventListener("keydown", (event) => { if (event.key === "Escape") setSidebarOpen(false); });
   updateWelcome();
   setInterval(updateWelcome, 60000);
-  $("#resetInvoiceButton").addEventListener("click", () => resetInvoiceBuilder());
+  $("#resetInvoiceButton").addEventListener("click", () => {
+    if (invoiceDraftIsDirty(collectInvoiceDraft()) && !confirm("¿Limpiar los campos? Se pierde el trabajo sin guardar.")) return;
+    resetInvoiceBuilder();
+  });
+  $("#keepInvoiceDraftButton")?.addEventListener("click", () => $("#invoiceDraftBanner")?.classList.add("hidden"));
+  $("#discardInvoiceDraftButton")?.addEventListener("click", () => {
+    if (!confirm("¿Descartar esta invoice sin guardar? Se limpia el borrador de este teléfono.")) return;
+    resetInvoiceBuilder();
+  });
   $("#printInvoiceButton").addEventListener("click", () => saveGeneratedInvoice(true));
   $("#saveGeneratedInvoiceButton").addEventListener("click", () => saveGeneratedInvoice(false));
   $("#fillInvoiceFromTextButton").addEventListener("click", fillInvoiceFromText);
   $("#whatsappText").addEventListener("paste", () => setTimeout(fillInvoiceFromText, 0));
-  $("#whatsappText").addEventListener("input", () => $("#whatsappResult").classList.add("hidden"));
-  ["builderInvoiceNumber", "builderIssuedDate", "builderApproval", "builderFromName", "builderBillName", "builderFromPhone", "builderBillAddress", "builderWorkAddress", "builderFromEmail", "builderFromAddress", "builderDescription", "builderQty", "builderPrice", "builderDeposit", "builderNote"].forEach((id) => $("#" + id).addEventListener("input", updateInvoicePreview));
+  INVOICE_DRAFT_FIELDS.forEach((id) => $("#" + id).addEventListener("input", () => { updateInvoicePreview(); persistInvoiceDraft(); }));
+  $("#whatsappText").addEventListener("input", () => { $("#whatsappResult").classList.add("hidden"); persistInvoiceDraft(); });
   document.querySelectorAll("textarea.js-grow").forEach(el => el.addEventListener("input", () => growTextarea(el)));
   growAllTextareas();
   $("#builderDescription").addEventListener("blur", () => {
@@ -914,6 +1039,7 @@
         if (!(Number($("#builderQty").value) > 0)) $("#builderQty").value = 1;
       }
       updateInvoicePreview();
+      persistInvoiceDraft(true);
     }
   });
   $("#builderLogo").addEventListener("change", (event) => {
@@ -921,7 +1047,12 @@
     if (!file) return;
     if (!/^image\/(png|jpeg|webp)$/i.test(file.type) || file.size > 4 * 1024 * 1024) { showToast("Usa un logo PNG, JPG o WebP de hasta 4 MB."); return; }
     const reader = new FileReader();
-    reader.onload = () => { logoDataUrl = reader.result; $("#paperLogo").classList.add("has-image"); $("#paperLogo").innerHTML = `<img src="${logoDataUrl}" alt="Logo" />`; };
+    reader.onload = () => {
+      logoDataUrl = reader.result;
+      $("#paperLogo").classList.add("has-image");
+      $("#paperLogo").innerHTML = `<img src="${logoDataUrl}" alt="Logo" />`;
+      persistInvoiceDraft(true);
+    };
     reader.readAsDataURL(file);
   });
   document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !$("#modalBackdrop").classList.contains("hidden")) closeModal(); });
@@ -1000,6 +1131,8 @@
     render();
   });
 
+  document.addEventListener("visibilitychange", () => { if (document.hidden) persistInvoiceDraft(true); });
+  window.addEventListener("pagehide", () => persistInvoiceDraft(true));
   window.TranslatorApp?.bindAll();
 
   async function boot() {
@@ -1007,7 +1140,8 @@
       await window.LocalCache.open();
       await loadRecords();
       await migrateLegacy();
-      await resetInvoiceBuilder();
+      await resetInvoiceBuilder({ keepDraft: true });
+      restoreInvoiceDraft();
       updateSaved("En la nube y en este navegador");
       render();
       growAllTextareas();
@@ -1017,6 +1151,7 @@
       window.JobApp?.boot?.().catch(error => console.warn(error));
     } catch (error) {
       console.error(error);
+      restoreInvoiceDraft();
       ready = true;
       updateSaved("Nube no disponible");
       render();
