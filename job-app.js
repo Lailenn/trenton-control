@@ -24,12 +24,111 @@
     {date: "2026-09-12", employee: "Corina", description: "Trash removal", timeIn: "", timeOut: "", lunch: 0, rate: 30, hoursOverride: 6}
   ];
   let reports = [], entries = [], saving = false;
+  const JOB_DRAFT_KEY = "trenton.draft.job";
+  let jobDraftTimer = 0;
+  let applyingJobDraft = false;
+
+  function jobDraftDefaults() {
+    return {
+      jobAddress: "1117 C St SE, Washington, DC 20003",
+      defaultRate: "30",
+      whatsappText: "",
+      entries: defaultEntries()
+    };
+  }
+
+  function jobEntrySnap(entry) {
+    return {
+      date: entry?.date || "",
+      employee: entry?.employee || "",
+      description: entry?.description || "",
+      timeIn: entry?.timeIn || "",
+      timeOut: entry?.timeOut || "",
+      lunch: Number(entry?.lunch) || 0,
+      rate: entry?.rate,
+      hoursOverride: entry?.hoursOverride === "" || entry?.hoursOverride == null ? "" : Number(entry.hoursOverride)
+    };
+  }
+
+  function collectJobDraft() {
+    return {
+      savedAt: Date.now(),
+      jobAddress: $("#jobAddress")?.value || "",
+      defaultRate: $("#jobDefaultRate")?.value || "",
+      whatsappText: $("#jobWhatsAppText")?.value || "",
+      entries: entries.map(jobEntrySnap)
+    };
+  }
+
+  function jobDraftIsDirty(draft) {
+    if (!draft) return false;
+    const defaults = jobDraftDefaults();
+    if ((draft.whatsappText || "").trim()) return true;
+    if (String(draft.jobAddress || "").trim() !== defaults.jobAddress) return true;
+    if (String(draft.defaultRate || "") !== defaults.defaultRate) return true;
+    return JSON.stringify((draft.entries || []).map(jobEntrySnap)) !== JSON.stringify(defaults.entries.map(jobEntrySnap));
+  }
+
+  function readJobDraft() {
+    try { return JSON.parse(localStorage.getItem(JOB_DRAFT_KEY) || "null"); }
+    catch (_) { return null; }
+  }
+
+  function clearJobDraft() {
+    try { localStorage.removeItem(JOB_DRAFT_KEY); } catch (_) { /* ignore */ }
+    $("#jobDraftBanner")?.classList.add("hidden");
+  }
+
+  function persistJobDraft(immediate) {
+    if (applyingJobDraft) return;
+    const write = () => {
+      const draft = collectJobDraft();
+      if (!jobDraftIsDirty(draft)) {
+        clearJobDraft();
+        return;
+      }
+      try { localStorage.setItem(JOB_DRAFT_KEY, JSON.stringify(draft)); }
+      catch (error) { console.warn("No se pudo guardar el borrador de otro formato de horas", error); }
+    };
+    if (immediate) {
+      clearTimeout(jobDraftTimer);
+      write();
+      return;
+    }
+    clearTimeout(jobDraftTimer);
+    jobDraftTimer = setTimeout(write, 280);
+  }
+
+  function applyJobDraft(draft) {
+    if (!draft) return false;
+    applyingJobDraft = true;
+    if ($("#jobAddress")) $("#jobAddress").value = draft.jobAddress || "";
+    if ($("#jobDefaultRate")) $("#jobDefaultRate").value = draft.defaultRate || "30";
+    if ($("#jobWhatsAppText") && draft.whatsappText != null) $("#jobWhatsAppText").value = draft.whatsappText;
+    entries = (draft.entries || []).length ? draft.entries.map(entry => ({ ...entry })) : defaultEntries();
+    renderEntries();
+    renderPreview();
+    applyingJobDraft = false;
+    return true;
+  }
+
+  function restoreJobDraft() {
+    const draft = readJobDraft();
+    if (!jobDraftIsDirty(draft)) {
+      clearJobDraft();
+      return false;
+    }
+    applyJobDraft(draft);
+    $("#jobDraftBanner")?.classList.remove("hidden");
+    return true;
+  }
 
   async function load() {
     reports = await root.CloudDB.listJobs();
   }
 
-  function reset() {
+  function reset(options = {}) {
+    applyingJobDraft = true;
     $("#jobAddress").setAttribute("list", "addressHistory");
     $("#jobAddress").value = "1117 C St SE, Washington, DC 20003";
     $("#jobDefaultRate").value = "30";
@@ -39,6 +138,8 @@
     entries = defaultEntries();
     $("#jobError").textContent = "";
     renderEntries(); renderPreview();
+    applyingJobDraft = false;
+    if (!options.keepDraft) clearJobDraft();
   }
 
   function renderEntries() {
@@ -66,6 +167,7 @@
     else entry[field] = value;
     renderEntries();
     renderPreview();
+    persistJobDraft();
   }
 
   function datesOf(list) {
@@ -163,6 +265,7 @@
     const result = $("#jobWhatsAppResult");
     result.innerHTML = `<p>${parsed.entries.length ? `${parsed.entries.length} registro(s) colocados.` : "No se encontraron filas."}${parsed.warnings.length ? " " + parsed.warnings.map(esc).join(" ") : ""}</p>`;
     result.classList.remove("hidden");
+    persistJobDraft(true);
   }
 
   function recordFromForm() {
@@ -202,6 +305,7 @@
     }];
     renderEntries();
     renderPreview();
+    persistJobDraft(true);
   }
 
   function recordFromImport(file, parsed, id) {
@@ -306,6 +410,7 @@
         await load(); renderHistory();
         window.TrentonControl?.jobArchive?.render?.();
         if (root.TrentonControl?.toast) root.TrentonControl.toast("Otro formato de horas guardado en la nube");
+        clearJobDraft();
       } catch (cloudError) {
         console.error(cloudError);
         try { await load(); renderHistory(); } catch (_) { /* local copy */ }
@@ -349,7 +454,7 @@
   }
 
   async function open() { try { await load(); renderHistory(); } catch (error) { $("#jobError").textContent = error.message || "No se pudo abrir el archivo de este formato."; } renderPreview(); }
-  async function boot() { await load(); renderHistory(); window.TrentonControl?.jobArchive?.render?.(); }
+  async function boot() { await load(); renderHistory(); window.TrentonControl?.jobArchive?.render?.(); restoreJobDraft(); }
   function render() { renderHistory(); renderPreview(); }
 
   $("#jobEntries")?.addEventListener("input", event => {
@@ -360,7 +465,7 @@
     const button = event.target.closest("[data-job-action=remove]");
     if (!button || entries.length === 1) return;
     entries.splice(Number(button.dataset.index), 1);
-    renderEntries(); renderPreview();
+    renderEntries(); renderPreview(); persistJobDraft();
   });
   $("#addJobEntryButton")?.addEventListener("click", () => {
     const last = entries[entries.length - 1];
@@ -369,14 +474,23 @@
       timeIn: last?.timeIn || "07:00", timeOut: last?.timeOut || "15:30",
       lunch: last?.lunch ?? 30, rate: Number($("#jobDefaultRate").value) || 30, hoursOverride: ""
     });
-    renderEntries(); renderPreview();
+    renderEntries(); renderPreview(); persistJobDraft();
   });
-  ["jobAddress", "jobDefaultRate"].forEach(id => $("#" + id)?.addEventListener("input", () => { if (id === "jobDefaultRate") renderEntries(); renderPreview(); }));
+  ["jobAddress", "jobDefaultRate"].forEach(id => $("#" + id)?.addEventListener("input", () => { if (id === "jobDefaultRate") renderEntries(); renderPreview(); persistJobDraft(); }));
+  $("#jobWhatsAppText")?.addEventListener("input", () => persistJobDraft());
   $("#parseJobWhatsAppButton")?.addEventListener("click", parseJobText);
   $("#jobWhatsAppText")?.addEventListener("paste", () => setTimeout(parseJobText, 80));
   $("#saveJobButton")?.addEventListener("click", () => save(false));
   $("#downloadJobButton")?.addEventListener("click", () => save(true));
-  $("#resetJobButton")?.addEventListener("click", reset);
+  $("#resetJobButton")?.addEventListener("click", () => {
+    if (jobDraftIsDirty(collectJobDraft()) && !confirm("¿Limpiar este reporte? Se pierde el trabajo sin guardar.")) return;
+    reset();
+  });
+  $("#keepJobDraftButton")?.addEventListener("click", () => $("#jobDraftBanner")?.classList.add("hidden"));
+  $("#discardJobDraftButton")?.addEventListener("click", () => {
+    if (!confirm("¿Descartar este reporte de otro formato sin guardar?")) return;
+    reset();
+  });
   $("#importJobPdfButton")?.addEventListener("click", () => $("#importJobPdfFile")?.click());
   $("#importJobPdfFile")?.addEventListener("change", async event => {
     const files = Array.from(event.target.files || []);
@@ -405,6 +519,9 @@
   });
 
   function resetSession() { reports = []; renderHistory(); window.TrentonControl?.jobArchive?.render?.(); }
-  reset();
+  document.addEventListener("visibilitychange", () => { if (document.hidden) persistJobDraft(true); });
+  window.addEventListener("pagehide", () => persistJobDraft(true));
+  reset({ keepDraft: true });
+  restoreJobDraft();
   root.JobApp = {open, render, boot, resetSession, reports: () => reports, importJobFiles, applyImported, jobReady, recordFromImport, removeReport, fileName, download, rebuildPdf};
 })(typeof globalThis !== "undefined" ? globalThis : this);

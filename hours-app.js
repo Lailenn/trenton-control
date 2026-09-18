@@ -13,6 +13,113 @@
     {date: "2026-08-26", employee: "Pablo Matamoros", timeIn: "07:00", timeOut: "18:30", lunch: 30, rate: 30, scheduleAuto: true}
   ];
   let reports = [], entries = [], saving = false;
+  const HOURS_DRAFT_KEY = "trenton.draft.hours";
+  let hoursDraftTimer = 0;
+  let applyingHoursDraft = false;
+
+  function hoursDraftDefaults() {
+    return {
+      jobAddress: "4406 Woodfield Rd, Kensington, MD 20895",
+      reportDate: "2026-08-26",
+      defaultRate: "30",
+      description: "",
+      whatsappText: "",
+      entries: defaultEntries()
+    };
+  }
+
+  function hoursEntrySnap(entry) {
+    return {
+      date: entry?.date || "",
+      employee: entry?.employee || "",
+      timeIn: entry?.timeIn || "",
+      timeOut: entry?.timeOut || "",
+      lunch: Number(entry?.lunch) || 0,
+      rate: entry?.rate,
+      scheduleAuto: Boolean(entry?.scheduleAuto),
+      hoursOverride: entry?.hoursOverride === "" || entry?.hoursOverride == null ? "" : Number(entry.hoursOverride)
+    };
+  }
+
+  function collectHoursDraft() {
+    return {
+      savedAt: Date.now(),
+      jobAddress: $("#hoursJobAddress")?.value || "",
+      reportDate: $("#hoursReportDate")?.value || "",
+      defaultRate: $("#hoursDefaultRate")?.value || "",
+      description: $("#hoursDescription")?.value || "",
+      whatsappText: $("#hoursWhatsAppText")?.value || "",
+      entries: entries.map(hoursEntrySnap)
+    };
+  }
+
+  function hoursDraftIsDirty(draft) {
+    if (!draft) return false;
+    const defaults = hoursDraftDefaults();
+    if ((draft.whatsappText || "").trim()) return true;
+    if (String(draft.jobAddress || "").trim() !== defaults.jobAddress) return true;
+    if (String(draft.reportDate || "") !== defaults.reportDate) return true;
+    if (String(draft.defaultRate || "") !== defaults.defaultRate) return true;
+    if (String(draft.description || "").trim()) return true;
+    return JSON.stringify((draft.entries || []).map(hoursEntrySnap)) !== JSON.stringify(defaults.entries.map(hoursEntrySnap));
+  }
+
+  function readHoursDraft() {
+    try { return JSON.parse(localStorage.getItem(HOURS_DRAFT_KEY) || "null"); }
+    catch (_) { return null; }
+  }
+
+  function clearHoursDraft() {
+    try { localStorage.removeItem(HOURS_DRAFT_KEY); } catch (_) { /* ignore */ }
+    $("#hoursDraftBanner")?.classList.add("hidden");
+  }
+
+  function persistHoursDraft(immediate) {
+    if (applyingHoursDraft) return;
+    const write = () => {
+      const draft = collectHoursDraft();
+      if (!hoursDraftIsDirty(draft)) {
+        clearHoursDraft();
+        return;
+      }
+      try { localStorage.setItem(HOURS_DRAFT_KEY, JSON.stringify(draft)); }
+      catch (error) { console.warn("No se pudo guardar el borrador de horas", error); }
+    };
+    if (immediate) {
+      clearTimeout(hoursDraftTimer);
+      write();
+      return;
+    }
+    clearTimeout(hoursDraftTimer);
+    hoursDraftTimer = setTimeout(write, 280);
+  }
+
+  function applyHoursDraft(draft) {
+    if (!draft) return false;
+    applyingHoursDraft = true;
+    if ($("#hoursJobAddress")) $("#hoursJobAddress").value = draft.jobAddress || "";
+    if ($("#hoursReportDate")) $("#hoursReportDate").value = draft.reportDate || "";
+    if ($("#hoursDefaultRate")) $("#hoursDefaultRate").value = draft.defaultRate || "30";
+    if ($("#hoursDescription")) $("#hoursDescription").value = draft.description || "";
+    if ($("#hoursWhatsAppText") && draft.whatsappText != null) $("#hoursWhatsAppText").value = draft.whatsappText;
+    entries = (draft.entries || []).length ? draft.entries.map(entry => ({ ...entry })) : defaultEntries();
+    renderEntries();
+    renderPreview();
+    window.growTextareas?.();
+    applyingHoursDraft = false;
+    return true;
+  }
+
+  function restoreHoursDraft() {
+    const draft = readHoursDraft();
+    if (!hoursDraftIsDirty(draft)) {
+      clearHoursDraft();
+      return false;
+    }
+    applyHoursDraft(draft);
+    $("#hoursDraftBanner")?.classList.remove("hidden");
+    return true;
+  }
 
   function addHoursToClock(time, hours, lunchMinutes) {
     const match = String(time || "07:00").match(/^(\d{1,2}):(\d{2})$/);
@@ -25,7 +132,8 @@
     reports = await root.CloudDB.listHours();
   }
 
-  function reset() {
+  function reset(options = {}) {
+    applyingHoursDraft = true;
     $("#hoursJobAddress").setAttribute("list", "addressHistory");
     $("#hoursJobAddress").value = "4406 Woodfield Rd, Kensington, MD 20895";
     $("#hoursReportDate").value = "2026-08-26";
@@ -38,6 +146,8 @@
     $("#hoursError").textContent = "";
     renderEntries(); renderPreview();
     window.growTextareas?.();
+    applyingHoursDraft = false;
+    if (!options.keepDraft) clearHoursDraft();
   }
 
   function renderEntries() {
@@ -75,10 +185,11 @@
       scheduleChanged = true;
     }
     if (field === "date" && index === 0 && value) $("#hoursReportDate").value = value;
-    if (scheduleChanged) { renderEntries(); renderPreview(); return; }
+    if (scheduleChanged) { renderEntries(); renderPreview(); persistHoursDraft(); return; }
     const total = $("[data-hours-total=\"" + index + "\"]");
     if (total) total.textContent = `Total: ${formatHours(HoursPDF.calcHours(entry))} horas · ${money(HoursPDF.calcHours(entry) * Number(entry.rate ?? $("#hoursDefaultRate").value ?? 0))}`;
     renderPreview();
+    persistHoursDraft();
   }
 
   function groupEntries() {
@@ -166,6 +277,7 @@
     if (parsed.fields.description) $("#hoursDescription").value = parsed.fields.description;
     if (parsed.entries.length) entries = parsed.entries;
     renderEntries(); renderPreview(); showWhatsAppResult(parsed, Boolean(parsed.entries.length || parsed.fields.address || parsed.fields.reportDate || parsed.fields.defaultRate != null || parsed.fields.description));
+    persistHoursDraft(true);
   }
 
   function recordFromImport(file, parsed, id) {
@@ -214,6 +326,7 @@
     renderEntries();
     renderPreview();
     window.growTextareas?.();
+    persistHoursDraft(true);
   }
 
   function hoursReady(record) {
@@ -296,6 +409,7 @@
         window.TrentonControl?.hoursArchive?.render?.();
         $("#hoursError").textContent = "Guardado en la nube. Descargando PDF…";
         if (root.TrentonControl?.toast) root.TrentonControl.toast("Reporte de horas guardado en la nube");
+        clearHoursDraft();
       } catch (cloudError) {
         console.error(cloudError);
         try { await load(); renderHistory(); } catch (_) { /* local copy may still show */ }
@@ -331,15 +445,25 @@
   }
 
   async function open() { try { await load(); renderHistory(); } catch (error) { $("#hoursError").textContent = error.message || "No se pudo abrir el almacenamiento de horas."; } renderPreview(); window.growTextareas?.(); }
-  async function boot() { await load(); renderHistory(); window.TrentonControl?.hoursArchive?.render?.(); }
+  async function boot() { await load(); renderHistory(); window.TrentonControl?.hoursArchive?.render?.(); restoreHoursDraft(); }
   function render() { renderHistory(); renderPreview(); }
   $("#hoursEntries").addEventListener("input", event => { const field = event.target.dataset.hoursField; if (field) updateEntry(Number(event.target.dataset.index), field, event.target.value); });
-  $("#hoursEntries").addEventListener("click", event => { const button = event.target.closest("[data-hours-action=remove]"); if (!button || entries.length === 1) return; entries.splice(Number(button.dataset.index), 1); renderEntries(); renderPreview(); });
-  $("#addHoursEntryButton").addEventListener("click", () => { entries.push({date: $("#hoursReportDate").value || today(), employee: "", timeIn: "07:00", timeOut: "15:30", lunch: 30, rate: Number($("#hoursDefaultRate").value) || 30, scheduleAuto: true}); renderEntries(); renderPreview(); });
-  ["hoursJobAddress", "hoursReportDate", "hoursDefaultRate", "hoursDescription"].forEach(id => $("#" + id).addEventListener("input", () => { if (id === "hoursDefaultRate") renderEntries(); renderPreview(); window.growTextareas?.(); }));
+  $("#hoursEntries").addEventListener("click", event => { const button = event.target.closest("[data-hours-action=remove]"); if (!button || entries.length === 1) return; entries.splice(Number(button.dataset.index), 1); renderEntries(); renderPreview(); persistHoursDraft(); });
+  $("#addHoursEntryButton").addEventListener("click", () => { entries.push({date: $("#hoursReportDate").value || today(), employee: "", timeIn: "07:00", timeOut: "15:30", lunch: 30, rate: Number($("#hoursDefaultRate").value) || 30, scheduleAuto: true}); renderEntries(); renderPreview(); persistHoursDraft(); });
+  ["hoursJobAddress", "hoursReportDate", "hoursDefaultRate", "hoursDescription"].forEach(id => $("#" + id).addEventListener("input", () => { if (id === "hoursDefaultRate") renderEntries(); renderPreview(); window.growTextareas?.(); persistHoursDraft(); }));
+  $("#hoursWhatsAppText")?.addEventListener("input", () => persistHoursDraft());
   $("#parseHoursWhatsAppButton").addEventListener("click", parseHoursWhatsAppText);
   $("#hoursWhatsAppText").addEventListener("paste", () => setTimeout(parseHoursWhatsAppText, 80));
-  $("#saveHoursButton").addEventListener("click", () => save(false)); $("#downloadHoursButton").addEventListener("click", () => save(true)); $("#resetHoursButton").addEventListener("click", reset);
+  $("#saveHoursButton").addEventListener("click", () => save(false)); $("#downloadHoursButton").addEventListener("click", () => save(true));
+  $("#resetHoursButton").addEventListener("click", () => {
+    if (hoursDraftIsDirty(collectHoursDraft()) && !confirm("¿Limpiar este reporte? Se pierde el trabajo sin guardar.")) return;
+    reset();
+  });
+  $("#keepHoursDraftButton")?.addEventListener("click", () => $("#hoursDraftBanner")?.classList.add("hidden"));
+  $("#discardHoursDraftButton")?.addEventListener("click", () => {
+    if (!confirm("¿Descartar este reporte de horas sin guardar?")) return;
+    reset();
+  });
   $("#importHoursPdfButton")?.addEventListener("click", () => $("#importHoursPdfFile")?.click());
   $("#importHoursPdfFile")?.addEventListener("change", async event => {
     const files = Array.from(event.target.files || []);
@@ -371,6 +495,9 @@
     } catch (error) { $("#hoursError").textContent = error.message || "No se pudo descargar el PDF."; }
   });
   function resetSession() { reports = []; renderHistory(); window.TrentonControl?.hoursArchive?.render?.(); }
-  reset();
+  document.addEventListener("visibilitychange", () => { if (document.hidden) persistHoursDraft(true); });
+  window.addEventListener("pagehide", () => persistHoursDraft(true));
+  reset({ keepDraft: true });
+  restoreHoursDraft();
   root.HoursApp = {open, render, boot, resetSession, reports: () => reports, importHoursFiles, applyImported, hoursReady, recordFromImport, removeReport};
 })(typeof globalThis !== "undefined" ? globalThis : this);

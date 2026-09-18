@@ -12,7 +12,7 @@
     <link rel="icon" href="favicon.ico" sizes="any" />
     <link rel="icon" href="assets/app-icon.png?v=1" type="image/png" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-    <link rel="stylesheet" href="styles.css?v=invoice-draft-1" />
+    <link rel="stylesheet" href="styles.css?v=hours-draft-1" />
   </head>
   <body>
     <div id="authGate" class="auth-gate auth-play login-screen" data-mode="login">
@@ -337,6 +337,16 @@
                 <button class="button button-primary" id="downloadHoursButton" type="button">Guardar y descargar PDF</button>
               </div>
             </div>
+            <div id="hoursDraftBanner" class="draft-banner hidden" role="status">
+              <div>
+                <strong>Tienes trabajo sin guardar</strong>
+                <p>Dejamos este reporte de horas aquí para que no se pierda si cambias de pestaña.</p>
+              </div>
+              <div class="draft-banner-actions">
+                <button class="button button-primary" id="keepHoursDraftButton" type="button">Continuar</button>
+                <button class="button button-ghost" id="discardHoursDraftButton" type="button">Descartar</button>
+              </div>
+            </div>
             <section class="whatsapp-import hours-whatsapp-import" aria-labelledby="hoursWhatsappTitle">
               <div class="whatsapp-heading"><div><p class="eyebrow">Desde el mensaje de Rubén</p><h2 id="hoursWhatsappTitle">Pegar texto de WhatsApp</h2></div><span class="whatsapp-badge">Texto → horas</span></div>
               <label for="hoursWhatsAppText">Copia el mensaje, pégalo aquí y pulsa “Desglosar horas”.</label>
@@ -398,6 +408,16 @@
                 <input id="importJobPdfFile" type="file" accept="application/pdf,.pdf" multiple hidden>
                 <button class="button button-ghost" id="resetJobButton" type="button">Nuevo reporte</button>
                 <button class="button button-primary" id="downloadJobButton" type="button">Guardar y descargar PDF</button>
+              </div>
+            </div>
+            <div id="jobDraftBanner" class="draft-banner hidden" role="status">
+              <div>
+                <strong>Tienes trabajo sin guardar</strong>
+                <p>Dejamos este reporte de otro formato aquí para que no se pierda si cambias de pestaña.</p>
+              </div>
+              <div class="draft-banner-actions">
+                <button class="button button-primary" id="keepJobDraftButton" type="button">Continuar</button>
+                <button class="button button-ghost" id="discardJobDraftButton" type="button">Descartar</button>
               </div>
             </div>
             <section class="whatsapp-import hours-whatsapp-import" aria-labelledby="jobWhatsappTitle">
@@ -775,10 +795,10 @@
     <script src="invoice-archive.js?v=pc-menu-1" defer></script>
     <script src="hours-pdf.js?v=hours-import-1" defer></script>
     <script src="hours-whatsapp.js?v=2" defer></script>
-    <script src="hours-app.js?v=hours-import-1" defer></script>
+    <script src="hours-app.js?v=hours-draft-1" defer></script>
     <script src="hours-archive.js?v=hours-import-1" defer></script>
     <script src="job-pdf.js?v=job-a3-4" defer></script>
-    <script src="job-app.js?v=job-a3-4" defer></script>
+    <script src="job-app.js?v=job-draft-1" defer></script>
     <script src="job-archive.js?v=job-a3-3" defer></script>
     <script src="translator.js?v=grow-1" defer></script>
     <script src="auth-app.js?v=profile-hours-1" defer></script>
