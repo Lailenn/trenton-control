@@ -506,7 +506,7 @@ h1 span { color: var(--blue); }
   border-radius: 16px;
   background: #fff7e8;
 }
-.draft-banner.hidden { display: none; }
+.draft-banner.hidden { display: none !important; }
 .draft-banner strong { display: block; color: #5c4314; font-size: 14px; }
 .draft-banner p { margin: 4px 0 0; color: #7a6240; font-size: 13px; line-height: 1.4; }
 .draft-banner-actions { display: flex; flex-wrap: wrap; gap: 8px; }

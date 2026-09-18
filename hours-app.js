@@ -16,6 +16,7 @@
   const HOURS_DRAFT_KEY = "trenton.draft.hours";
   let hoursDraftTimer = 0;
   let applyingHoursDraft = false;
+  let hoursDraftDismissed = false;
 
   function hoursDraftDefaults() {
     return {
@@ -74,6 +75,11 @@
     $("#hoursDraftBanner")?.classList.add("hidden");
   }
 
+  function revealHoursDraftBanner() {
+    if (hoursDraftDismissed) return;
+    $("#hoursDraftBanner")?.classList.remove("hidden");
+  }
+
   function persistHoursDraft(immediate) {
     if (applyingHoursDraft) return;
     const write = () => {
@@ -84,6 +90,7 @@
       }
       try { localStorage.setItem(HOURS_DRAFT_KEY, JSON.stringify(draft)); }
       catch (error) { console.warn("No se pudo guardar el borrador de horas", error); }
+      if (!$("#hoursView")?.classList.contains("hidden")) revealHoursDraftBanner();
     };
     if (immediate) {
       clearTimeout(hoursDraftTimer);
@@ -111,14 +118,23 @@
   }
 
   function restoreHoursDraft() {
-    const draft = readHoursDraft();
-    if (!hoursDraftIsDirty(draft)) {
-      clearHoursDraft();
-      return false;
+    hoursDraftDismissed = false;
+    const stored = readHoursDraft();
+    if (hoursDraftIsDirty(collectHoursDraft())) {
+      persistHoursDraft(true);
+      return true;
     }
-    applyHoursDraft(draft);
-    $("#hoursDraftBanner")?.classList.remove("hidden");
-    return true;
+    if (hoursDraftIsDirty(stored)) {
+      applyHoursDraft(stored);
+      revealHoursDraftBanner();
+      return true;
+    }
+    clearHoursDraft();
+    return false;
+  }
+
+  function flushDraft() {
+    persistHoursDraft(true);
   }
 
   function addHoursToClock(time, hours, lunchMinutes) {
@@ -444,14 +460,30 @@
     window.TrentonControl?.hoursArchive?.render?.();
   }
 
-  async function open() { try { await load(); renderHistory(); } catch (error) { $("#hoursError").textContent = error.message || "No se pudo abrir el almacenamiento de horas."; } renderPreview(); window.growTextareas?.(); }
-  async function boot() { await load(); renderHistory(); window.TrentonControl?.hoursArchive?.render?.(); restoreHoursDraft(); }
+  async function open() {
+    try { await load(); renderHistory(); }
+    catch (error) { $("#hoursError").textContent = error.message || "No se pudo abrir el almacenamiento de horas."; }
+    restoreHoursDraft();
+    renderPreview();
+    window.growTextareas?.();
+  }
+  async function boot() {
+    try {
+      await load();
+      renderHistory();
+      window.TrentonControl?.hoursArchive?.render?.();
+    } catch (error) {
+      console.warn(error);
+    } finally {
+      restoreHoursDraft();
+    }
+  }
   function render() { renderHistory(); renderPreview(); }
   $("#hoursEntries").addEventListener("input", event => { const field = event.target.dataset.hoursField; if (field) updateEntry(Number(event.target.dataset.index), field, event.target.value); });
   $("#hoursEntries").addEventListener("click", event => { const button = event.target.closest("[data-hours-action=remove]"); if (!button || entries.length === 1) return; entries.splice(Number(button.dataset.index), 1); renderEntries(); renderPreview(); persistHoursDraft(); });
   $("#addHoursEntryButton").addEventListener("click", () => { entries.push({date: $("#hoursReportDate").value || today(), employee: "", timeIn: "07:00", timeOut: "15:30", lunch: 30, rate: Number($("#hoursDefaultRate").value) || 30, scheduleAuto: true}); renderEntries(); renderPreview(); persistHoursDraft(); });
   ["hoursJobAddress", "hoursReportDate", "hoursDefaultRate", "hoursDescription"].forEach(id => $("#" + id).addEventListener("input", () => { if (id === "hoursDefaultRate") renderEntries(); renderPreview(); window.growTextareas?.(); persistHoursDraft(); }));
-  $("#hoursWhatsAppText")?.addEventListener("input", () => persistHoursDraft());
+  $("#hoursWhatsAppText")?.addEventListener("input", () => persistHoursDraft(true));
   $("#parseHoursWhatsAppButton").addEventListener("click", parseHoursWhatsAppText);
   $("#hoursWhatsAppText").addEventListener("paste", () => setTimeout(parseHoursWhatsAppText, 80));
   $("#saveHoursButton").addEventListener("click", () => save(false)); $("#downloadHoursButton").addEventListener("click", () => save(true));
@@ -459,7 +491,10 @@
     if (hoursDraftIsDirty(collectHoursDraft()) && !confirm("¿Limpiar este reporte? Se pierde el trabajo sin guardar.")) return;
     reset();
   });
-  $("#keepHoursDraftButton")?.addEventListener("click", () => $("#hoursDraftBanner")?.classList.add("hidden"));
+  $("#keepHoursDraftButton")?.addEventListener("click", () => {
+    hoursDraftDismissed = true;
+    $("#hoursDraftBanner")?.classList.add("hidden");
+  });
   $("#discardHoursDraftButton")?.addEventListener("click", () => {
     if (!confirm("¿Descartar este reporte de horas sin guardar?")) return;
     reset();
@@ -499,5 +534,5 @@
   window.addEventListener("pagehide", () => persistHoursDraft(true));
   reset({ keepDraft: true });
   restoreHoursDraft();
-  root.HoursApp = {open, render, boot, resetSession, reports: () => reports, importHoursFiles, applyImported, hoursReady, recordFromImport, removeReport};
+  root.HoursApp = {open, render, boot, resetSession, flushDraft, restoreHoursDraft, reports: () => reports, importHoursFiles, applyImported, hoursReady, recordFromImport, removeReport};
 })(typeof globalThis !== "undefined" ? globalThis : this);

@@ -27,6 +27,7 @@
   const JOB_DRAFT_KEY = "trenton.draft.job";
   let jobDraftTimer = 0;
   let applyingJobDraft = false;
+  let jobDraftDismissed = false;
 
   function jobDraftDefaults() {
     return {
@@ -39,13 +40,13 @@
 
   function jobEntrySnap(entry) {
     return {
-      date: entry?.date || "",
-      employee: entry?.employee || "",
-      description: entry?.description || "",
-      timeIn: entry?.timeIn || "",
-      timeOut: entry?.timeOut || "",
+      date: String(entry?.date || ""),
+      employee: String(entry?.employee || "").trim(),
+      description: String(entry?.description || "").trim(),
+      timeIn: String(entry?.timeIn || ""),
+      timeOut: String(entry?.timeOut || ""),
       lunch: Number(entry?.lunch) || 0,
-      rate: entry?.rate,
+      rate: Number(entry?.rate ?? 30),
       hoursOverride: entry?.hoursOverride === "" || entry?.hoursOverride == null ? "" : Number(entry.hoursOverride)
     };
   }
@@ -79,6 +80,11 @@
     $("#jobDraftBanner")?.classList.add("hidden");
   }
 
+  function revealJobDraftBanner() {
+    if (jobDraftDismissed) return;
+    $("#jobDraftBanner")?.classList.remove("hidden");
+  }
+
   function persistJobDraft(immediate) {
     if (applyingJobDraft) return;
     const write = () => {
@@ -89,6 +95,7 @@
       }
       try { localStorage.setItem(JOB_DRAFT_KEY, JSON.stringify(draft)); }
       catch (error) { console.warn("No se pudo guardar el borrador de otro formato de horas", error); }
+      if (!$("#jobView")?.classList.contains("hidden")) revealJobDraftBanner();
     };
     if (immediate) {
       clearTimeout(jobDraftTimer);
@@ -113,14 +120,23 @@
   }
 
   function restoreJobDraft() {
-    const draft = readJobDraft();
-    if (!jobDraftIsDirty(draft)) {
-      clearJobDraft();
-      return false;
+    jobDraftDismissed = false;
+    const stored = readJobDraft();
+    if (jobDraftIsDirty(collectJobDraft())) {
+      persistJobDraft(true);
+      return true;
     }
-    applyJobDraft(draft);
-    $("#jobDraftBanner")?.classList.remove("hidden");
-    return true;
+    if (jobDraftIsDirty(stored)) {
+      applyJobDraft(stored);
+      revealJobDraftBanner();
+      return true;
+    }
+    clearJobDraft();
+    return false;
+  }
+
+  function flushDraft() {
+    persistJobDraft(true);
   }
 
   async function load() {
@@ -453,11 +469,30 @@
     window.TrentonControl?.jobArchive?.render?.();
   }
 
-  async function open() { try { await load(); renderHistory(); } catch (error) { $("#jobError").textContent = error.message || "No se pudo abrir el archivo de este formato."; } renderPreview(); }
-  async function boot() { await load(); renderHistory(); window.TrentonControl?.jobArchive?.render?.(); restoreJobDraft(); }
+  async function open() {
+    try { await load(); renderHistory(); }
+    catch (error) { $("#jobError").textContent = error.message || "No se pudo abrir el archivo de este formato."; }
+    restoreJobDraft();
+    renderPreview();
+  }
+  async function boot() {
+    try {
+      await load();
+      renderHistory();
+      window.TrentonControl?.jobArchive?.render?.();
+    } catch (error) {
+      console.warn(error);
+    } finally {
+      restoreJobDraft();
+    }
+  }
   function render() { renderHistory(); renderPreview(); }
 
   $("#jobEntries")?.addEventListener("input", event => {
+    const field = event.target.dataset.jobField;
+    if (field) updateEntry(Number(event.target.dataset.index), field, event.target.value);
+  });
+  $("#jobEntries")?.addEventListener("change", event => {
     const field = event.target.dataset.jobField;
     if (field) updateEntry(Number(event.target.dataset.index), field, event.target.value);
   });
@@ -477,7 +512,7 @@
     renderEntries(); renderPreview(); persistJobDraft();
   });
   ["jobAddress", "jobDefaultRate"].forEach(id => $("#" + id)?.addEventListener("input", () => { if (id === "jobDefaultRate") renderEntries(); renderPreview(); persistJobDraft(); }));
-  $("#jobWhatsAppText")?.addEventListener("input", () => persistJobDraft());
+  $("#jobWhatsAppText")?.addEventListener("input", () => persistJobDraft(true));
   $("#parseJobWhatsAppButton")?.addEventListener("click", parseJobText);
   $("#jobWhatsAppText")?.addEventListener("paste", () => setTimeout(parseJobText, 80));
   $("#saveJobButton")?.addEventListener("click", () => save(false));
@@ -486,7 +521,10 @@
     if (jobDraftIsDirty(collectJobDraft()) && !confirm("¿Limpiar este reporte? Se pierde el trabajo sin guardar.")) return;
     reset();
   });
-  $("#keepJobDraftButton")?.addEventListener("click", () => $("#jobDraftBanner")?.classList.add("hidden"));
+  $("#keepJobDraftButton")?.addEventListener("click", () => {
+    jobDraftDismissed = true;
+    $("#jobDraftBanner")?.classList.add("hidden");
+  });
   $("#discardJobDraftButton")?.addEventListener("click", () => {
     if (!confirm("¿Descartar este reporte de otro formato sin guardar?")) return;
     reset();
@@ -523,5 +561,5 @@
   window.addEventListener("pagehide", () => persistJobDraft(true));
   reset({ keepDraft: true });
   restoreJobDraft();
-  root.JobApp = {open, render, boot, resetSession, reports: () => reports, importJobFiles, applyImported, jobReady, recordFromImport, removeReport, fileName, download, rebuildPdf};
+  root.JobApp = {open, render, boot, resetSession, flushDraft, restoreJobDraft, reports: () => reports, importJobFiles, applyImported, jobReady, recordFromImport, removeReport, fileName, download, rebuildPdf};
 })(typeof globalThis !== "undefined" ? globalThis : this);

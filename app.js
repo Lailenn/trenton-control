@@ -624,6 +624,9 @@
   }
 
   function showView(view) {
+    if (view !== "job") window.JobApp?.flushDraft?.();
+    if (view !== "hours") window.HoursApp?.flushDraft?.();
+    if (view !== "invoice") persistInvoiceDraft(true);
     $("#boardView").classList.toggle("hidden", view !== "board");
     $("#invoiceView").classList.toggle("hidden", view !== "invoice");
     $("#archiveView").classList.toggle("hidden", view !== "archive");
