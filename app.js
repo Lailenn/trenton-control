@@ -35,6 +35,7 @@
   let logoDataUrl = DEFAULT_LOGO_URL;
   const pdfUrls = new Map();
   const INVOICE_DRAFT_KEY = "trenton.draft.invoice";
+  const DEFAULT_FROM_ADDRESS = "11804 Birchview Ct. Clinton MD 20735";
   const INVOICE_DRAFT_FIELDS = ["builderInvoiceNumber", "builderIssuedDate", "builderApproval", "builderFromName", "builderBillName", "builderFromPhone", "builderBillAddress", "builderWorkAddress", "builderFromEmail", "builderFromAddress", "builderDescription", "builderQty", "builderPrice", "builderDeposit", "builderNote"];
   let invoiceDraftTimer = 0;
   let applyingInvoiceDraft = false;
@@ -460,7 +461,7 @@
       billAddress: $("#builderBillAddress").value.trim(),
       workAddress: $("#builderWorkAddress").value.trim(),
       fromEmail: $("#builderFromEmail").value.trim(),
-      fromAddress: $("#builderFromAddress").value.trim(),
+      fromAddress: canonicalFromAddress($("#builderFromAddress")?.value),
       description: split.text || "Trabajo realizado",
       qty: Number($("#builderQty").value) > 0 ? Number($("#builderQty").value) : 1,
       price,
@@ -481,7 +482,7 @@
       builderBillAddress: "1117 C St SE, Washington, DC 20003",
       builderWorkAddress: "",
       builderFromEmail: "pr391665@gmail.com",
-      builderFromAddress: "11804 Birchview Ct. Clinton MD 20735",
+      builderFromAddress: DEFAULT_FROM_ADDRESS,
       builderDescription: "Preparation and installation of stucco",
       builderQty: "1",
       builderPrice: "",
@@ -504,6 +505,19 @@
     };
   }
 
+  function normalizeAddress(value) {
+    return String(value || "").replace(/\s+/g, " ").trim();
+  }
+
+  function canonicalFromAddress(value) {
+    const current = normalizeAddress(value);
+    if (!current) return DEFAULT_FROM_ADDRESS;
+    const key = current.toLowerCase().replace(/\.$/, "").replace(/\s+/g, " ");
+    if (key === "birchview ct clinton md 20735" || key === "birchview ct. clinton md 20735") return DEFAULT_FROM_ADDRESS;
+    if (key === "11804 birchview ct clinton md 20735") return DEFAULT_FROM_ADDRESS;
+    return current;
+  }
+
   function invoiceDraftIsDirty(draft) {
     if (!draft?.fields) return false;
     if ((draft.whatsappText || "").trim()) return true;
@@ -512,7 +526,12 @@
     const defaults = invoiceDraftDefaults();
     return INVOICE_DRAFT_FIELDS
       .filter((id) => id !== "builderInvoiceNumber" && id !== "builderIssuedDate")
-      .some((id) => String(draft.fields[id] ?? "").trim() !== String(defaults[id] ?? "").trim());
+      .some((id) => {
+        const current = String(draft.fields[id] ?? "").trim();
+        const expected = String(defaults[id] ?? "").trim();
+        if (id === "builderFromAddress") return canonicalFromAddress(current) !== expected;
+        return current !== expected;
+      });
   }
 
   function readInvoiceDraft() {
@@ -562,6 +581,7 @@
       $("#paperLogo")?.classList.add("has-image");
       if ($("#paperLogo")) $("#paperLogo").innerHTML = `<img src="${logoDataUrl}" alt="Logo" />`;
     }
+    if ($("#builderFromAddress")) $("#builderFromAddress").value = canonicalFromAddress($("#builderFromAddress").value);
     applyingInvoiceDraft = false;
     updateInvoicePreview();
     growAllTextareas();
@@ -718,7 +738,7 @@
     $("#builderBillAddress").value = "1117 C St SE, Washington, DC 20003";
     $("#builderWorkAddress").value = "";
     $("#builderFromEmail").value = "pr391665@gmail.com";
-    $("#builderFromAddress").value = "11804 Birchview Ct. Clinton MD 20735";
+    $("#builderFromAddress").value = DEFAULT_FROM_ADDRESS;
     $("#builderDescription").value = "Preparation and installation of stucco";
     $("#builderQty").value = "1";
     $("#builderPrice").value = "";
