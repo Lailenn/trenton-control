@@ -464,11 +464,18 @@
   function hoursTotalHours(record) {
     return (record.entries || []).reduce((sum, entry) => sum + Number(entry.hours || 0), 0);
   }
+  function hoursDollars(value) {
+    return Math.max(0, Math.round((Number(value) || 0) * 100) / 100);
+  }
+  function parseHoursMoney(value) {
+    if (value == null || value === "") return 0;
+    const parsed = root.InvoiceCore?.amount?.(value);
+    if (parsed != null) return hoursDollars(parsed);
+    const fallback = Number(String(value).replace(/[^\d.]/g, ""));
+    return Number.isFinite(fallback) ? hoursDollars(fallback) : 0;
+  }
   function hoursDueAmount(record) {
-    const total = hoursPay(record);
-    const received = Number(record.received || 0);
-    if (record.due != null && record.due !== "") return Math.max(0, Number(record.due) || 0);
-    return Math.max(0, Math.round((total - received) * 100) / 100);
+    return hoursDollars(hoursPay(record) - Number(record.received || 0));
   }
   function matchesHoursSearch(record) {
     const q = ($("#hoursBoardSearch")?.value || "").trim().toLowerCase();
@@ -478,10 +485,10 @@
   function syncHoursBalance() {
     const record = reports.find(item => item.id === editingHoursId);
     const total = record ? hoursPay(record) : 0;
-    const received = Math.max(0, Number($("#hoursEditReceived")?.value) || 0);
-    const due = Math.max(0, Math.round((total - received) * 100) / 100);
-    if ($("#hoursEditTotal")) $("#hoursEditTotal").value = total ? String(Math.round(total * 100) / 100) : "0";
-    if ($("#hoursEditDue")) $("#hoursEditDue").value = due ? String(due) : "0";
+    const received = parseHoursMoney($("#hoursEditReceived")?.value);
+    const due = hoursDollars(total - received);
+    if ($("#hoursEditTotal")) $("#hoursEditTotal").value = hoursDollars(total).toFixed(2);
+    if ($("#hoursEditDue")) $("#hoursEditDue").value = due.toFixed(2);
     if ($("#hoursBalanceLive")) $("#hoursBalanceLive").textContent = `Total ${money(total)} · recibido ${money(received)} · se debe ${money(due)}`;
     return { received, due, total };
   }

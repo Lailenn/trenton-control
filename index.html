@@ -12,7 +12,7 @@
     <link rel="icon" href="favicon.ico" sizes="any" />
     <link rel="icon" href="assets/app-icon.png?v=1" type="image/png" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-    <link rel="stylesheet" href="styles.css?v=hours-board-2" />
+    <link rel="stylesheet" href="styles.css?v=hours-board-3" />
   </head>
   <body>
     <div id="authGate" class="auth-gate auth-play login-screen" data-mode="login">
@@ -779,7 +779,7 @@
             <div class="form-grid">
               <label class="field field-wide"><span>Dirección del trabajo <em>*</em></span><input id="address" type="text" list="addressHistory" required placeholder="Ej. 1117 C St SE, Washington, DC" autocomplete="street-address" /></label>
               <label class="field"><span>Número de invoice <em>*</em></span><input id="invoiceNumber" type="text" required placeholder="#001" /></label>
-              <label class="field"><span>Monto de la invoice <em>*</em></span><div class="money-input"><b>$</b><input id="amount" type="number" min="0" step="0.01" required placeholder="0.00" /></div></label>
+              <label class="field"><span>Monto de la invoice <em>*</em></span><div class="money-input"><b>$</b><input id="amount" type="text" inputmode="decimal" required placeholder="0.00" autocomplete="off" /></div></label>
               <label class="field"><span>Fecha de emisión <em>*</em></span><input id="recordIssuedDate" type="date" required /></label>
               <label class="field"><span>Horas trabajadas</span><input id="hours" type="number" min="0" step="0.25" placeholder="0" /></label>
               <label class="field"><span>Fase inicial</span><select id="stage"><option value="created">Factura creada</option><option value="working">En trabajo</option><option value="waiting">Entregado / esperando cheque</option><option value="paid">Pagado</option></select></label>
@@ -788,11 +788,11 @@
             <section class="balance-panel" aria-label="Saldo de pago">
               <div class="balance-panel-head">
                 <p class="field-group-title">Saldo de pago</p>
-                <p>Anticipo recibido y lo que falta por pagar. Ya no hace falta escribirlo en la descripción.</p>
+                <p>Anticipo recibido y lo que falta por pagar. Escribe 4500 o 4,500; el saldo se calcula solo.</p>
               </div>
               <div class="balance-grid">
-                <label class="field"><span>Anticipo / recibido</span><div class="money-input"><b>$</b><input id="amountReceived" type="number" min="0" step="0.01" placeholder="0.00"></div></label>
-                <label class="field"><span>Se debe</span><div class="money-input"><b>$</b><input id="amountDue" type="number" min="0" step="0.01" readonly tabindex="-1"></div></label>
+                <label class="field"><span>Anticipo / recibido</span><div class="money-input"><b>$</b><input id="amountReceived" type="text" inputmode="decimal" placeholder="0.00" autocomplete="off"></div></label>
+                <label class="field"><span>Se debe</span><div class="money-input"><b>$</b><input id="amountDue" type="text" inputmode="decimal" readonly tabindex="-1"></div></label>
               </div>
               <p class="balance-live" id="balanceLive">Total $0.00 · recibido $0.00 · se debe $0.00</p>
             </section>
@@ -830,12 +830,12 @@
             <section class="balance-panel" aria-label="Saldo de horas">
               <div class="balance-panel-head">
                 <p class="field-group-title">Saldo de pago</p>
-                <p>El total sale de las horas × tarifa. Aquí registras lo recibido y lo que se debe.</p>
+                <p>El total sale de las horas × tarifa. Escribe 4500 o 4,500; el saldo se calcula solo.</p>
               </div>
               <div class="balance-grid">
-                <label class="field"><span>Total del reporte</span><div class="money-input"><b>$</b><input id="hoursEditTotal" type="number" readonly tabindex="-1"></div></label>
-                <label class="field"><span>Anticipo / recibido</span><div class="money-input"><b>$</b><input id="hoursEditReceived" type="number" min="0" step="0.01" placeholder="0.00"></div></label>
-                <label class="field"><span>Se debe</span><div class="money-input"><b>$</b><input id="hoursEditDue" type="number" min="0" step="0.01" readonly tabindex="-1"></div></label>
+                <label class="field"><span>Total del reporte</span><div class="money-input"><b>$</b><input id="hoursEditTotal" type="text" readonly tabindex="-1"></div></label>
+                <label class="field"><span>Anticipo / recibido</span><div class="money-input"><b>$</b><input id="hoursEditReceived" type="text" inputmode="decimal" placeholder="0.00" autocomplete="off"></div></label>
+                <label class="field"><span>Se debe</span><div class="money-input"><b>$</b><input id="hoursEditDue" type="text" readonly tabindex="-1"></div></label>
               </div>
               <p class="balance-live" id="hoursBalanceLive">Total $0.00 · recibido $0.00 · se debe $0.00</p>
             </section>
@@ -901,24 +901,24 @@
     <script src="config.js?v=5" defer></script>
     <script src="supabase-client.js?v=auth-lock-1" defer></script>
     <script src="local-cache.js?v=a3-dl-1" defer></script>
-    <script src="company-app.js?v=hours-board-2" defer></script>
+    <script src="company-app.js?v=hours-board-3" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
     <script src="vendor/pdf-lib.min.js" defer></script>
     <script src="vendor/jszip.min.js" defer></script>
     <script src="invoice-core.js?v=qty-total-1" defer></script>
     <script src="invoice-pdf.js?v=pdf-read-2" defer></script>
-    <script src="cloud-db.js?v=hours-board-2" defer></script>
+    <script src="cloud-db.js?v=hours-board-3" defer></script>
     <script src="whatsapp-invoice.js?v=qty-total-1" defer></script>
     <script src="invoice-archive.js?v=pc-menu-1" defer></script>
     <script src="hours-pdf.js?v=hours-import-1" defer></script>
     <script src="hours-whatsapp.js?v=2" defer></script>
-    <script src="hours-app.js?v=hours-board-2" defer></script>
+    <script src="hours-app.js?v=hours-board-3" defer></script>
     <script src="hours-archive.js?v=hours-import-1" defer></script>
     <script src="job-pdf.js?v=job-a3-4" defer></script>
     <script src="job-app.js?v=company-1" defer></script>
     <script src="job-archive.js?v=job-a3-3" defer></script>
     <script src="translator.js?v=grow-1" defer></script>
     <script src="auth-app.js?v=company-1" defer></script>
-    <script src="app.js?v=hours-board-2" defer></script>
+    <script src="app.js?v=hours-board-3" defer></script>
   </body>
 </html>

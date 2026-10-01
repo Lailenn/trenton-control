@@ -150,12 +150,18 @@
     return pdfUrls.get(record.id);
   }
 
+  function dollars(value) {
+    return Math.max(0, Math.round((Number(value) || 0) * 100) / 100);
+  }
+  function parseMoneyInput(value) {
+    if (value == null || value === "") return 0;
+    const parsed = Core.amount(value);
+    if (parsed != null) return dollars(parsed);
+    const fallback = Number(String(value).replace(/[^\d.]/g, ""));
+    return Number.isFinite(fallback) ? dollars(fallback) : 0;
+  }
   function invoiceDue(record) {
-    const amount = Number(record?.amount || 0);
-    const received = Number(record?.received || 0);
-    const stored = record?.due;
-    if (stored != null && stored !== "") return Math.max(0, Number(stored) || 0);
-    return Math.max(0, Math.round((amount - received) * 100) / 100);
+    return dollars((Number(record?.amount) || 0) - (Number(record?.received) || 0));
   }
   function dueLine(record) {
     const due = invoiceDue(record);
@@ -166,10 +172,10 @@
       : `<p class="card-due is-clear">Saldo cubierto</p>`;
   }
   function syncInvoiceBalance() {
-    const amount = Number($("#amount")?.value) || 0;
-    const received = Math.max(0, Number($("#amountReceived")?.value) || 0);
-    const due = Math.max(0, Math.round((amount - received) * 100) / 100);
-    if ($("#amountDue")) $("#amountDue").value = due ? String(due) : "0";
+    const amount = parseMoneyInput($("#amount")?.value);
+    const received = parseMoneyInput($("#amountReceived")?.value);
+    const due = dollars(amount - received);
+    if ($("#amountDue")) $("#amountDue").value = due.toFixed(2);
     if ($("#balanceLive")) $("#balanceLive").textContent = `Total ${money(amount)} · recibido ${money(received)} · se debe ${money(due)}`;
     return { received, due };
   }
