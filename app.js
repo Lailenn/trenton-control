@@ -35,6 +35,9 @@
   let logoDataUrl = DEFAULT_LOGO_URL;
   const pdfUrls = new Map();
   const INVOICE_DRAFT_KEY = "trenton.draft.invoice";
+  function invoiceDraftKey() {
+    return window.CompanyApp?.draftKey?.("invoice") || INVOICE_DRAFT_KEY;
+  }
   const DEFAULT_FROM_ADDRESS = "11804 Birchview Ct. Clinton MD 20735";
   const INVOICE_DRAFT_FIELDS = ["builderInvoiceNumber", "builderIssuedDate", "builderApproval", "builderFromName", "builderBillName", "builderFromPhone", "builderBillAddress", "builderWorkAddress", "builderFromEmail", "builderFromAddress", "builderDescription", "builderQty", "builderPrice", "builderDeposit", "builderNote"];
   let invoiceDraftTimer = 0;
@@ -535,12 +538,12 @@
   }
 
   function readInvoiceDraft() {
-    try { return JSON.parse(localStorage.getItem(INVOICE_DRAFT_KEY) || "null"); }
+    try { return JSON.parse(localStorage.getItem(invoiceDraftKey()) || "null"); }
     catch (_) { return null; }
   }
 
   function clearInvoiceDraft() {
-    try { localStorage.removeItem(INVOICE_DRAFT_KEY); } catch (_) { /* ignore */ }
+    try { localStorage.removeItem(invoiceDraftKey()); } catch (_) { /* ignore */ }
     $("#invoiceDraftBanner")?.classList.add("hidden");
   }
 
@@ -552,7 +555,7 @@
         clearInvoiceDraft();
         return;
       }
-      try { localStorage.setItem(INVOICE_DRAFT_KEY, JSON.stringify(draft)); }
+      try { localStorage.setItem(invoiceDraftKey(), JSON.stringify(draft)); }
       catch (error) { console.warn("No se pudo guardar el borrador de la invoice", error); }
     };
     if (immediate) {
@@ -1172,6 +1175,7 @@
       recoverExistingPdfs().catch(error => console.warn(error));
       window.HoursApp?.boot?.().catch(error => console.warn(error));
       window.JobApp?.boot?.().catch(error => console.warn(error));
+      window.CompanyApp?.paint?.();
     } catch (error) {
       console.error(error);
       restoreInvoiceDraft();

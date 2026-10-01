@@ -3829,3 +3829,46 @@ body {
     box-sizing: border-box;
   }
 }
+
+.login-screen.auth-gate[data-mode="company"] .login-hero { display: none; }
+.company-gate {
+  margin-top: 8px;
+  padding-top: 8px;
+}
+.company-gate h2 {
+  margin: 6px 0 8px;
+  font-size: 26px;
+  line-height: 1.15;
+}
+.company-gate > p {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.company-choice-grid {
+  display: grid;
+  gap: 10px;
+}
+.company-choice {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: 16px 16px 14px;
+  border: 1px solid #d7deeb;
+  border-radius: 14px;
+  background: #fff;
+  text-align: left;
+  color: inherit;
+}
+.company-choice strong { font-size: 17px; }
+.company-choice span { color: var(--muted); font-size: 13px; line-height: 1.4; }
+.company-choice:hover,
+.company-choice.is-selected {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+}
+.hours-kanban { margin: 0 0 22px; }
+.hours-board { min-height: 220px; }
+.hours-board .kanban-column { min-width: min(100%, 220px); }
+.hours-board .card-actions { opacity: 1; margin-top: 8px; }
+#switchCompanyButton { margin-bottom: 8px; }

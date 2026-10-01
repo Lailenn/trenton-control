@@ -320,7 +320,12 @@
   function setGate(mode) {
     $("#authConfigPanel")?.classList.toggle("hidden", mode !== "config");
     $("#authLoginPanel")?.classList.toggle("hidden", mode !== "login");
-    $("#authGate")?.setAttribute("data-mode", mode);
+    const gate = $("#companyGate");
+    if (gate) {
+      gate.classList.toggle("hidden", mode !== "company");
+      gate.hidden = mode !== "company";
+    }
+    $("#authGate")?.setAttribute("data-mode", mode || "login");
   }
 
   function showApp(show) {
@@ -618,21 +623,24 @@
     });
   }
 
+  let readyHandler = null;
+
   function watchAuth(onReady, onLogout) {
     if (watching || !root.TrentonConfig.ready()) return;
     watching = true;
+    readyHandler = onReady;
     root.TrentonSupabase.client.auth.onAuthStateChange(async (_event, session) => {
       const user = session?.user || null;
       root.TrentonSupabase?.setSessionUser?.(user);
       root.CloudDB.setUser(user);
       if (!user) {
         setProfileOpen(false);
+        root.CompanyApp?.clearSession?.();
         showApp(false);
         setGate(root.TrentonConfig.ready() ? "login" : "config");
         onLogout?.();
         return;
       }
-      showApp(true);
       paintLoginHello();
       restoreLocalProfile(user.id);
       profile = { ...profile, email: sessionEmail() || profile.email };
@@ -643,8 +651,26 @@
       setQuote($("#authWelcomeQuote"), PHRASES[quoteIndex % PHRASES.length]);
       if (booting) return;
       booting = true;
-      try { await onReady?.(user); } finally { booting = false; }
+      try {
+        showApp(false);
+        if (!root.CompanyApp?.hasSessionPick?.()) setGate("company");
+        await root.CompanyApp?.choose?.();
+        showApp(true);
+        await onReady?.(user);
+      } finally {
+        booting = false;
+      }
     });
+  }
+
+  async function switchCompany() {
+    if (!root.TrentonSupabase?.sessionUser?.()) return;
+    root.CompanyApp?.clearSession?.();
+    showApp(false);
+    setGate("company");
+    await root.CompanyApp?.choose?.();
+    showApp(true);
+    await readyHandler?.(root.TrentonSupabase.sessionUser());
   }
 
   async function start({ onReady, onLogout }) {
@@ -735,5 +761,5 @@
     watchAuth(onReady, onLogout);
   }
 
-  root.AuthApp = { start, greeting, phrase: phraseFor, phrases: PHRASES, replayWelcome, loadProfile };
+  root.AuthApp = { start, greeting, phrase: phraseFor, phrases: PHRASES, replayWelcome, loadProfile, switchCompany };
 })(typeof globalThis !== "undefined" ? globalThis : this);

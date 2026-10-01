@@ -14,6 +14,9 @@
   ];
   let reports = [], entries = [], saving = false;
   const HOURS_DRAFT_KEY = "trenton.draft.hours";
+  function hoursDraftKey() {
+    return root.CompanyApp?.draftKey?.("hours") || HOURS_DRAFT_KEY;
+  }
   let hoursDraftTimer = 0;
   let applyingHoursDraft = false;
   let hoursDraftDismissed = false;
@@ -66,12 +69,12 @@
   }
 
   function readHoursDraft() {
-    try { return JSON.parse(localStorage.getItem(HOURS_DRAFT_KEY) || "null"); }
+    try { return JSON.parse(localStorage.getItem(hoursDraftKey()) || "null"); }
     catch (_) { return null; }
   }
 
   function clearHoursDraft() {
-    try { localStorage.removeItem(HOURS_DRAFT_KEY); } catch (_) { /* ignore */ }
+    try { localStorage.removeItem(hoursDraftKey()); } catch (_) { /* ignore */ }
     $("#hoursDraftBanner")?.classList.add("hidden");
   }
 
@@ -88,7 +91,7 @@
         clearHoursDraft();
         return;
       }
-      try { localStorage.setItem(HOURS_DRAFT_KEY, JSON.stringify(draft)); }
+      try { localStorage.setItem(hoursDraftKey(), JSON.stringify(draft)); }
       catch (error) { console.warn("No se pudo guardar el borrador de horas", error); }
       if (!$("#hoursView")?.classList.contains("hidden")) revealHoursDraftBanner();
     };
@@ -395,6 +398,7 @@
     }
     await load();
     renderHistory();
+    renderHoursBoard();
     window.TrentonControl?.hoursArchive?.render?.();
     if (lastRecord) applyImported(lastRecord);
     $("#hoursError").textContent = saved.length === 1
@@ -410,7 +414,7 @@
     const invalid = !jobAddress || !reportDate || !entries.length || entries.some(entry => !entry.employee.trim() || !entry.date || !entry.timeIn || !entry.timeOut || HoursPDF.calcHours(entry) <= 0 || Number(entry.rate ?? defaultRate) <= 0);
     if (invalid) { $("#hoursError").textContent = "Completa dirección, fecha, empleado, entrada, salida, almuerzo y una tarifa mayor que cero."; return; }
     saving = true; $("#saveHoursButton").disabled = true; $("#downloadHoursButton").disabled = true; $("#hoursError").textContent = "Generando PDF…";
-    const record = {id: makeId(), jobAddress, reportDate, description, defaultRate, entries: entries.map(entry => ({...entry, rate: Number(entry.rate ?? defaultRate) || 0, hours: HoursPDF.calcHours(entry)})), updatedAt: new Date().toISOString()};
+    const record = {id: makeId(), jobAddress, reportDate, description, defaultRate, stage: "created", entries: entries.map(entry => ({...entry, rate: Number(entry.rate ?? defaultRate) || 0, hours: HoursPDF.calcHours(entry)})), updatedAt: new Date().toISOString()};
     try {
       record.pdfBlob = await HoursPDF.generate({...record, recordId: record.id}, await logoBytes());
       if (!record.pdfBlob || record.pdfBlob.size < 80) throw new Error("El PDF salió vacío. Vuelve a intentar.");
@@ -421,7 +425,7 @@
       try {
         await root.CloudDB.saveHours(record);
         cloudOk = true;
-        await load(); renderHistory();
+        await load(); renderHistory(); renderHoursBoard();
         window.TrentonControl?.hoursArchive?.render?.();
         $("#hoursError").textContent = "Guardado en la nube. Descargando PDF…";
         if (root.TrentonControl?.toast) root.TrentonControl.toast("Reporte de horas guardado en la nube");
@@ -443,6 +447,57 @@
     finally { saving = false; $("#saveHoursButton").disabled = false; $("#downloadHoursButton").disabled = false; }
   }
 
+  const hoursStages = [
+    { id: "created", title: "Reporte creado", className: "column-created" },
+    { id: "working", title: "En trabajo", className: "column-working" },
+    { id: "waiting", title: "Esperando cheque", className: "column-waiting" },
+    { id: "paid", title: "Pagado", className: "column-paid" }
+  ];
+
+  function renderHoursBoard() {
+    const board = $("#hoursBoard");
+    const wrap = $("#hoursKanban");
+    if (!board || !wrap) return;
+    const show = Boolean(root.CompanyApp?.isOtras?.());
+    wrap.classList.toggle("hidden", !show);
+    if (!show) { board.innerHTML = ""; return; }
+    board.innerHTML = hoursStages.map(stage => {
+      const items = reports.filter(record => (record.stage || "created") === stage.id);
+      const cards = items.length
+        ? items.map(record => {
+            const hours = (record.entries || []).reduce((sum, entry) => sum + Number(entry.hours || 0), 0);
+            const index = hoursStages.findIndex(item => item.id === (record.stage || "created"));
+            return `<article class="invoice-card">
+              <strong>${esc(record.jobAddress || "Sin dirección")}</strong>
+              <span>${esc(dateText(record.reportDate))} · ${esc(formatHours(hours))} HRS</span>
+              <div class="card-actions">
+                ${index > 0 ? `<button class="mini-action" type="button" data-hours-stage="back" data-id="${esc(record.id)}">←</button>` : ""}
+                ${index < hoursStages.length - 1 ? `<button class="mini-action" type="button" data-hours-stage="next" data-id="${esc(record.id)}">→</button>` : ""}
+              </div>
+            </article>`;
+          }).join("")
+        : `<div class="empty-column">Sin reportes en esta fase</div>`;
+      return `<section class="kanban-column ${stage.className}" data-stage="${stage.id}"><header class="column-head"><div class="column-title"><h3>${stage.title}</h3></div><span class="column-count">${items.length}</span></header><div class="column-cards">${cards}</div></section>`;
+    }).join("");
+  }
+
+  async function moveHoursRecord(id, direction) {
+    const record = reports.find(item => item.id === id);
+    if (!record) return;
+    const index = hoursStages.findIndex(item => item.id === (record.stage || "created"));
+    const next = index + (direction === "next" ? 1 : -1);
+    if (next < 0 || next >= hoursStages.length) return;
+    record.stage = hoursStages[next].id;
+    try {
+      await root.CloudDB.saveHours(record);
+      renderHoursBoard();
+      renderHistory();
+      if (root.TrentonControl?.toast) root.TrentonControl.toast(`Movido a “${hoursStages[next].title}”`);
+    } catch (error) {
+      $("#hoursError").textContent = error.message || "No se pudo mover el reporte.";
+    }
+  }
+
   function renderHistory() {
     $("#hoursHistoryGrid").innerHTML = reports.length ? reports.map(record => {
       const rows = record.entries || [];
@@ -457,11 +512,12 @@
     await root.CloudDB.softDeleteHours(record);
     reports = reports.filter(item => item.id !== record.id);
     renderHistory();
+    renderHoursBoard();
     window.TrentonControl?.hoursArchive?.render?.();
   }
 
   async function open() {
-    try { await load(); renderHistory(); }
+    try { await load(); renderHistory(); renderHoursBoard(); }
     catch (error) { $("#hoursError").textContent = error.message || "No se pudo abrir el almacenamiento de horas."; }
     restoreHoursDraft();
     renderPreview();
@@ -471,6 +527,7 @@
     try {
       await load();
       renderHistory();
+      renderHoursBoard();
       window.TrentonControl?.hoursArchive?.render?.();
     } catch (error) {
       console.warn(error);
@@ -478,7 +535,7 @@
       restoreHoursDraft();
     }
   }
-  function render() { renderHistory(); renderPreview(); }
+  function render() { renderHistory(); renderHoursBoard(); renderPreview(); }
   $("#hoursEntries").addEventListener("input", event => { const field = event.target.dataset.hoursField; if (field) updateEntry(Number(event.target.dataset.index), field, event.target.value); });
   $("#hoursEntries").addEventListener("click", event => { const button = event.target.closest("[data-hours-action=remove]"); if (!button || entries.length === 1) return; entries.splice(Number(button.dataset.index), 1); renderEntries(); renderPreview(); persistHoursDraft(); });
   $("#addHoursEntryButton").addEventListener("click", () => { entries.push({date: $("#hoursReportDate").value || today(), employee: "", timeIn: "07:00", timeOut: "15:30", lunch: 30, rate: Number($("#hoursDefaultRate").value) || 30, scheduleAuto: true}); renderEntries(); renderPreview(); persistHoursDraft(); });
@@ -529,7 +586,12 @@
       else $("#hoursError").textContent = "No hay PDF de horas para descargar.";
     } catch (error) { $("#hoursError").textContent = error.message || "No se pudo descargar el PDF."; }
   });
-  function resetSession() { reports = []; renderHistory(); window.TrentonControl?.hoursArchive?.render?.(); }
+  function resetSession() { reports = []; renderHistory(); renderHoursBoard(); window.TrentonControl?.hoursArchive?.render?.(); }
+  $("#hoursBoard")?.addEventListener("click", event => {
+    const button = event.target.closest("[data-hours-stage]");
+    if (!button) return;
+    moveHoursRecord(button.dataset.id, button.dataset.hoursStage);
+  });
   document.addEventListener("visibilitychange", () => { if (document.hidden) persistHoursDraft(true); });
   window.addEventListener("pagehide", () => persistHoursDraft(true));
   reset({ keepDraft: true });

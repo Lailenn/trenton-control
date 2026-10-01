@@ -5,6 +5,26 @@
   const JOB_META = "trenton.job.meta";
   const INVOICE_META = "trenton.invoices.meta";
 
+  function companyId() {
+    return root.CompanyApp?.id?.() || "trenton";
+  }
+  function companyQuery() {
+    return `company_id=eq.${encodeURIComponent(companyId())}`;
+  }
+  function matchesCompany(item) {
+    const value = item?.companyId || item?.company_id || "trenton";
+    return value === companyId();
+  }
+  function hoursMetaKey() {
+    return companyId() === "otras" ? `${HOURS_META}.otras` : HOURS_META;
+  }
+  function jobMetaKey() {
+    return companyId() === "otras" ? `${JOB_META}.otras` : JOB_META;
+  }
+  function invoiceMetaKey() {
+    return companyId() === "otras" ? `${INVOICE_META}.otras` : INVOICE_META;
+  }
+
   function sb() { return root.TrentonSupabase.client; }
   function Core() { return root.InvoiceCore; }
   function ownerId() {
@@ -250,21 +270,21 @@
   }
   function rememberHours(record) {
     if (!record?.id) return;
-    const list = readJson(HOURS_META).filter(item => item.id !== record.id);
-    list.unshift(slimRecord(record));
-    writeJson(HOURS_META, list.slice(0, 300));
+    const list = readJson(hoursMetaKey()).filter(item => item.id !== record.id);
+    list.unshift(slimRecord({ ...record, companyId: companyId() }));
+    writeJson(hoursMetaKey(), list.slice(0, 300));
   }
   function rememberJob(record) {
     if (!record?.id) return;
-    const list = readJson(JOB_META).filter(item => item.id !== record.id);
-    list.unshift(slimRecord(record));
-    writeJson(JOB_META, list.slice(0, 300));
+    const list = readJson(jobMetaKey()).filter(item => item.id !== record.id);
+    list.unshift(slimRecord({ ...record, companyId: companyId() }));
+    writeJson(jobMetaKey(), list.slice(0, 300));
   }
   function rememberInvoice(record) {
     if (!record?.id) return;
-    const list = readJson(INVOICE_META).filter(item => item.id !== record.id);
-    list.unshift(slimRecord(record));
-    writeJson(INVOICE_META, list.slice(0, 400));
+    const list = readJson(invoiceMetaKey()).filter(item => item.id !== record.id);
+    list.unshift(slimRecord({ ...record, companyId: companyId() }));
+    writeJson(invoiceMetaKey(), list.slice(0, 400));
   }
 
   async function upload(bucket, path, blob, type) {
@@ -348,6 +368,7 @@
     return {
       id: record.id,
       owner_id: uid,
+      company_id: companyId(),
       address: record.address || "",
       address_norm: C.addressNorm(record.address || record.workAddress),
       invoice_number: record.invoiceNumber || "",
@@ -388,6 +409,7 @@
       paidAt: row.paid_at,
       updatedAt: row.updated_at,
       deletedAt: row.deleted_at,
+      companyId: row.company_id || "trenton",
       pdfBlob: null,
       cloud: Boolean(row.pdf_path),
       checkPhotos: photos.filter(photo => photo.invoice_id === row.id)
@@ -407,7 +429,7 @@
 
   async function queryInvoices() {
     try {
-      return await rest("invoices?deleted_at=is.null&order=updated_at.desc");
+      return await rest(`invoices?deleted_at=is.null&${companyQuery()}&order=updated_at.desc`);
     } catch (error) {
       if (isMissingColumn(error)) return await rest("invoices?order=id.desc");
       throw error;
@@ -423,13 +445,18 @@
     }
     let photos = [];
     try {
-      photos = await rest("check_photos?order=captured_at.desc") || [];
+      photos = await rest(`check_photos?${companyQuery()}&order=captured_at.desc`) || [];
     } catch (photoError) {
-      console.warn("No se pudieron leer las fotos de cheque.", photoError);
+      try {
+        if (isMissingColumn(photoError)) photos = await rest("check_photos?order=captured_at.desc") || [];
+        else console.warn("No se pudieron leer las fotos de cheque.", photoError);
+      } catch (inner) {
+        console.warn("No se pudieron leer las fotos de cheque.", inner);
+      }
     }
-    const cloud = (Array.isArray(data) ? data : []).map(row => invoiceFrom(row, photos));
+    const cloud = (Array.isArray(data) ? data : []).map(row => invoiceFrom(row, photos)).filter(matchesCompany);
     const seen = new Set(cloud.map(item => item.id));
-    const local = readJson(INVOICE_META).filter(item => item.id && !seen.has(item.id)).map(item => ({
+    const local = readJson(invoiceMetaKey()).filter(item => item.id && !seen.has(item.id) && matchesCompany(item)).map(item => ({
       ...item,
       pdfBlob: null,
       cloud: false,
@@ -504,7 +531,7 @@
     if (syncingInvoices) return;
     syncingInvoices = true;
     try {
-      const pending = readJson(INVOICE_META).filter(item => item.id && item.cloudSynced === false);
+      const pending = readJson(invoiceMetaKey()).filter(item => item.id && item.cloudSynced === false);
       for (const item of pending) {
         try {
           item.pdfBlob = item.pdfBlob || await root.LocalCache.get("invoice", item.id, item.pdfHash);
@@ -537,7 +564,7 @@
     } catch (error) {
       fail(error, "No se pudo eliminar la invoice.");
     }
-    writeJson(INVOICE_META, readJson(INVOICE_META).filter(item => item.id !== record.id));
+    writeJson(invoiceMetaKey(), readJson(invoiceMetaKey()).filter(item => item.id !== record.id));
     await root.LocalCache.remove("invoice", record.id);
   }
 
@@ -555,7 +582,7 @@
     try {
       await rest(`hours_entries?report_id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
     } catch (_) { /* las jornadas pueden no existir */ }
-    writeJson(HOURS_META, readJson(HOURS_META).filter(item => item.id !== id));
+    writeJson(hoursMetaKey(), readJson(hoursMetaKey()).filter(item => item.id !== id));
     await root.LocalCache.remove("hours", id);
   }
 
@@ -573,14 +600,14 @@
     try {
       await rest(`job_entries?report_id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
     } catch (_) { /* las filas pueden no existir */ }
-    writeJson(JOB_META, readJson(JOB_META).filter(item => item.id !== id));
+    writeJson(jobMetaKey(), readJson(jobMetaKey()).filter(item => item.id !== id));
     await root.LocalCache.remove("job", id);
   }
 
   async function nextInvoiceNumber(records = []) {
     let data = [];
     try {
-      data = await rest("invoices?deleted_at=is.null&select=invoice_number");
+      data = await rest(`invoices?deleted_at=is.null&${companyQuery()}&select=invoice_number`);
     } catch (error) {
       const max = records.reduce((value, record) => /^\s*#?\d+\s*$/.test(record.invoiceNumber || "") ? Math.max(value, Number(String(record.invoiceNumber).replace("#", ""))) : value, 0);
       return "#" + String(max + 1).padStart(3, "0");
@@ -599,6 +626,8 @@
       reportDate: report.report_date,
       description: report.description || "",
       defaultRate: Number(report.default_rate) || 0,
+      stage: report.stage || "created",
+      companyId: report.company_id || "trenton",
       pdfHash: report.pdf_hash,
       pdfPath: report.pdf_path,
       pdfName: report.pdf_name,
@@ -621,7 +650,7 @@
 
   async function queryHoursReports() {
     try {
-      return await rest("hours_reports?deleted_at=is.null&order=updated_at.desc");
+      return await rest(`hours_reports?deleted_at=is.null&${companyQuery()}&order=updated_at.desc`);
     } catch (error) {
       if (isMissingColumn(error)) return await rest("hours_reports?order=report_date.desc");
       throw error;
@@ -638,12 +667,12 @@
       } catch (entryError) {
         console.warn(entryError);
       }
-      cloud = (Array.isArray(reports) ? reports : []).map(report => ({ ...hoursFrom(report, entries), cloudSynced: true }));
+      cloud = (Array.isArray(reports) ? reports : []).map(report => ({ ...hoursFrom(report, entries), cloudSynced: true })).filter(matchesCompany);
     } catch (error) {
       console.warn("Nube de horas no disponible; se usan los reportes de este aparato.", error);
     }
     const seen = new Set(cloud.map(item => item.id));
-    const local = readJson(HOURS_META).filter(item => item.id && !seen.has(item.id));
+    const local = readJson(hoursMetaKey()).filter(item => item.id && !seen.has(item.id) && matchesCompany(item));
     const merged = cloud.concat(local);
     await Promise.all(merged.map(async record => {
       record.pdfBlob = record.pdfBlob || await root.LocalCache.get("hours", record.id, record.pdfHash);
@@ -727,10 +756,12 @@
     await upsertHoursReport({
       id: record.id,
       owner_id: uid,
+      company_id: companyId(),
       job_address: record.jobAddress,
       report_date: record.reportDate,
       description: record.description || "",
       default_rate: Number(record.defaultRate) || 0,
+      stage: record.stage || "created",
       pdf_hash: record.pdfHash || null,
       pdf_path: record.pdfPath || null,
       pdf_name: record.pdfName || "",
@@ -752,7 +783,7 @@
     if (syncingHours) return;
     syncingHours = true;
     try {
-      const pending = readJson(HOURS_META).filter(item => item.id && item.cloudSynced === false);
+      const pending = readJson(hoursMetaKey()).filter(item => item.id && item.cloudSynced === false);
       for (const item of pending) {
         try {
           item.pdfBlob = item.pdfBlob || await root.LocalCache.get("hours", item.id, item.pdfHash);
@@ -785,6 +816,7 @@
       startDate: report.start_date,
       endDate: report.end_date,
       defaultRate: Number(report.default_rate) || 0,
+      companyId: report.company_id || "trenton",
       pdfHash: report.pdf_hash,
       pdfPath: report.pdf_path,
       pdfName: report.pdf_name,
@@ -797,7 +829,7 @@
 
   async function queryJobReports() {
     try {
-      return await rest("job_reports?deleted_at=is.null&order=updated_at.desc");
+      return await rest(`job_reports?deleted_at=is.null&${companyQuery()}&order=updated_at.desc`);
     } catch (error) {
       if (isMissingColumn(error)) return await rest("job_reports?order=start_date.desc");
       throw error;
@@ -814,12 +846,12 @@
       } catch (entryError) {
         console.warn(entryError);
       }
-      cloud = (Array.isArray(reports) ? reports : []).map(report => ({ ...jobFrom(report, entries), cloudSynced: true }));
+      cloud = (Array.isArray(reports) ? reports : []).map(report => ({ ...jobFrom(report, entries), cloudSynced: true })).filter(matchesCompany);
     } catch (error) {
       console.warn("Nube de jobs no disponible; se usan los reportes de este aparato.", error);
     }
     const seen = new Set(cloud.map(item => item.id));
-    const local = readJson(JOB_META).filter(item => item.id && !seen.has(item.id));
+    const local = readJson(jobMetaKey()).filter(item => item.id && !seen.has(item.id) && matchesCompany(item));
     const merged = cloud.concat(local);
     await Promise.all(merged.map(async record => {
       record.pdfBlob = record.pdfBlob || await root.LocalCache.get("job", record.id, record.pdfHash);
@@ -873,23 +905,36 @@
     if (record.pdfBlob) record.pdfPath = record.pdfPath || `${uid}/${record.id}.pdf`;
     if (record.pdfBlob) await cacheBlob("job", record.id, record.pdfHash, record.pdfBlob);
     rememberJob({ ...record, cloudSynced: false });
-    const saved = rowFrom(await rest("job_reports?on_conflict=id", {
-      method: "POST",
-      body: {
-        id: record.id,
-        owner_id: uid,
-        job_address: record.jobAddress,
-        start_date: record.startDate || null,
-        end_date: record.endDate || null,
-        default_rate: Number(record.defaultRate) || 0,
-        pdf_hash: record.pdfHash || null,
-        pdf_path: record.pdfPath || null,
-        pdf_name: record.pdfName || "",
-        deleted_at: null,
-        updated_at: record.updatedAt
-      },
-      prefer: "return=representation,resolution=merge-duplicates"
-    }));
+    let saved = null;
+    const jobBody = {
+      id: record.id,
+      owner_id: uid,
+      company_id: companyId(),
+      job_address: record.jobAddress,
+      start_date: record.startDate || null,
+      end_date: record.endDate || null,
+      default_rate: Number(record.defaultRate) || 0,
+      pdf_hash: record.pdfHash || null,
+      pdf_path: record.pdfPath || null,
+      pdf_name: record.pdfName || "",
+      deleted_at: null,
+      updated_at: record.updatedAt
+    };
+    try {
+      saved = rowFrom(await rest("job_reports?on_conflict=id", {
+        method: "POST",
+        body: jobBody,
+        prefer: "return=representation,resolution=merge-duplicates"
+      }));
+    } catch (error) {
+      if (!isMissingColumn(error)) fail(error, "No se pudo guardar el reporte de job.");
+      const { company_id, ...legacy } = jobBody;
+      saved = rowFrom(await rest("job_reports?on_conflict=id", {
+        method: "POST",
+        body: legacy,
+        prefer: "return=representation,resolution=merge-duplicates"
+      }));
+    }
     if (!saved?.id) throw new Error("Supabase no confirmó el job. Corre supabase/schema-job-reports.sql y vuelve a guardar.");
     await replaceJobEntries(record, uid);
     record.cloudSynced = true;
@@ -906,7 +951,7 @@
     if (syncingJobs) return;
     syncingJobs = true;
     try {
-      const pending = readJson(JOB_META).filter(item => item.id && item.cloudSynced === false);
+      const pending = readJson(jobMetaKey()).filter(item => item.id && item.cloudSynced === false);
       for (const item of pending) {
         try {
           item.pdfBlob = item.pdfBlob || await root.LocalCache.get("job", item.id, item.pdfHash);
@@ -929,11 +974,14 @@
     const path = `${uid}/${invoiceId}/${id}.${ext}`;
     await upload("check-photos", path, image, image.type || "image/jpeg");
     await root.LocalCache.put("check", id, "", image);
-    const row = { id, invoice_id: invoiceId, owner_id: uid, storage_path: path, file_name: image.name || `${id}.${ext}`, note: String(note || "").slice(0, 500), captured_at: new Date().toISOString() };
+    const row = { id, invoice_id: invoiceId, owner_id: uid, company_id: companyId(), storage_path: path, file_name: image.name || `${id}.${ext}`, note: String(note || "").slice(0, 500), captured_at: new Date().toISOString() };
     try {
       await rest("check_photos", { method: "POST", body: row });
     } catch (error) {
-      fail(error, "No se pudo guardar la foto del cheque.");
+      if (!isMissingColumn(error)) fail(error, "No se pudo guardar la foto del cheque.");
+      const { company_id, ...legacy } = row;
+      try { await rest("check_photos", { method: "POST", body: legacy }); }
+      catch (inner) { fail(inner, "No se pudo guardar la foto del cheque."); }
     }
     return { ...row, blob: image };
   }

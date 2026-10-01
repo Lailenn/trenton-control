@@ -25,6 +25,9 @@
   ];
   let reports = [], entries = [], saving = false;
   const JOB_DRAFT_KEY = "trenton.draft.job";
+  function jobDraftKey() {
+    return root.CompanyApp?.draftKey?.("job") || JOB_DRAFT_KEY;
+  }
   let jobDraftTimer = 0;
   let applyingJobDraft = false;
   let jobDraftDismissed = false;
@@ -71,12 +74,12 @@
   }
 
   function readJobDraft() {
-    try { return JSON.parse(localStorage.getItem(JOB_DRAFT_KEY) || "null"); }
+    try { return JSON.parse(localStorage.getItem(jobDraftKey()) || "null"); }
     catch (_) { return null; }
   }
 
   function clearJobDraft() {
-    try { localStorage.removeItem(JOB_DRAFT_KEY); } catch (_) { /* ignore */ }
+    try { localStorage.removeItem(jobDraftKey()); } catch (_) { /* ignore */ }
     $("#jobDraftBanner")?.classList.add("hidden");
   }
 
@@ -93,7 +96,7 @@
         clearJobDraft();
         return;
       }
-      try { localStorage.setItem(JOB_DRAFT_KEY, JSON.stringify(draft)); }
+      try { localStorage.setItem(jobDraftKey(), JSON.stringify(draft)); }
       catch (error) { console.warn("No se pudo guardar el borrador de otro formato de horas", error); }
       if (!$("#jobView")?.classList.contains("hidden")) revealJobDraftBanner();
     };
