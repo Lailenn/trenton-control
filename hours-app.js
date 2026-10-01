@@ -414,7 +414,7 @@
     const invalid = !jobAddress || !reportDate || !entries.length || entries.some(entry => !entry.employee.trim() || !entry.date || !entry.timeIn || !entry.timeOut || HoursPDF.calcHours(entry) <= 0 || Number(entry.rate ?? defaultRate) <= 0);
     if (invalid) { $("#hoursError").textContent = "Completa dirección, fecha, empleado, entrada, salida, almuerzo y una tarifa mayor que cero."; return; }
     saving = true; $("#saveHoursButton").disabled = true; $("#downloadHoursButton").disabled = true; $("#hoursError").textContent = "Generando PDF…";
-    const record = {id: makeId(), jobAddress, reportDate, description, defaultRate, stage: "created", entries: entries.map(entry => ({...entry, rate: Number(entry.rate ?? defaultRate) || 0, hours: HoursPDF.calcHours(entry)})), updatedAt: new Date().toISOString()};
+    const record = {id: makeId(), jobAddress, reportDate, description, defaultRate, stage: "created", received: 0, due: 0, note: "", checkPhotos: [], entries: entries.map(entry => ({...entry, rate: Number(entry.rate ?? defaultRate) || 0, hours: HoursPDF.calcHours(entry)})), updatedAt: new Date().toISOString()};
     try {
       record.pdfBlob = await HoursPDF.generate({...record, recordId: record.id}, await logoBytes());
       if (!record.pdfBlob || record.pdfBlob.size < 80) throw new Error("El PDF salió vacío. Vuelve a intentar.");
@@ -453,32 +453,123 @@
     { id: "waiting", title: "Esperando cheque", className: "column-waiting" },
     { id: "paid", title: "Pagado", className: "column-paid" }
   ];
+  const HOURS_COLUMN_PREVIEW = 5;
+  const expandedHoursColumns = new Set();
+  let editingHoursId = null;
+  let draggedHoursId = null;
+
+  function hoursPay(record) {
+    return (record.entries || []).reduce((sum, entry) => sum + Number(entry.hours || 0) * Number(entry.rate || 0), 0);
+  }
+  function hoursTotalHours(record) {
+    return (record.entries || []).reduce((sum, entry) => sum + Number(entry.hours || 0), 0);
+  }
+  function hoursDueAmount(record) {
+    const total = hoursPay(record);
+    const received = Number(record.received || 0);
+    if (record.due != null && record.due !== "") return Math.max(0, Number(record.due) || 0);
+    return Math.max(0, Math.round((total - received) * 100) / 100);
+  }
+  function matchesHoursSearch(record) {
+    const q = ($("#hoursBoardSearch")?.value || "").trim().toLowerCase();
+    if (!q) return true;
+    return [record.jobAddress, record.note, record.description, dateText(record.reportDate)].some(value => String(value || "").toLowerCase().includes(q));
+  }
+  function syncHoursBalance() {
+    const record = reports.find(item => item.id === editingHoursId);
+    const total = record ? hoursPay(record) : 0;
+    const received = Math.max(0, Number($("#hoursEditReceived")?.value) || 0);
+    const due = Math.max(0, Math.round((total - received) * 100) / 100);
+    if ($("#hoursEditTotal")) $("#hoursEditTotal").value = total ? String(Math.round(total * 100) / 100) : "0";
+    if ($("#hoursEditDue")) $("#hoursEditDue").value = due ? String(due) : "0";
+    if ($("#hoursBalanceLive")) $("#hoursBalanceLive").textContent = `Total ${money(total)} · recibido ${money(received)} · se debe ${money(due)}`;
+    return { received, due, total };
+  }
+
+  function hoursCard(record) {
+    const hours = hoursTotalHours(record);
+    const pay = hoursPay(record);
+    const due = hoursDueAmount(record);
+    const received = Number(record.received || 0);
+    const dueHtml = received > 0 || due > 0
+      ? (due > 0.004 ? `<p class="card-due">Se debe ${money(due)}</p>` : `<p class="card-due is-clear">Saldo cubierto</p>`)
+      : "";
+    const checks = record.stage === "waiting" || record.stage === "paid" || (record.checkPhotos || []).length
+      ? `<div class="card-check">${(record.checkPhotos || []).length ? `<span class="check-badge">Cheque ×${record.checkPhotos.length}</span>` : `<span class="check-badge" style="background:#eef1fb;color:#5b6580">Sin foto</span>`}<button class="card-check-btn" type="button" data-hours-home="attach-check" data-id="${esc(record.id)}">Subir cheque</button></div>`
+      : "";
+    return `<article class="invoice-card" draggable="true" data-hours-id="${esc(record.id)}" tabindex="0">
+      <div class="card-top"><span class="card-invoice"><i class="card-dot"></i>HORAS</span><button class="card-menu" type="button" data-hours-home="menu" data-id="${esc(record.id)}" aria-label="Editar horas">•••</button></div>
+      <p class="card-date">${esc(dateText(record.reportDate))}</p>
+      <h4 class="card-address">${esc(record.jobAddress || "Sin dirección")}</h4>
+      <div class="card-details"><span class="card-hours">${esc(formatHours(hours))} hrs</span><span class="card-amount">${money(pay)}</span></div>
+      ${dueHtml}
+      ${record.note ? `<p class="card-date">${esc(record.note)}</p>` : ""}
+      ${checks}
+    </article>`;
+  }
 
   function renderHoursBoard() {
-    const board = $("#hoursBoard");
-    const wrap = $("#hoursKanban");
-    if (!board || !wrap) return;
-    const show = Boolean(root.CompanyApp?.isOtras?.());
-    wrap.classList.toggle("hidden", !show);
-    if (!show) { board.innerHTML = ""; return; }
+    const board = $("#hoursHomeBoard");
+    if (!board) return;
+    const visible = reports.filter(matchesHoursSearch);
     board.innerHTML = hoursStages.map(stage => {
-      const items = reports.filter(record => (record.stage || "created") === stage.id);
-      const cards = items.length
-        ? items.map(record => {
-            const hours = (record.entries || []).reduce((sum, entry) => sum + Number(entry.hours || 0), 0);
-            const index = hoursStages.findIndex(item => item.id === (record.stage || "created"));
-            return `<article class="invoice-card">
-              <strong>${esc(record.jobAddress || "Sin dirección")}</strong>
-              <span>${esc(dateText(record.reportDate))} · ${esc(formatHours(hours))} HRS</span>
-              <div class="card-actions">
-                ${index > 0 ? `<button class="mini-action" type="button" data-hours-stage="back" data-id="${esc(record.id)}">←</button>` : ""}
-                ${index < hoursStages.length - 1 ? `<button class="mini-action" type="button" data-hours-stage="next" data-id="${esc(record.id)}">→</button>` : ""}
-              </div>
-            </article>`;
-          }).join("")
-        : `<div class="empty-column">Sin reportes en esta fase</div>`;
-      return `<section class="kanban-column ${stage.className}" data-stage="${stage.id}"><header class="column-head"><div class="column-title"><h3>${stage.title}</h3></div><span class="column-count">${items.length}</span></header><div class="column-cards">${cards}</div></section>`;
+      const items = visible.filter(record => (record.stage || "created") === stage.id);
+      const expanded = expandedHoursColumns.has(stage.id);
+      const shown = expanded ? items : items.slice(0, HOURS_COLUMN_PREVIEW);
+      const hiddenCount = Math.max(0, items.length - shown.length);
+      const more = items.length > HOURS_COLUMN_PREVIEW
+        ? `<button class="column-more" type="button" data-hours-home="toggle-column" data-stage="${stage.id}">${expanded ? "Ver menos" : `Ver más (${hiddenCount})`}</button>`
+        : "";
+      return `<section class="kanban-column ${stage.className}${expanded ? " is-expanded" : ""}" data-stage="${stage.id}"><header class="column-head"><div class="column-title"><h3>${stage.title}</h3></div><span class="column-count">${items.length}</span></header><div class="column-cards">${items.length ? shown.map(hoursCard).join("") + more : `<div class="empty-column">Sin reportes en esta fase</div>`}</div><button class="add-card-button" type="button" data-hours-home="add" data-stage="${stage.id}">+ Agregar horas</button></section>`;
     }).join("");
+    wireHoursHomeBoard();
+    renderHoursCheckDesk();
+  }
+
+  function wireHoursHomeBoard() {
+    const board = $("#hoursHomeBoard");
+    if (!board) return;
+    board.querySelectorAll(".invoice-card").forEach(card => {
+      card.addEventListener("dragstart", event => {
+        draggedHoursId = card.dataset.hoursId;
+        card.classList.add("dragging");
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", draggedHoursId);
+      });
+      card.addEventListener("dragend", () => {
+        draggedHoursId = null;
+        card.classList.remove("dragging");
+        board.querySelectorAll(".kanban-column").forEach(column => column.classList.remove("drag-over"));
+      });
+    });
+    board.querySelectorAll(".kanban-column").forEach(column => {
+      column.addEventListener("dragover", event => { event.preventDefault(); column.classList.add("drag-over"); });
+      column.addEventListener("dragleave", event => { if (!column.contains(event.relatedTarget)) column.classList.remove("drag-over"); });
+      column.addEventListener("drop", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        column.classList.remove("drag-over");
+        const id = draggedHoursId || event.dataTransfer.getData("text/plain");
+        moveHoursToStage(id, column.dataset.stage);
+      });
+    });
+  }
+
+  async function moveHoursToStage(id, stage) {
+    const record = reports.find(item => item.id === id);
+    if (!record || !stage || record.stage === stage) return;
+    if (stage === "paid" && !(record.checkPhotos || []).length) {
+      if (!confirm("¿Ya adjuntaste la foto del cheque? Puedes marcar pagado ahora y subirla después.")) return;
+    }
+    record.stage = stage;
+    try {
+      await root.CloudDB.saveHours(record);
+      renderHoursBoard();
+      renderHistory();
+      if (root.TrentonControl?.toast) root.TrentonControl.toast(`Movido a “${hoursStages.find(item => item.id === stage)?.title || stage}”`);
+    } catch (error) {
+      if (root.TrentonControl?.toast) root.TrentonControl.toast(error.message || "No se pudo mover el reporte.");
+    }
   }
 
   async function moveHoursRecord(id, direction) {
@@ -487,15 +578,127 @@
     const index = hoursStages.findIndex(item => item.id === (record.stage || "created"));
     const next = index + (direction === "next" ? 1 : -1);
     if (next < 0 || next >= hoursStages.length) return;
-    record.stage = hoursStages[next].id;
+    await moveHoursToStage(id, hoursStages[next].id);
+  }
+
+  async function renderHoursEditChecks(record) {
+    const grid = $("#hoursEditCheckGrid");
+    if (!grid) return;
+    const photos = record?.checkPhotos || [];
+    if (!photos.length) { grid.innerHTML = "<p class=\"check-empty\">Todavía no hay fotos de cheque.</p>"; return; }
+    const cards = [];
+    for (const photo of photos) {
+      try {
+        const blob = await root.CloudDB.ensureCheckPhoto(photo);
+        const url = URL.createObjectURL(blob);
+        cards.push(`<figure class="check-thumb"><img src="${url}" alt="${esc(photo.file_name || "Cheque")}"><button type="button" class="mini-action delete" data-hours-check-id="${esc(photo.id)}" aria-label="Quitar foto">×</button></figure>`);
+      } catch (_) {
+        cards.push(`<figure class="check-thumb"><span>No se pudo abrir</span></figure>`);
+      }
+    }
+    grid.innerHTML = cards.join("");
+  }
+
+  function openHoursModal(record) {
+    if (!record) return;
+    editingHoursId = record.id;
+    $("#hoursModalTitle").textContent = "Editar horas";
+    $("#hoursEditAddress").value = record.jobAddress || "";
+    $("#hoursEditDate").value = record.reportDate || "";
+    $("#hoursEditStage").value = record.stage || "created";
+    $("#hoursEditNote").value = record.note || "";
+    $("#hoursEditReceived").value = record.received ?? 0;
+    $("#hoursBoardFormError").textContent = "";
+    syncHoursBalance();
+    renderHoursEditChecks(record);
+    $("#hoursModalBackdrop")?.classList.remove("hidden");
+  }
+  function closeHoursModal() {
+    $("#hoursModalBackdrop")?.classList.add("hidden");
+    editingHoursId = null;
+  }
+
+  async function saveHoursBoardForm(event) {
+    event.preventDefault();
+    const record = reports.find(item => item.id === editingHoursId);
+    if (!record) return;
+    const address = $("#hoursEditAddress").value.trim();
+    if (!address) { $("#hoursBoardFormError").textContent = "Escribe la dirección del trabajo."; return; }
+    const balance = syncHoursBalance();
+    record.jobAddress = address;
+    record.reportDate = $("#hoursEditDate").value || record.reportDate;
+    record.stage = $("#hoursEditStage").value || record.stage;
+    record.note = $("#hoursEditNote").value.trim();
+    record.received = balance.received;
+    record.due = balance.due;
     try {
       await root.CloudDB.saveHours(record);
+      closeHoursModal();
       renderHoursBoard();
       renderHistory();
-      if (root.TrentonControl?.toast) root.TrentonControl.toast(`Movido a “${hoursStages[next].title}”`);
+      if (root.TrentonControl?.toast) root.TrentonControl.toast("Reporte de horas actualizado");
     } catch (error) {
-      $("#hoursError").textContent = error.message || "No se pudo mover el reporte.";
+      $("#hoursBoardFormError").textContent = error.message || "No se pudo guardar. Corre el SQL de saldo de horas.";
     }
+  }
+
+  async function renderHoursCheckDesk() {
+    const select = $("#hoursCheckDeskReport");
+    const status = $("#hoursCheckDeskStatus");
+    const grid = $("#hoursCheckDeskGrid");
+    if (!select || !status || !grid) return;
+    const list = reports.filter(record => record.stage === "waiting" || record.stage === "paid" || (record.checkPhotos || []).length);
+    const current = select.value;
+    const empty = !list.length;
+    $("#hoursCheckDesk")?.classList.toggle("is-empty", empty);
+    select.disabled = empty;
+    $("#hoursCheckDeskGalleryButton") && ($("#hoursCheckDeskGalleryButton").disabled = empty);
+    $("#hoursCheckDeskCameraButton") && ($("#hoursCheckDeskCameraButton").disabled = empty);
+    select.innerHTML = list.length
+      ? list.map(record => `<option value="${esc(record.id)}">${esc(record.jobAddress || "Horas")} · ${esc(dateText(record.reportDate))}</option>`).join("")
+      : `<option value="">Elige un reporte</option>`;
+    if (current && list.some(record => record.id === current)) select.value = current;
+    const record = reports.find(item => item.id === select.value);
+    if (!record) {
+      status.textContent = "Mueve un reporte de horas a Esperando cheque o Pagado y aquí podrás subir la foto.";
+      grid.innerHTML = "";
+      return;
+    }
+    const photos = record.checkPhotos || [];
+    status.textContent = photos.length
+      ? `${photos.length} foto${photos.length === 1 ? "" : "s"} para ${record.jobAddress}.`
+      : `Aún no hay foto del cheque de ${record.jobAddress}.`;
+    if (!photos.length) { grid.innerHTML = ""; return; }
+    const cards = [];
+    for (const photo of photos) {
+      try {
+        const blob = await root.CloudDB.ensureCheckPhoto(photo);
+        const url = URL.createObjectURL(blob);
+        cards.push(`<figure class="check-thumb"><img src="${url}" alt="${esc(photo.file_name || "Cheque")}"><button type="button" class="mini-action delete" data-hours-desk-check="${esc(photo.id)}" aria-label="Quitar foto">×</button></figure>`);
+      } catch (_) {
+        cards.push(`<figure class="check-thumb"><span>No se pudo abrir</span></figure>`);
+      }
+    }
+    grid.innerHTML = cards.join("");
+  }
+
+  function openHoursCheckPicker(reportId, camera) {
+    const picker = camera ? $("#hoursCheckDeskCamera") : $("#hoursCheckDeskFile");
+    if (!picker) return;
+    picker.dataset.reportId = reportId || "";
+    picker.click();
+  }
+
+  async function addHoursCheck(reportId, files) {
+    const record = reports.find(item => item.id === reportId);
+    if (!record) throw new Error("Elige primero un reporte de horas.");
+    for (const file of Array.from(files || []).filter(Boolean)) {
+      const photo = await root.CloudDB.addHoursCheckPhoto(record.id, file);
+      record.checkPhotos = [photo, ...(record.checkPhotos || [])];
+    }
+    renderHoursBoard();
+    if (editingHoursId === record.id) renderHoursEditChecks(record);
+    return record;
   }
 
   function renderHistory() {
@@ -587,10 +790,98 @@
     } catch (error) { $("#hoursError").textContent = error.message || "No se pudo descargar el PDF."; }
   });
   function resetSession() { reports = []; renderHistory(); renderHoursBoard(); window.TrentonControl?.hoursArchive?.render?.(); }
-  $("#hoursBoard")?.addEventListener("click", event => {
-    const button = event.target.closest("[data-hours-stage]");
+  $("#hoursHomeBoard")?.addEventListener("click", event => {
+    const button = event.target.closest("[data-hours-home]");
     if (!button) return;
-    moveHoursRecord(button.dataset.id, button.dataset.hoursStage);
+    const action = button.dataset.hoursHome;
+    const record = reports.find(item => item.id === button.dataset.id);
+    if (action === "toggle-column") {
+      const stage = button.dataset.stage;
+      if (expandedHoursColumns.has(stage)) expandedHoursColumns.delete(stage);
+      else expandedHoursColumns.add(stage);
+      renderHoursBoard();
+      return;
+    }
+    if (action === "add") {
+      window.TrentonControl?.showView?.("hours");
+      return;
+    }
+    if (action === "menu" && record) openHoursModal(record);
+    if (action === "attach-check" && record) openHoursCheckPicker(record.id, false);
+  });
+  $("#hoursBoardSearch")?.addEventListener("input", () => renderHoursBoard());
+  $("#hoursBoardForm")?.addEventListener("submit", saveHoursBoardForm);
+  $("#closeHoursModalButton")?.addEventListener("click", closeHoursModal);
+  $("#cancelHoursModalButton")?.addEventListener("click", closeHoursModal);
+  $("#hoursModalBackdrop")?.addEventListener("click", event => { if (event.target === $("#hoursModalBackdrop")) closeHoursModal(); });
+  $("#hoursEditReceived")?.addEventListener("input", syncHoursBalance);
+  $("#hoursEditOpenForm")?.addEventListener("click", () => {
+    const record = reports.find(item => item.id === editingHoursId);
+    closeHoursModal();
+    if (record) applyImported(record);
+    window.TrentonControl?.showView?.("hours");
+  });
+  $("#hoursEditCheckGallery")?.addEventListener("click", () => {
+    if (editingHoursId) $("#hoursEditCheckFile")?.click();
+  });
+  $("#hoursEditCheckCameraButton")?.addEventListener("click", () => {
+    if (editingHoursId) $("#hoursEditCheckCamera")?.click();
+  });
+  async function onHoursEditCheckFiles(event) {
+    try {
+      await addHoursCheck(editingHoursId, event.target.files);
+      if (root.TrentonControl?.toast) root.TrentonControl.toast("Foto del cheque guardada.");
+    } catch (error) {
+      $("#hoursBoardFormError").textContent = error.message || "No se pudo subir la foto.";
+    }
+    event.target.value = "";
+  }
+  $("#hoursEditCheckFile")?.addEventListener("change", onHoursEditCheckFiles);
+  $("#hoursEditCheckCamera")?.addEventListener("change", onHoursEditCheckFiles);
+  $("#hoursEditCheckGrid")?.addEventListener("click", async event => {
+    const button = event.target.closest("[data-hours-check-id]");
+    if (!button) return;
+    const record = reports.find(item => item.id === editingHoursId);
+    const photo = record?.checkPhotos?.find(item => item.id === button.dataset.hoursCheckId);
+    if (!photo || !confirm("¿Quitar esta foto del cheque?")) return;
+    await root.CloudDB.removeHoursCheckPhoto(photo);
+    record.checkPhotos = record.checkPhotos.filter(item => item.id !== photo.id);
+    renderHoursEditChecks(record);
+    renderHoursBoard();
+  });
+  $("#hoursCheckDeskReport")?.addEventListener("change", () => renderHoursCheckDesk());
+  $("#hoursCheckDeskGalleryButton")?.addEventListener("click", () => {
+    const record = reports.find(item => item.id === $("#hoursCheckDeskReport")?.value);
+    if (!record) { if (root.TrentonControl?.toast) root.TrentonControl.toast("Mueve un reporte a Esperando cheque o Pagado."); return; }
+    openHoursCheckPicker(record.id, false);
+  });
+  $("#hoursCheckDeskCameraButton")?.addEventListener("click", () => {
+    const record = reports.find(item => item.id === $("#hoursCheckDeskReport")?.value);
+    if (!record) return;
+    openHoursCheckPicker(record.id, true);
+  });
+  async function onHoursDeskFiles(event) {
+    const reportId = event.target.dataset.reportId || $("#hoursCheckDeskReport")?.value;
+    try {
+      await addHoursCheck(reportId, event.target.files);
+      if (root.TrentonControl?.toast) root.TrentonControl.toast("Foto del cheque de horas guardada.");
+    } catch (error) {
+      if (root.TrentonControl?.toast) root.TrentonControl.toast(error.message || "No se pudo subir la foto.");
+    }
+    event.target.value = "";
+    delete event.target.dataset.reportId;
+  }
+  $("#hoursCheckDeskFile")?.addEventListener("change", onHoursDeskFiles);
+  $("#hoursCheckDeskCamera")?.addEventListener("change", onHoursDeskFiles);
+  $("#hoursCheckDeskGrid")?.addEventListener("click", async event => {
+    const button = event.target.closest("[data-hours-desk-check]");
+    if (!button) return;
+    const record = reports.find(item => item.id === $("#hoursCheckDeskReport")?.value);
+    const photo = record?.checkPhotos?.find(item => item.id === button.dataset.hoursDeskCheck);
+    if (!photo || !confirm("¿Quitar esta foto del cheque?")) return;
+    await root.CloudDB.removeHoursCheckPhoto(photo);
+    record.checkPhotos = record.checkPhotos.filter(item => item.id !== photo.id);
+    renderHoursBoard();
   });
   document.addEventListener("visibilitychange", () => { if (document.hidden) persistHoursDraft(true); });
   window.addEventListener("pagehide", () => persistHoursDraft(true));

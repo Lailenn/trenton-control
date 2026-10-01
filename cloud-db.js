@@ -248,6 +248,18 @@
   function isMissingColumn(error) {
     return /column|schema cache|PGRST204|does not exist|Could not find/i.test(errorText(error));
   }
+  function omitKeys(row, keys) {
+    const next = { ...row };
+    keys.forEach(key => { delete next[key]; });
+    return next;
+  }
+  async function upsertRow(table, body) {
+    return rowFrom(await rest(`${table}?on_conflict=id`, {
+      method: "POST",
+      body,
+      prefer: "return=representation,resolution=merge-duplicates"
+    }));
+  }
   function fail(error, fallback) {
     if (!error) return;
     if (error.code === "23505") throw new Error("Esta invoice ya está guardada. Edita el registro existente.");
@@ -385,6 +397,8 @@
       pdf_path: record.pdfPath || null,
       pdf_name: record.pdfName || "",
       paid_at: record.paidAt || null,
+      received_cents: Core.cents(record.received ?? 0),
+      due_cents: Core.cents(record.due ?? Math.max(0, Number(record.amount || 0) - Number(record.received || 0))),
       deleted_at: record.deletedAt || null,
       updated_at: record.updatedAt || new Date().toISOString()
     };
@@ -397,6 +411,8 @@
       invoiceNumber: row.invoice_number,
       issuedDate: row.issued_date || "",
       amount: (row.amount_cents || 0) / 100,
+      received: (row.received_cents || 0) / 100,
+      due: (row.due_cents != null ? row.due_cents : Math.max(0, (row.amount_cents || 0) - (row.received_cents || 0))) / 100,
       hours: Number(row.hours) || 0,
       stage: row.stage,
       description: row.description || "",
@@ -492,29 +508,29 @@
     rememberInvoice({ ...record, cloudSynced: false });
     const row = invoiceRow(record, uid);
     let saved = null;
-    try {
-      saved = rowFrom(await rest("invoices?on_conflict=id", {
-        method: "POST",
-        body: row,
-        prefer: "return=representation,resolution=merge-duplicates"
-      }));
-    } catch (error) {
-      if (!isMissingColumn(error)) fail(error, "No se pudo guardar la invoice.");
-      saved = rowFrom(await rest("invoices?on_conflict=id", {
-        method: "POST",
-        body: {
-          id: row.id,
-          owner_id: uid,
-          address: row.address,
-          invoice_number: row.invoice_number,
-          issued_date: row.issued_date,
-          amount_cents: row.amount_cents,
-          hours: row.hours,
-          stage: row.stage,
-          description: row.description
-        },
-        prefer: "return=representation,resolution=merge-duplicates"
-      }));
+    const invoiceAttempts = [
+      row,
+      omitKeys(row, ["received_cents", "due_cents"]),
+      omitKeys(row, ["received_cents", "due_cents", "company_id"]),
+      {
+        id: row.id,
+        owner_id: uid,
+        address: row.address,
+        invoice_number: row.invoice_number,
+        issued_date: row.issued_date,
+        amount_cents: row.amount_cents,
+        hours: row.hours,
+        stage: row.stage,
+        description: row.description
+      }
+    ];
+    for (const body of invoiceAttempts) {
+      try {
+        saved = await upsertRow("invoices", body);
+        break;
+      } catch (error) {
+        if (!isMissingColumn(error)) fail(error, "No se pudo guardar la invoice.");
+      }
     }
     if (!saved?.id) throw new Error("Supabase no confirmó la invoice. Corre supabase/schema.sql y vuelve a guardar.");
     record.cloudSynced = true;
@@ -628,6 +644,9 @@
       defaultRate: Number(report.default_rate) || 0,
       stage: report.stage || "created",
       companyId: report.company_id || "trenton",
+      note: report.note || "",
+      received: (report.received_cents || 0) / 100,
+      due: (report.due_cents || 0) / 100,
       pdfHash: report.pdf_hash,
       pdfPath: report.pdf_path,
       pdfName: report.pdf_name,
@@ -659,6 +678,7 @@
 
   async function listHours() {
     let cloud = [];
+    let photos = [];
     try {
       const reports = await queryHoursReports();
       let entries = [];
@@ -667,12 +687,22 @@
       } catch (entryError) {
         console.warn(entryError);
       }
-      cloud = (Array.isArray(reports) ? reports : []).map(report => ({ ...hoursFrom(report, entries), cloudSynced: true })).filter(matchesCompany);
+      try {
+        photos = await rest(`hours_check_photos?${companyQuery()}&order=captured_at.desc`) || [];
+      } catch (photoError) {
+        if (isMissingColumn(photoError)) {
+          try { photos = await rest("hours_check_photos?order=captured_at.desc") || []; }
+          catch (_) { photos = []; }
+        } else console.warn(photoError);
+      }
+      cloud = (Array.isArray(reports) ? reports : []).map(report => ({ ...hoursFrom(report, entries), checkPhotos: photos.filter(photo => photo.report_id === report.id), cloudSynced: true })).filter(matchesCompany);
     } catch (error) {
       console.warn("Nube de horas no disponible; se usan los reportes de este aparato.", error);
     }
     const seen = new Set(cloud.map(item => item.id));
-    const local = readJson(hoursMetaKey()).filter(item => item.id && !seen.has(item.id) && matchesCompany(item));
+    const local = readJson(hoursMetaKey())
+      .filter(item => item.id && !seen.has(item.id) && matchesCompany(item))
+      .map(item => ({ ...item, checkPhotos: item.checkPhotos || [] }));
     const merged = cloud.concat(local);
     await Promise.all(merged.map(async record => {
       record.pdfBlob = record.pdfBlob || await root.LocalCache.get("hours", record.id, record.pdfHash);
@@ -693,26 +723,26 @@
   }
 
   async function upsertHoursReport(report) {
+    const attempts = [
+      report,
+      omitKeys(report, ["received_cents", "due_cents", "note", "stage"]),
+      omitKeys(report, ["received_cents", "due_cents", "note", "stage", "company_id"]),
+      {
+        id: report.id,
+        owner_id: report.owner_id,
+        job_address: report.job_address,
+        report_date: report.report_date,
+        description: report.description
+      }
+    ];
     let saved = null;
-    try {
-      saved = rowFrom(await rest("hours_reports?on_conflict=id", {
-        method: "POST",
-        body: report,
-        prefer: "return=representation,resolution=merge-duplicates"
-      }));
-    } catch (error) {
-      if (!isMissingColumn(error)) fail(error, "No se pudo guardar el reporte de horas.");
-      saved = rowFrom(await rest("hours_reports?on_conflict=id", {
-        method: "POST",
-        body: {
-          id: report.id,
-          owner_id: report.owner_id,
-          job_address: report.job_address,
-          report_date: report.report_date,
-          description: report.description
-        },
-        prefer: "return=representation,resolution=merge-duplicates"
-      }));
+    for (const body of attempts) {
+      try {
+        saved = await upsertRow("hours_reports", body);
+        break;
+      } catch (error) {
+        if (!isMissingColumn(error)) fail(error, "No se pudo guardar el reporte de horas.");
+      }
     }
     if (!saved?.id) throw new Error("Supabase no confirmó el reporte. Corre supabase/schema-fix-hours-cloud.sql y vuelve a guardar.");
     return saved;
@@ -762,6 +792,9 @@
       description: record.description || "",
       default_rate: Number(record.defaultRate) || 0,
       stage: record.stage || "created",
+      note: record.note || "",
+      received_cents: Math.round(Number(record.received || 0) * 100),
+      due_cents: Math.round(Number(record.due || 0) * 100),
       pdf_hash: record.pdfHash || null,
       pdf_path: record.pdfPath || null,
       pdf_name: record.pdfName || "",
@@ -1036,6 +1069,37 @@
     } catch (_) { /* el archivo puede no existir */ }
     try {
       await rest(`check_photos?id=eq.${encodeURIComponent(photo.id)}`, { method: "DELETE" });
+    } catch (error) {
+      fail(error, "No se pudo quitar la foto.");
+    }
+    await root.LocalCache.remove("check", photo.id);
+  }
+
+  async function addHoursCheckPhoto(reportId, file, note = "") {
+    if (!file) throw new Error("Selecciona una foto del cheque.");
+    if (!reportId) throw new Error("Elige primero un reporte de horas.");
+    const image = await normalizeCheckImage(file);
+    const uid = await requireOwnerId();
+    const id = `hours-check-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const ext = image.type.includes("png") ? "png" : image.type.includes("webp") ? "webp" : "jpg";
+    const path = `${uid}/hours/${reportId}/${id}.${ext}`;
+    await upload("check-photos", path, image, image.type || "image/jpeg");
+    await root.LocalCache.put("check", id, "", image);
+    const row = { id, report_id: reportId, owner_id: uid, company_id: companyId(), storage_path: path, file_name: image.name || `${id}.${ext}`, note: String(note || "").slice(0, 500), captured_at: new Date().toISOString() };
+    try {
+      await rest("hours_check_photos", { method: "POST", body: row });
+    } catch (error) {
+      fail(error, "No se pudo guardar la foto del cheque de horas. Corre supabase/schema-hours-board-balance.sql.");
+    }
+    return { ...row, blob: image };
+  }
+
+  async function removeHoursCheckPhoto(photo) {
+    try {
+      await storageFetch(`check-photos/${photo.storage_path}`, { method: "DELETE", timeout: 10000, timeoutMessage: "No se pudo quitar la foto." });
+    } catch (_) { /* ignore */ }
+    try {
+      await rest(`hours_check_photos?id=eq.${encodeURIComponent(photo.id)}`, { method: "DELETE" });
     } catch (error) {
       fail(error, "No se pudo quitar la foto.");
     }
@@ -1375,6 +1439,8 @@
     addCheckPhoto,
     ensureCheckPhoto,
     removeCheckPhoto,
+    addHoursCheckPhoto,
+    removeHoursCheckPhoto,
     getProfile,
     saveProfile,
     saveAvatar,

@@ -3872,3 +3872,34 @@ body {
 .hours-board .kanban-column { min-width: min(100%, 220px); }
 .hours-board .card-actions { opacity: 1; margin-top: 8px; }
 #switchCompanyButton { margin-bottom: 8px; }
+.hours-home-board { margin-top: 8px; }
+.balance-panel {
+  margin: 18px 0 8px;
+  padding: 16px;
+  border: 1px solid #e4d2b8;
+  border-left: 4px solid var(--orange);
+  border-radius: 14px;
+  background: #fffaf2;
+}
+.balance-panel-head .field-group-title { margin: 0; }
+.balance-panel-head p { margin: 4px 0 0; color: #7a6240; font-size: 13px; line-height: 1.4; }
+.balance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+.balance-live {
+  margin: 12px 0 0;
+  color: #5c4314;
+  font-size: 13px;
+  font-weight: 700;
+}
+.card-due {
+  margin: 8px 0 0;
+  color: #945519;
+  font-size: 12px;
+  font-weight: 700;
+}
+.card-due.is-clear { color: #187054; }
+#amountDue, #hoursEditDue, #hoursEditTotal { background: #f7f8fc; }

@@ -150,6 +150,30 @@
     return pdfUrls.get(record.id);
   }
 
+  function invoiceDue(record) {
+    const amount = Number(record?.amount || 0);
+    const received = Number(record?.received || 0);
+    const stored = record?.due;
+    if (stored != null && stored !== "") return Math.max(0, Number(stored) || 0);
+    return Math.max(0, Math.round((amount - received) * 100) / 100);
+  }
+  function dueLine(record) {
+    const due = invoiceDue(record);
+    const received = Number(record?.received || 0);
+    if (received <= 0 && due <= 0) return "";
+    return due > 0.004
+      ? `<p class="card-due">Se debe ${money(due)}</p>`
+      : `<p class="card-due is-clear">Saldo cubierto</p>`;
+  }
+  function syncInvoiceBalance() {
+    const amount = Number($("#amount")?.value) || 0;
+    const received = Math.max(0, Number($("#amountReceived")?.value) || 0);
+    const due = Math.max(0, Math.round((amount - received) * 100) / 100);
+    if ($("#amountDue")) $("#amountDue").value = due ? String(due) : "0";
+    if ($("#balanceLive")) $("#balanceLive").textContent = `Total ${money(amount)} · recibido ${money(received)} · se debe ${money(due)}`;
+    return { received, due };
+  }
+
   function cardDate(record) {
     const iso = Core.issuedDate(record);
     if (!iso) return "Sin fecha";
@@ -165,6 +189,7 @@
       <p class="card-date">${esc(cardDate(record))}</p>
       <h4 class="card-address"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 1 7 7c0 5.25-7 13-7 13S5 14.25 5 9a7 7 0 0 1 7-7zm0 9.5A2.5 2.5 0 1 0 12 6a2.5 2.5 0 0 0 0 5.5z"/></svg>${esc(record.address)}</h4>
       <div class="card-details"><span class="card-hours"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm1 5h-2v6l4.5 2.7.9-1.5L13 12.2z"/></svg>${Number(record.hours || 0)} hrs</span><span class="card-amount">${money(record.amount)}</span></div>
+      ${dueLine(record)}
       ${record.stage === "waiting" || record.stage === "paid" || (record.checkPhotos || []).length ? `<div class="card-check">${(record.checkPhotos || []).length ? `<span class="check-badge">Cheque ×${record.checkPhotos.length}</span>` : `<span class="check-badge" style="background:#eef1fb;color:#5b6580">Sin foto</span>`}<button class="card-check-btn" type="button" data-action="attach-check" data-id="${esc(record.id)}">Subir cheque</button></div>` : ""}
     </article>`;
   }
@@ -305,6 +330,11 @@
       $("#amount").value = record.amount ?? "";
       $("#hours").value = record.hours ?? "";
       $("#description").value = record.description || "";
+      $("#amountReceived").value = record.received ?? 0;
+      syncInvoiceBalance();
+    } else {
+      $("#amountReceived").value = "";
+      syncInvoiceBalance();
     }
     renderCheckPhotos(record);
     $("#modalBackdrop").classList.remove("hidden");
@@ -314,7 +344,7 @@
   function closeModal() { $("#modalBackdrop").classList.add("hidden"); editingId = null; selectedPdf = null; }
 
   function readForm() {
-    return { address: $("#address").value.trim(), invoiceNumber: $("#invoiceNumber").value.trim(), issuedDate: $("#recordIssuedDate").value, amount: Core.amount($("#amount").value), hours: Number($("#hours").value) || 0, description: $("#description").value.trim(), stage: $("#stage").value };
+    return { address: $("#address").value.trim(), invoiceNumber: $("#invoiceNumber").value.trim(), issuedDate: $("#recordIssuedDate").value, amount: Core.amount($("#amount").value), hours: Number($("#hours").value) || 0, description: $("#description").value.trim(), stage: $("#stage").value, received: syncInvoiceBalance().received, due: syncInvoiceBalance().due };
   }
 
   async function submitForm(event) {
@@ -374,11 +404,11 @@
   }
 
   function wireBoardEvents() {
-    document.querySelectorAll(".invoice-card").forEach((card) => {
+    document.querySelectorAll("#board .invoice-card").forEach((card) => {
       card.addEventListener("dragstart", (event) => { draggedId = card.dataset.id; card.classList.add("dragging"); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", draggedId); });
-      card.addEventListener("dragend", () => { draggedId = null; card.classList.remove("dragging"); document.querySelectorAll(".kanban-column").forEach((column) => column.classList.remove("drag-over")); });
+      card.addEventListener("dragend", () => { draggedId = null; card.classList.remove("dragging"); document.querySelectorAll("#board .kanban-column").forEach((column) => column.classList.remove("drag-over")); });
     });
-    document.querySelectorAll(".kanban-column").forEach((column) => {
+    document.querySelectorAll("#board .kanban-column").forEach((column) => {
       column.addEventListener("dragover", (event) => { event.preventDefault(); column.classList.add("drag-over"); });
       column.addEventListener("dragleave", (event) => { if (!column.contains(event.relatedTarget)) column.classList.remove("drag-over"); });
       column.addEventListener("drop", (event) => { event.preventDefault(); column.classList.remove("drag-over"); const recordId = draggedId || event.dataTransfer.getData("text/plain"); moveRecord(recordId, column.dataset.stage); });
@@ -980,7 +1010,7 @@
   const jobRender = jobArchive.render.bind(jobArchive);
   jobArchive.render = () => { hoursArchive.render(); jobRender(); };
   jobArchive.open = () => hoursArchive.open();
-  window.TrentonControl = { toast: showToast, records: () => records, hoursArchive, jobArchive, download };
+  window.TrentonControl = { toast: showToast, records: () => records, hoursArchive, jobArchive, download, showView };
   document.querySelectorAll("[data-archive]").forEach(button => button.addEventListener("click", () => navClick(button.dataset.archive === "all" ? "archive" : button.dataset.archive)));
   $("#editGeneratedInvoiceButton").addEventListener("click", editGeneratedInvoice);
   $("#newInvoiceButton").addEventListener("click", () => { if (builderRecordId) resetInvoiceBuilder(); navClick("invoice"); });
@@ -1020,6 +1050,8 @@
   $("#cancelButton").addEventListener("click", closeModal);
   $("#modalBackdrop").addEventListener("click", (event) => { if (event.target === $("#modalBackdrop")) closeModal(); });
   $("#invoiceForm").addEventListener("submit", submitForm);
+  $("#amount")?.addEventListener("input", syncInvoiceBalance);
+  $("#amountReceived")?.addEventListener("input", syncInvoiceBalance);
   $("#choosePdfButton").addEventListener("click", () => $("#pdfFile").click());
   $("#pdfFile").addEventListener("change", (event) => selectPdf(event.target.files[0]));
   $("#uploadArea").addEventListener("dragover", (event) => { event.preventDefault(); $("#uploadArea").classList.add("dragging"); });

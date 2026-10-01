@@ -16,7 +16,7 @@
       title: "Otra empresa",
       crumb: "Otra empresa",
       hero: "Misma estructura, <span>datos aparte</span>. Sin logo ni nombre.",
-      hint: "Invoices, horas, otro formato y kanban de horas. No se mezcla con Trenton."
+      hint: "Invoices, horas, otro formato y el tablero de horas en Inicio. No se mezcla con Trenton."
     }
   };
 
@@ -49,7 +49,7 @@
     document.body.classList.toggle("workspace-otras", current.id === "otras");
     if ($("#topbarCompanyName")) $("#topbarCompanyName").textContent = current.crumb;
     if ($("#heroWorkspaceTitle")) $("#heroWorkspaceTitle").innerHTML = current.hero;
-    $("#hoursKanban")?.classList.toggle("hidden", current.id !== "otras");
+    $("#hoursKanban")?.classList.add("hidden");
     document.querySelectorAll("[data-company-choice]").forEach(button => {
       button.classList.toggle("is-selected", button.dataset.companyChoice === current.id);
     });
