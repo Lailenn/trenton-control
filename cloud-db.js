@@ -850,6 +850,10 @@
       endDate: report.end_date,
       defaultRate: Number(report.default_rate) || 0,
       companyId: report.company_id || "trenton",
+      stage: report.stage || "created",
+      note: report.note || "",
+      received: (report.received_cents || 0) / 100,
+      due: (report.due_cents || 0) / 100,
       pdfHash: report.pdf_hash,
       pdfPath: report.pdf_path,
       pdfName: report.pdf_name,
@@ -871,6 +875,7 @@
 
   async function listJobs() {
     let cloud = [];
+    let photos = [];
     try {
       const reports = await queryJobReports();
       let entries = [];
@@ -879,12 +884,22 @@
       } catch (entryError) {
         console.warn(entryError);
       }
-      cloud = (Array.isArray(reports) ? reports : []).map(report => ({ ...jobFrom(report, entries), cloudSynced: true })).filter(matchesCompany);
+      try {
+        photos = await rest(`job_check_photos?${companyQuery()}&order=captured_at.desc`) || [];
+      } catch (photoError) {
+        if (isMissingColumn(photoError)) {
+          try { photos = await rest("job_check_photos?order=captured_at.desc") || []; }
+          catch (_) { photos = []; }
+        } else console.warn(photoError);
+      }
+      cloud = (Array.isArray(reports) ? reports : []).map(report => ({ ...jobFrom(report, entries), checkPhotos: photos.filter(photo => photo.report_id === report.id), cloudSynced: true })).filter(matchesCompany);
     } catch (error) {
       console.warn("Nube de jobs no disponible; se usan los reportes de este aparato.", error);
     }
     const seen = new Set(cloud.map(item => item.id));
-    const local = readJson(jobMetaKey()).filter(item => item.id && !seen.has(item.id) && matchesCompany(item));
+    const local = readJson(jobMetaKey())
+      .filter(item => item.id && !seen.has(item.id) && matchesCompany(item))
+      .map(item => ({ ...item, checkPhotos: item.checkPhotos || [] }));
     const merged = cloud.concat(local);
     await Promise.all(merged.map(async record => {
       record.pdfBlob = record.pdfBlob || await root.LocalCache.get("job", record.id, record.pdfHash);
@@ -947,26 +962,36 @@
       start_date: record.startDate || null,
       end_date: record.endDate || null,
       default_rate: Number(record.defaultRate) || 0,
+      stage: record.stage || "created",
+      note: record.note || "",
+      received_cents: Math.round(Number(record.received || 0) * 100),
+      due_cents: Math.round(Number(record.due || 0) * 100),
       pdf_hash: record.pdfHash || null,
       pdf_path: record.pdfPath || null,
       pdf_name: record.pdfName || "",
       deleted_at: null,
       updated_at: record.updatedAt
     };
-    try {
-      saved = rowFrom(await rest("job_reports?on_conflict=id", {
-        method: "POST",
-        body: jobBody,
-        prefer: "return=representation,resolution=merge-duplicates"
-      }));
-    } catch (error) {
-      if (!isMissingColumn(error)) fail(error, "No se pudo guardar el reporte de job.");
-      const { company_id, ...legacy } = jobBody;
-      saved = rowFrom(await rest("job_reports?on_conflict=id", {
-        method: "POST",
-        body: legacy,
-        prefer: "return=representation,resolution=merge-duplicates"
-      }));
+    const jobAttempts = [
+      jobBody,
+      omitKeys(jobBody, ["received_cents", "due_cents", "note", "stage"]),
+      omitKeys(jobBody, ["received_cents", "due_cents", "note", "stage", "company_id"]),
+      {
+        id: jobBody.id,
+        owner_id: uid,
+        job_address: jobBody.job_address,
+        start_date: jobBody.start_date,
+        end_date: jobBody.end_date,
+        default_rate: jobBody.default_rate
+      }
+    ];
+    for (const body of jobAttempts) {
+      try {
+        saved = await upsertRow("job_reports", body);
+        break;
+      } catch (error) {
+        if (!isMissingColumn(error)) fail(error, "No se pudo guardar el reporte de job.");
+      }
     }
     if (!saved?.id) throw new Error("Supabase no confirmó el job. Corre supabase/schema-job-reports.sql y vuelve a guardar.");
     await replaceJobEntries(record, uid);
@@ -1100,6 +1125,37 @@
     } catch (_) { /* ignore */ }
     try {
       await rest(`hours_check_photos?id=eq.${encodeURIComponent(photo.id)}`, { method: "DELETE" });
+    } catch (error) {
+      fail(error, "No se pudo quitar la foto.");
+    }
+    await root.LocalCache.remove("check", photo.id);
+  }
+
+  async function addJobCheckPhoto(reportId, file, note = "") {
+    if (!file) throw new Error("Selecciona una foto del cheque.");
+    if (!reportId) throw new Error("Elige primero un reporte enviado a Trenton.");
+    const image = await normalizeCheckImage(file);
+    const uid = await requireOwnerId();
+    const id = `job-check-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const ext = image.type.includes("png") ? "png" : image.type.includes("webp") ? "webp" : "jpg";
+    const path = `${uid}/jobs/${reportId}/${id}.${ext}`;
+    await upload("check-photos", path, image, image.type || "image/jpeg");
+    await root.LocalCache.put("check", id, "", image);
+    const row = { id, report_id: reportId, owner_id: uid, company_id: companyId(), storage_path: path, file_name: image.name || `${id}.${ext}`, note: String(note || "").slice(0, 500), captured_at: new Date().toISOString() };
+    try {
+      await rest("job_check_photos", { method: "POST", body: row });
+    } catch (error) {
+      fail(error, "No se pudo guardar la foto del cheque. Corre supabase/schema-job-board.sql.");
+    }
+    return { ...row, blob: image };
+  }
+
+  async function removeJobCheckPhoto(photo) {
+    try {
+      await storageFetch(`check-photos/${photo.storage_path}`, { method: "DELETE", timeout: 10000, timeoutMessage: "No se pudo quitar la foto." });
+    } catch (_) { /* ignore */ }
+    try {
+      await rest(`job_check_photos?id=eq.${encodeURIComponent(photo.id)}`, { method: "DELETE" });
     } catch (error) {
       fail(error, "No se pudo quitar la foto.");
     }
@@ -1441,6 +1497,8 @@
     removeCheckPhoto,
     addHoursCheckPhoto,
     removeHoursCheckPhoto,
+    addJobCheckPhoto,
+    removeJobCheckPhoto,
     getProfile,
     saveProfile,
     saveAvatar,

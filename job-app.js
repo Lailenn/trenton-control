@@ -304,6 +304,11 @@
       startDate: dates[0] || "",
       endDate: dates[dates.length - 1] || dates[0] || "",
       defaultRate,
+      stage: "created",
+      received: 0,
+      due: 0,
+      note: "",
+      checkPhotos: [],
       entries: list,
       updatedAt: new Date().toISOString()
     };
@@ -349,6 +354,11 @@
       startDate: dates[0] || "",
       endDate: dates[dates.length - 1] || "",
       defaultRate,
+      stage: "created",
+      received: 0,
+      due: 0,
+      note: "",
+      checkPhotos: [],
       entries: imported,
       pdfBlob: file,
       pdfName: file?.name || fileName({ jobAddress: fields.jobAddress, entries: imported }),
@@ -426,13 +436,13 @@
       try {
         await root.CloudDB.saveJob(record);
         cloudOk = true;
-        await load(); renderHistory();
+        await load(); renderHistory(); renderJobBoard();
         window.TrentonControl?.jobArchive?.render?.();
         if (root.TrentonControl?.toast) root.TrentonControl.toast("Otro formato de horas guardado en la nube");
         clearJobDraft();
       } catch (cloudError) {
         console.error(cloudError);
-        try { await load(); renderHistory(); } catch (_) { /* local copy */ }
+        try { await load(); renderHistory(); renderJobBoard(); } catch (_) { /* local copy */ }
         $("#jobError").textContent = "El reporte quedó en este aparato, pero no en la nube: " + (cloudError.message || "revisa la conexión") + ". Corre supabase/schema-job-reports.sql y vuelve a guardar.";
         if (root.TrentonControl?.toast) root.TrentonControl.toast("PDF listo; la nube falló");
       }
@@ -453,6 +463,249 @@
     }
   }
 
+  const jobStages = [
+    { id: "created", title: "Reporte creado", className: "column-created" },
+    { id: "sent", title: "Enviado a Trenton", className: "column-working" },
+    { id: "waiting", title: "Esperando cheque", className: "column-waiting" },
+    { id: "paid", title: "Pagado", className: "column-paid" }
+  ];
+  const JOB_COLUMN_PREVIEW = 5;
+  const expandedJobColumns = new Set();
+  let editingJobId = null;
+  let draggedJobId = null;
+
+  function jobPay(record) {
+    return (record.entries || []).reduce((sum, entry) => sum + Number(entry.hours || JobPDF.calcHours(entry) || 0) * Number(entry.rate || 0), 0);
+  }
+  function jobTotalHours(record) {
+    return (record.entries || []).reduce((sum, entry) => sum + Number(entry.hours || JobPDF.calcHours(entry) || 0), 0);
+  }
+  function jobDollars(value) {
+    return Math.max(0, Math.round((Number(value) || 0) * 100) / 100);
+  }
+  function parseJobMoney(value) {
+    if (value == null || value === "") return 0;
+    const parsed = root.InvoiceCore?.amount?.(value);
+    if (parsed != null) return jobDollars(parsed);
+    const fallback = Number(String(value).replace(/[^\d.]/g, ""));
+    return Number.isFinite(fallback) ? jobDollars(fallback) : 0;
+  }
+  function jobDueAmount(record) {
+    return jobDollars(jobPay(record) - Number(record.received || 0));
+  }
+  function jobDateText(record) {
+    return JobPDF.rangeLabel((record.entries || []).map(entry => entry.date)) || record.startDate || "Sin fecha";
+  }
+  function matchesJobSearch(record) {
+    const q = ($("#jobBoardSearch")?.value || "").trim().toLowerCase();
+    if (!q) return true;
+    return [record.jobAddress, record.note, jobDateText(record)].some(value => String(value || "").toLowerCase().includes(q));
+  }
+  function syncJobBalance() {
+    const record = reports.find(item => item.id === editingJobId);
+    const total = record ? jobPay(record) : 0;
+    const received = parseJobMoney($("#jobEditReceived")?.value);
+    const due = jobDollars(total - received);
+    if ($("#jobEditTotal")) $("#jobEditTotal").value = jobDollars(total).toFixed(2);
+    if ($("#jobEditDue")) $("#jobEditDue").value = due.toFixed(2);
+    if ($("#jobBalanceLive")) $("#jobBalanceLive").textContent = `Total ${money(total)} · recibido ${money(received)} · se debe ${money(due)}`;
+    return { received, due, total };
+  }
+  function jobCard(record) {
+    const hours = jobTotalHours(record);
+    const pay = jobPay(record);
+    const due = jobDueAmount(record);
+    const received = Number(record.received || 0);
+    const dueHtml = received > 0 || due > 0
+      ? (due > 0.004 ? `<p class="card-due">Se debe ${money(due)}</p>` : `<p class="card-due is-clear">Saldo cubierto</p>`)
+      : "";
+    const checks = record.stage === "waiting" || record.stage === "paid" || (record.checkPhotos || []).length
+      ? `<div class="card-check">${(record.checkPhotos || []).length ? `<span class="check-badge">Cheque ×${record.checkPhotos.length}</span>` : `<span class="check-badge" style="background:#eef1fb;color:#5b6580">Sin foto</span>`}<button class="card-check-btn" type="button" data-job-home="attach-check" data-id="${esc(record.id)}">Subir cheque</button></div>`
+      : "";
+    return `<article class="invoice-card" draggable="true" data-job-id="${esc(record.id)}" tabindex="0">
+      <div class="card-top"><span class="card-invoice"><i class="card-dot"></i>TRENTON</span><button class="card-menu" type="button" data-job-home="menu" data-id="${esc(record.id)}" aria-label="Editar reporte">•••</button></div>
+      <p class="card-date">${esc(jobDateText(record))}</p>
+      <h4 class="card-address">${esc(record.jobAddress || "Sin dirección")}</h4>
+      <div class="card-details"><span class="card-hours">${esc(formatHours(hours))} hrs</span><span class="card-amount">${money(pay)}</span></div>
+      ${dueHtml}
+      ${record.note ? `<p class="card-date">${esc(record.note)}</p>` : ""}
+      ${checks}
+    </article>`;
+  }
+  function renderJobBoard() {
+    const board = $("#jobHomeBoard");
+    if (!board) return;
+    const visible = reports.filter(matchesJobSearch);
+    board.innerHTML = jobStages.map(stage => {
+      const items = visible.filter(record => (record.stage || "created") === stage.id);
+      const expanded = expandedJobColumns.has(stage.id);
+      const shown = expanded ? items : items.slice(0, JOB_COLUMN_PREVIEW);
+      const hiddenCount = Math.max(0, items.length - shown.length);
+      const more = items.length > JOB_COLUMN_PREVIEW
+        ? `<button class="column-more" type="button" data-job-home="toggle-column" data-stage="${stage.id}">${expanded ? "Ver menos" : `Ver más (${hiddenCount})`}</button>`
+        : "";
+      return `<section class="kanban-column ${stage.className}${expanded ? " is-expanded" : ""}" data-stage="${stage.id}"><header class="column-head"><div class="column-title"><h3>${stage.title}</h3></div><span class="column-count">${items.length}</span></header><div class="column-cards">${items.length ? shown.map(jobCard).join("") + more : `<div class="empty-column">Sin reportes en esta fase</div>`}</div><button class="add-card-button" type="button" data-job-home="add" data-stage="${stage.id}">+ Agregar reporte</button></section>`;
+    }).join("");
+    wireJobHomeBoard();
+    renderJobCheckDesk();
+  }
+  function wireJobHomeBoard() {
+    const board = $("#jobHomeBoard");
+    if (!board) return;
+    board.querySelectorAll(".invoice-card").forEach(card => {
+      card.addEventListener("dragstart", event => {
+        draggedJobId = card.dataset.jobId;
+        card.classList.add("dragging");
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", draggedJobId);
+      });
+      card.addEventListener("dragend", () => {
+        draggedJobId = null;
+        card.classList.remove("dragging");
+        board.querySelectorAll(".kanban-column").forEach(column => column.classList.remove("drag-over"));
+      });
+    });
+    board.querySelectorAll(".kanban-column").forEach(column => {
+      column.addEventListener("dragover", event => { event.preventDefault(); column.classList.add("drag-over"); });
+      column.addEventListener("dragleave", event => { if (!column.contains(event.relatedTarget)) column.classList.remove("drag-over"); });
+      column.addEventListener("drop", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        column.classList.remove("drag-over");
+        const id = draggedJobId || event.dataTransfer.getData("text/plain");
+        moveJobToStage(id, column.dataset.stage);
+      });
+    });
+  }
+  async function moveJobToStage(id, stage) {
+    const record = reports.find(item => item.id === id);
+    if (!record || !stage || record.stage === stage) return;
+    if (stage === "paid" && !(record.checkPhotos || []).length) {
+      if (!confirm("¿Ya adjuntaste la foto del cheque? Puedes marcar pagado ahora y subirla después.")) return;
+    }
+    record.stage = stage;
+    try {
+      await root.CloudDB.saveJob(record);
+      renderJobBoard();
+      renderHistory();
+      if (root.TrentonControl?.toast) root.TrentonControl.toast(`Movido a “${jobStages.find(item => item.id === stage)?.title || stage}”`);
+    } catch (error) {
+      if (root.TrentonControl?.toast) root.TrentonControl.toast(error.message || "No se pudo mover el reporte.");
+    }
+  }
+  async function renderJobEditChecks(record) {
+    const grid = $("#jobEditCheckGrid");
+    if (!grid) return;
+    const photos = record?.checkPhotos || [];
+    if (!photos.length) { grid.innerHTML = "<p class=\"check-empty\">Todavía no hay fotos de cheque.</p>"; return; }
+    const cards = [];
+    for (const photo of photos) {
+      try {
+        const blob = await root.CloudDB.ensureCheckPhoto(photo);
+        const url = URL.createObjectURL(blob);
+        cards.push(`<figure class="check-thumb"><img src="${url}" alt="${esc(photo.file_name || "Cheque")}"><button type="button" class="mini-action delete" data-job-check-id="${esc(photo.id)}" aria-label="Quitar foto">×</button></figure>`);
+      } catch (_) {
+        cards.push(`<figure class="check-thumb"><span>No se pudo abrir</span></figure>`);
+      }
+    }
+    grid.innerHTML = cards.join("");
+  }
+  function openJobModal(record) {
+    if (!record) return;
+    editingJobId = record.id;
+    $("#jobModalTitle").textContent = "Editar reporte final";
+    $("#jobEditAddress").value = record.jobAddress || "";
+    $("#jobEditStage").value = record.stage || "created";
+    $("#jobEditNote").value = record.note || "";
+    $("#jobEditReceived").value = record.received ?? 0;
+    $("#jobBoardFormError").textContent = "";
+    syncJobBalance();
+    renderJobEditChecks(record);
+    $("#jobModalBackdrop")?.classList.remove("hidden");
+  }
+  function closeJobModal() {
+    $("#jobModalBackdrop")?.classList.add("hidden");
+    editingJobId = null;
+  }
+  async function saveJobBoardForm(event) {
+    event.preventDefault();
+    const record = reports.find(item => item.id === editingJobId);
+    if (!record) return;
+    const address = $("#jobEditAddress").value.trim();
+    if (!address) { $("#jobBoardFormError").textContent = "Escribe la dirección del trabajo."; return; }
+    const balance = syncJobBalance();
+    record.jobAddress = address;
+    record.stage = $("#jobEditStage").value || record.stage;
+    record.note = $("#jobEditNote").value.trim();
+    record.received = balance.received;
+    record.due = balance.due;
+    try {
+      await root.CloudDB.saveJob(record);
+      closeJobModal();
+      renderJobBoard();
+      renderHistory();
+      if (root.TrentonControl?.toast) root.TrentonControl.toast("Reporte a Trenton actualizado");
+    } catch (error) {
+      $("#jobBoardFormError").textContent = error.message || "No se pudo guardar. Corre el SQL de reportes a Trenton.";
+    }
+  }
+  async function renderJobCheckDesk() {
+    const select = $("#jobCheckDeskReport");
+    const status = $("#jobCheckDeskStatus");
+    const grid = $("#jobCheckDeskGrid");
+    if (!select || !status || !grid) return;
+    const list = reports.filter(record => record.stage === "waiting" || record.stage === "paid" || (record.checkPhotos || []).length);
+    const current = select.value;
+    const empty = !list.length;
+    $("#jobCheckDesk")?.classList.toggle("is-empty", empty);
+    select.disabled = empty;
+    if ($("#jobCheckDeskGalleryButton")) $("#jobCheckDeskGalleryButton").disabled = empty;
+    if ($("#jobCheckDeskCameraButton")) $("#jobCheckDeskCameraButton").disabled = empty;
+    select.innerHTML = list.length
+      ? list.map(record => `<option value="${esc(record.id)}">${esc(record.jobAddress || "Reporte")} · ${esc(jobDateText(record))}</option>`).join("")
+      : `<option value="">Elige un reporte</option>`;
+    if (current && list.some(record => record.id === current)) select.value = current;
+    const record = reports.find(item => item.id === select.value);
+    if (!record) {
+      status.textContent = "Mueve un reporte a Esperando cheque o Pagado y aquí podrás subir la foto.";
+      grid.innerHTML = "";
+      return;
+    }
+    const photos = record.checkPhotos || [];
+    status.textContent = photos.length
+      ? `${photos.length} foto${photos.length === 1 ? "" : "s"} para ${record.jobAddress}.`
+      : `Aún no hay foto del cheque de ${record.jobAddress}.`;
+    if (!photos.length) { grid.innerHTML = ""; return; }
+    const cards = [];
+    for (const photo of photos) {
+      try {
+        const blob = await root.CloudDB.ensureCheckPhoto(photo);
+        const url = URL.createObjectURL(blob);
+        cards.push(`<figure class="check-thumb"><img src="${url}" alt="${esc(photo.file_name || "Cheque")}"><button type="button" class="mini-action delete" data-job-desk-check="${esc(photo.id)}" aria-label="Quitar foto">×</button></figure>`);
+      } catch (_) {
+        cards.push(`<figure class="check-thumb"><span>No se pudo abrir</span></figure>`);
+      }
+    }
+    grid.innerHTML = cards.join("");
+  }
+  function openJobCheckPicker(reportId, camera) {
+    const picker = camera ? $("#jobCheckDeskCamera") : $("#jobCheckDeskFile");
+    if (!picker) return;
+    picker.dataset.reportId = reportId || "";
+    picker.click();
+  }
+  async function addJobCheck(reportId, files) {
+    const record = reports.find(item => item.id === reportId);
+    if (!record) throw new Error("Elige primero un reporte enviado a Trenton.");
+    for (const file of Array.from(files || []).filter(Boolean)) {
+      const photo = await root.CloudDB.addJobCheckPhoto(record.id, file);
+      record.checkPhotos = [photo, ...(record.checkPhotos || [])];
+    }
+    renderJobBoard();
+    if (editingJobId === record.id) renderJobEditChecks(record);
+    return record;
+  }
+
   function renderHistory() {
     if (!$("#jobHistoryGrid")) return;
     $("#jobHistoryGrid").innerHTML = reports.length ? reports.map(record => {
@@ -469,11 +722,12 @@
     await root.CloudDB.softDeleteJob(record);
     reports = reports.filter(item => item.id !== record.id);
     renderHistory();
+    renderJobBoard();
     window.TrentonControl?.jobArchive?.render?.();
   }
 
   async function open() {
-    try { await load(); renderHistory(); }
+    try { await load(); renderHistory(); renderJobBoard(); }
     catch (error) { $("#jobError").textContent = error.message || "No se pudo abrir el archivo de este formato."; }
     restoreJobDraft();
     renderPreview();
@@ -482,6 +736,7 @@
     try {
       await load();
       renderHistory();
+      renderJobBoard();
       window.TrentonControl?.jobArchive?.render?.();
     } catch (error) {
       console.warn(error);
@@ -489,7 +744,7 @@
       restoreJobDraft();
     }
   }
-  function render() { renderHistory(); renderPreview(); }
+  function render() { renderHistory(); renderJobBoard(); renderPreview(); }
 
   $("#jobEntries")?.addEventListener("input", event => {
     const field = event.target.dataset.jobField;
@@ -559,7 +814,100 @@
     } catch (error) { $("#jobError").textContent = error.message || "No se pudo descargar el PDF."; }
   });
 
-  function resetSession() { reports = []; renderHistory(); window.TrentonControl?.jobArchive?.render?.(); }
+  function resetSession() { reports = []; renderHistory(); renderJobBoard(); window.TrentonControl?.jobArchive?.render?.(); }
+  $("#jobHomeBoard")?.addEventListener("click", event => {
+    const button = event.target.closest("[data-job-home]");
+    if (!button) return;
+    const action = button.dataset.jobHome;
+    const record = reports.find(item => item.id === button.dataset.id);
+    if (action === "toggle-column") {
+      const stage = button.dataset.stage;
+      if (expandedJobColumns.has(stage)) expandedJobColumns.delete(stage);
+      else expandedJobColumns.add(stage);
+      renderJobBoard();
+      return;
+    }
+    if (action === "add") {
+      window.TrentonControl?.showView?.("job");
+      return;
+    }
+    if (action === "menu" && record) openJobModal(record);
+    if (action === "attach-check" && record) openJobCheckPicker(record.id, false);
+  });
+  $("#jobBoardSearch")?.addEventListener("input", () => renderJobBoard());
+  $("#jobBoardForm")?.addEventListener("submit", saveJobBoardForm);
+  $("#closeJobModalButton")?.addEventListener("click", closeJobModal);
+  $("#cancelJobModalButton")?.addEventListener("click", closeJobModal);
+  $("#jobModalBackdrop")?.addEventListener("click", event => { if (event.target === $("#jobModalBackdrop")) closeJobModal(); });
+  $("#jobEditReceived")?.addEventListener("input", syncJobBalance);
+  $("#jobEditOpenForm")?.addEventListener("click", () => {
+    const record = reports.find(item => item.id === editingJobId);
+    closeJobModal();
+    if (record) applyImported(record);
+    window.TrentonControl?.showView?.("job");
+  });
+  $("#jobEditCheckGallery")?.addEventListener("click", () => {
+    if (editingJobId) $("#jobEditCheckFile")?.click();
+  });
+  $("#jobEditCheckCameraButton")?.addEventListener("click", () => {
+    if (editingJobId) $("#jobEditCheckCamera")?.click();
+  });
+  async function onJobEditCheckFiles(event) {
+    try {
+      await addJobCheck(editingJobId, event.target.files);
+      if (root.TrentonControl?.toast) root.TrentonControl.toast("Foto del cheque guardada.");
+    } catch (error) {
+      $("#jobBoardFormError").textContent = error.message || "No se pudo subir la foto.";
+    }
+    event.target.value = "";
+  }
+  $("#jobEditCheckFile")?.addEventListener("change", onJobEditCheckFiles);
+  $("#jobEditCheckCamera")?.addEventListener("change", onJobEditCheckFiles);
+  $("#jobEditCheckGrid")?.addEventListener("click", async event => {
+    const button = event.target.closest("[data-job-check-id]");
+    if (!button) return;
+    const record = reports.find(item => item.id === editingJobId);
+    const photo = record?.checkPhotos?.find(item => item.id === button.dataset.jobCheckId);
+    if (!photo || !confirm("¿Quitar esta foto del cheque?")) return;
+    await root.CloudDB.removeJobCheckPhoto(photo);
+    record.checkPhotos = record.checkPhotos.filter(item => item.id !== photo.id);
+    renderJobEditChecks(record);
+    renderJobBoard();
+  });
+  $("#jobCheckDeskReport")?.addEventListener("change", () => renderJobCheckDesk());
+  $("#jobCheckDeskGalleryButton")?.addEventListener("click", () => {
+    const record = reports.find(item => item.id === $("#jobCheckDeskReport")?.value);
+    if (!record) { if (root.TrentonControl?.toast) root.TrentonControl.toast("Mueve un reporte a Esperando cheque o Pagado."); return; }
+    openJobCheckPicker(record.id, false);
+  });
+  $("#jobCheckDeskCameraButton")?.addEventListener("click", () => {
+    const record = reports.find(item => item.id === $("#jobCheckDeskReport")?.value);
+    if (!record) return;
+    openJobCheckPicker(record.id, true);
+  });
+  async function onJobDeskFiles(event) {
+    const reportId = event.target.dataset.reportId || $("#jobCheckDeskReport")?.value;
+    try {
+      await addJobCheck(reportId, event.target.files);
+      if (root.TrentonControl?.toast) root.TrentonControl.toast("Foto del cheque del reporte a Trenton guardada.");
+    } catch (error) {
+      if (root.TrentonControl?.toast) root.TrentonControl.toast(error.message || "No se pudo subir la foto.");
+    }
+    event.target.value = "";
+    delete event.target.dataset.reportId;
+  }
+  $("#jobCheckDeskFile")?.addEventListener("change", onJobDeskFiles);
+  $("#jobCheckDeskCamera")?.addEventListener("change", onJobDeskFiles);
+  $("#jobCheckDeskGrid")?.addEventListener("click", async event => {
+    const button = event.target.closest("[data-job-desk-check]");
+    if (!button) return;
+    const record = reports.find(item => item.id === $("#jobCheckDeskReport")?.value);
+    const photo = record?.checkPhotos?.find(item => item.id === button.dataset.jobDeskCheck);
+    if (!photo || !confirm("¿Quitar esta foto del cheque?")) return;
+    await root.CloudDB.removeJobCheckPhoto(photo);
+    record.checkPhotos = record.checkPhotos.filter(item => item.id !== photo.id);
+    renderJobBoard();
+  });
   document.addEventListener("visibilitychange", () => { if (document.hidden) persistJobDraft(true); });
   window.addEventListener("pagehide", () => persistJobDraft(true));
   reset({ keepDraft: true });

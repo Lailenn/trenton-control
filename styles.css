@@ -3902,4 +3902,4 @@ body {
   font-weight: 700;
 }
 .card-due.is-clear { color: #187054; }
-#amountDue, #hoursEditDue, #hoursEditTotal { background: #f7f8fc; }
+#amountDue, #hoursEditDue, #hoursEditTotal, #jobEditDue, #jobEditTotal { background: #f7f8fc; }
