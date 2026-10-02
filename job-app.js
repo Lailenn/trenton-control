@@ -466,7 +466,6 @@
   const jobStages = [
     { id: "created", title: "Reporte creado", className: "column-created" },
     { id: "sent", title: "Enviado a Trenton", className: "column-working" },
-    { id: "waiting", title: "Esperando cheque", className: "column-waiting" },
     { id: "paid", title: "Pagado", className: "column-paid" }
   ];
   const JOB_COLUMN_PREVIEW = 5;
@@ -492,6 +491,10 @@
   }
   function jobDueAmount(record) {
     return jobDollars(jobPay(record) - Number(record.received || 0));
+  }
+  function jobStageId(record) {
+    const stage = record?.stage || "created";
+    return stage === "waiting" ? "sent" : stage;
   }
   function jobDateText(record) {
     return JobPDF.rangeLabel((record.entries || []).map(entry => entry.date)) || record.startDate || "Sin fecha";
@@ -519,7 +522,7 @@
     const dueHtml = received > 0 || due > 0
       ? (due > 0.004 ? `<p class="card-due">Se debe ${money(due)}</p>` : `<p class="card-due is-clear">Saldo cubierto</p>`)
       : "";
-    const checks = record.stage === "waiting" || record.stage === "paid" || (record.checkPhotos || []).length
+    const checks = record.stage === "sent" || record.stage === "paid" || (record.checkPhotos || []).length
       ? `<div class="card-check">${(record.checkPhotos || []).length ? `<span class="check-badge">Cheque ×${record.checkPhotos.length}</span>` : `<span class="check-badge" style="background:#eef1fb;color:#5b6580">Sin foto</span>`}<button class="card-check-btn" type="button" data-job-home="attach-check" data-id="${esc(record.id)}">Subir cheque</button></div>`
       : "";
     return `<article class="invoice-card" draggable="true" data-job-id="${esc(record.id)}" tabindex="0">
@@ -537,7 +540,7 @@
     if (!board) return;
     const visible = reports.filter(matchesJobSearch);
     board.innerHTML = jobStages.map(stage => {
-      const items = visible.filter(record => (record.stage || "created") === stage.id);
+      const items = visible.filter(record => jobStageId(record) === stage.id);
       const expanded = expandedJobColumns.has(stage.id);
       const shown = expanded ? items : items.slice(0, JOB_COLUMN_PREVIEW);
       const hiddenCount = Math.max(0, items.length - shown.length);
@@ -615,7 +618,7 @@
     editingJobId = record.id;
     $("#jobModalTitle").textContent = "Editar reporte final";
     $("#jobEditAddress").value = record.jobAddress || "";
-    $("#jobEditStage").value = record.stage || "created";
+    $("#jobEditStage").value = jobStageId(record);
     $("#jobEditNote").value = record.note || "";
     $("#jobEditReceived").value = record.received ?? 0;
     $("#jobBoardFormError").textContent = "";
@@ -654,7 +657,7 @@
     const status = $("#jobCheckDeskStatus");
     const grid = $("#jobCheckDeskGrid");
     if (!select || !status || !grid) return;
-    const list = reports.filter(record => record.stage === "waiting" || record.stage === "paid" || (record.checkPhotos || []).length);
+    const list = reports.filter(record => record.stage === "sent" || record.stage === "paid" || (record.checkPhotos || []).length);
     const current = select.value;
     const empty = !list.length;
     $("#jobCheckDesk")?.classList.toggle("is-empty", empty);
@@ -667,7 +670,7 @@
     if (current && list.some(record => record.id === current)) select.value = current;
     const record = reports.find(item => item.id === select.value);
     if (!record) {
-      status.textContent = "Mueve un reporte a Esperando cheque o Pagado y aquí podrás subir la foto.";
+      status.textContent = "Mueve un reporte a Enviado a Trenton o Pagado y aquí podrás subir la foto.";
       grid.innerHTML = "";
       return;
     }
@@ -877,7 +880,7 @@
   $("#jobCheckDeskReport")?.addEventListener("change", () => renderJobCheckDesk());
   $("#jobCheckDeskGalleryButton")?.addEventListener("click", () => {
     const record = reports.find(item => item.id === $("#jobCheckDeskReport")?.value);
-    if (!record) { if (root.TrentonControl?.toast) root.TrentonControl.toast("Mueve un reporte a Esperando cheque o Pagado."); return; }
+    if (!record) { if (root.TrentonControl?.toast) root.TrentonControl.toast("Mueve un reporte a Enviado a Trenton o Pagado."); return; }
     openJobCheckPicker(record.id, false);
   });
   $("#jobCheckDeskCameraButton")?.addEventListener("click", () => {

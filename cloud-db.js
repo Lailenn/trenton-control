@@ -397,8 +397,8 @@
       pdf_path: record.pdfPath || null,
       pdf_name: record.pdfName || "",
       paid_at: record.paidAt || null,
-      received_cents: Core.cents(record.received ?? 0),
-      due_cents: Core.cents(record.due ?? Math.max(0, Number(record.amount || 0) - Number(record.received || 0))),
+      received_cents: C.cents(record.received ?? 0),
+      due_cents: C.cents(record.due ?? Math.max(0, Number(record.amount || 0) - Number(record.received || 0))),
       deleted_at: record.deletedAt || null,
       updated_at: record.updatedAt || new Date().toISOString()
     };
