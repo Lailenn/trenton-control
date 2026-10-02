@@ -4,7 +4,7 @@
   const $ = selector => document.querySelector(selector);
   const esc = value => String(value ?? "").replace(/[&<>'"]/g, char => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#039;", '"': "&quot;"}[char]));
   const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
-  const money = value => `$${Number(value || 0).toLocaleString("en-US", {minimumFractionDigits: Number.isInteger(Number(value || 0)) ? 0 : 2, maximumFractionDigits: 2})}`;
+  const money = value => `$${Number(value || 0).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
   const formatHours = value => Number(value || 0).toLocaleString("en-US", {maximumFractionDigits: 2});
   const dateText = value => HoursPDF.fullDate(value) || "Selecciona una fecha";
   const makeId = () => `hours-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -614,14 +614,16 @@
     $("#hoursEditDate").value = record.reportDate || "";
     $("#hoursEditStage").value = record.stage || "created";
     $("#hoursEditNote").value = record.note || "";
-    $("#hoursEditReceived").value = record.received ?? 0;
+    $("#hoursEditReceived").value = hoursDollars(record.received).toFixed(2);
     $("#hoursBoardFormError").textContent = "";
     syncHoursBalance();
     renderHoursEditChecks(record);
     $("#hoursModalBackdrop")?.classList.remove("hidden");
+    document.body.classList.add("modal-open");
   }
   function closeHoursModal() {
     $("#hoursModalBackdrop")?.classList.add("hidden");
+    document.body.classList.remove("modal-open");
     editingHoursId = null;
   }
 
@@ -822,6 +824,10 @@
   $("#cancelHoursModalButton")?.addEventListener("click", closeHoursModal);
   $("#hoursModalBackdrop")?.addEventListener("click", event => { if (event.target === $("#hoursModalBackdrop")) closeHoursModal(); });
   $("#hoursEditReceived")?.addEventListener("input", syncHoursBalance);
+  $("#hoursEditReceived")?.addEventListener("blur", event => {
+    event.target.value = hoursDollars(parseHoursMoney(event.target.value)).toFixed(2);
+    syncHoursBalance();
+  });
   $("#hoursEditOpenForm")?.addEventListener("click", () => {
     const record = reports.find(item => item.id === editingHoursId);
     closeHoursModal();

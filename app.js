@@ -19,7 +19,7 @@
   };
 
   const $ = (selector) => document.querySelector(selector);
-  const money = (value) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(Number(value) || 0);
+  const money = (value) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value) || 0);
   const esc = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#039;", '"': "&quot;" }[char]));
   const makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   let records = [];
@@ -333,10 +333,10 @@
     if (record) {
       $("#address").value = record.address || "";
       $("#invoiceNumber").value = record.invoiceNumber || "";
-      $("#amount").value = record.amount ?? "";
+      $("#amount").value = record.amount != null && record.amount !== "" ? dollars(record.amount).toFixed(2) : "";
       $("#hours").value = record.hours ?? "";
       $("#description").value = record.description || "";
-      $("#amountReceived").value = record.received ?? 0;
+      $("#amountReceived").value = dollars(record.received).toFixed(2);
       syncInvoiceBalance();
     } else {
       $("#amountReceived").value = "";
@@ -344,10 +344,16 @@
     }
     renderCheckPhotos(record);
     $("#modalBackdrop").classList.remove("hidden");
+    document.body.classList.add("modal-open");
     setTimeout(() => $("#address").focus(), 50);
   }
 
-  function closeModal() { $("#modalBackdrop").classList.add("hidden"); editingId = null; selectedPdf = null; }
+  function closeModal() {
+    $("#modalBackdrop").classList.add("hidden");
+    document.body.classList.remove("modal-open");
+    editingId = null;
+    selectedPdf = null;
+  }
 
   function readForm() {
     return { address: $("#address").value.trim(), invoiceNumber: $("#invoiceNumber").value.trim(), issuedDate: $("#recordIssuedDate").value, amount: Core.amount($("#amount").value), hours: Number($("#hours").value) || 0, description: $("#description").value.trim(), stage: $("#stage").value, received: syncInvoiceBalance().received, due: syncInvoiceBalance().due };
@@ -1058,6 +1064,14 @@
   $("#invoiceForm").addEventListener("submit", submitForm);
   $("#amount")?.addEventListener("input", syncInvoiceBalance);
   $("#amountReceived")?.addEventListener("input", syncInvoiceBalance);
+  $("#amount")?.addEventListener("blur", event => {
+    if (event.target.value.trim()) event.target.value = dollars(parseMoneyInput(event.target.value)).toFixed(2);
+    syncInvoiceBalance();
+  });
+  $("#amountReceived")?.addEventListener("blur", event => {
+    event.target.value = dollars(parseMoneyInput(event.target.value)).toFixed(2);
+    syncInvoiceBalance();
+  });
   $("#choosePdfButton").addEventListener("click", () => $("#pdfFile").click());
   $("#pdfFile").addEventListener("change", (event) => selectPdf(event.target.files[0]));
   $("#uploadArea").addEventListener("dragover", (event) => { event.preventDefault(); $("#uploadArea").classList.add("dragging"); });

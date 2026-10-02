@@ -4,7 +4,7 @@
   const $ = selector => document.querySelector(selector);
   const esc = value => String(value ?? "").replace(/[&<>'"]/g, char => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#039;", '"': "&quot;"}[char]));
   const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
-  const money = value => `$${Number(value || 0).toLocaleString("en-US", {minimumFractionDigits: Number.isInteger(Number(value || 0)) ? 0 : 2, maximumFractionDigits: 2})}`;
+  const money = value => `$${Number(value || 0).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
   const formatHours = value => Number(value || 0).toLocaleString("en-US", {maximumFractionDigits: 2});
   const makeId = () => `job-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const defaultEntries = () => [
@@ -620,14 +620,16 @@
     $("#jobEditAddress").value = record.jobAddress || "";
     $("#jobEditStage").value = jobStageId(record);
     $("#jobEditNote").value = record.note || "";
-    $("#jobEditReceived").value = record.received ?? 0;
+    $("#jobEditReceived").value = jobDollars(record.received).toFixed(2);
     $("#jobBoardFormError").textContent = "";
     syncJobBalance();
     renderJobEditChecks(record);
     $("#jobModalBackdrop")?.classList.remove("hidden");
+    document.body.classList.add("modal-open");
   }
   function closeJobModal() {
     $("#jobModalBackdrop")?.classList.add("hidden");
+    document.body.classList.remove("modal-open");
     editingJobId = null;
   }
   async function saveJobBoardForm(event) {
@@ -843,6 +845,10 @@
   $("#cancelJobModalButton")?.addEventListener("click", closeJobModal);
   $("#jobModalBackdrop")?.addEventListener("click", event => { if (event.target === $("#jobModalBackdrop")) closeJobModal(); });
   $("#jobEditReceived")?.addEventListener("input", syncJobBalance);
+  $("#jobEditReceived")?.addEventListener("blur", event => {
+    event.target.value = jobDollars(parseJobMoney(event.target.value)).toFixed(2);
+    syncJobBalance();
+  });
   $("#jobEditOpenForm")?.addEventListener("click", () => {
     const record = reports.find(item => item.id === editingJobId);
     closeJobModal();
