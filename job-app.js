@@ -625,11 +625,13 @@
     syncJobBalance();
     renderJobEditChecks(record);
     $("#jobModalBackdrop")?.classList.remove("hidden");
-    document.body.classList.add("modal-open");
+    if (root.setModalOpen) root.setModalOpen(true);
+    else document.body.classList.add("modal-open");
   }
   function closeJobModal() {
     $("#jobModalBackdrop")?.classList.add("hidden");
-    document.body.classList.remove("modal-open");
+    if (root.setModalOpen) root.setModalOpen(false);
+    else document.body.classList.remove("modal-open");
     editingJobId = null;
   }
   async function saveJobBoardForm(event) {

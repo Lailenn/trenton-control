@@ -619,11 +619,13 @@
     syncHoursBalance();
     renderHoursEditChecks(record);
     $("#hoursModalBackdrop")?.classList.remove("hidden");
-    document.body.classList.add("modal-open");
+    if (root.setModalOpen) root.setModalOpen(true);
+    else document.body.classList.add("modal-open");
   }
   function closeHoursModal() {
     $("#hoursModalBackdrop")?.classList.add("hidden");
-    document.body.classList.remove("modal-open");
+    if (root.setModalOpen) root.setModalOpen(false);
+    else document.body.classList.remove("modal-open");
     editingHoursId = null;
   }
 

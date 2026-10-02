@@ -344,13 +344,17 @@
     }
     renderCheckPhotos(record);
     $("#modalBackdrop").classList.remove("hidden");
-    document.body.classList.add("modal-open");
-    setTimeout(() => $("#address").focus(), 50);
+    if (window.setModalOpen) window.setModalOpen(true);
+    else document.body.classList.add("modal-open");
+    if (!window.matchMedia("(max-width: 820px), (pointer: coarse)").matches) {
+      setTimeout(() => $("#address").focus(), 50);
+    }
   }
 
   function closeModal() {
     $("#modalBackdrop").classList.add("hidden");
-    document.body.classList.remove("modal-open");
+    if (window.setModalOpen) window.setModalOpen(false);
+    else document.body.classList.remove("modal-open");
     editingId = null;
     selectedPdf = null;
   }

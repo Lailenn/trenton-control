@@ -99,6 +99,18 @@
   function clearSession() {
     try { sessionStorage.removeItem(SESSION_KEY); } catch (_) { /* ignore */ }
   }
+  let lockedY = 0;
+  function setModalOpen(open) {
+    if (open) {
+      lockedY = window.scrollY || window.pageYOffset || 0;
+      document.body.classList.add("modal-open");
+      document.body.style.top = `-${lockedY}px`;
+    } else {
+      document.body.classList.remove("modal-open");
+      document.body.style.top = "";
+      window.scrollTo(0, lockedY);
+    }
+  }
   function bind() {
     $("#companyGate")?.addEventListener("click", event => {
       const button = event.target.closest("[data-company-choice]");
@@ -121,5 +133,6 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
   else bind();
 
+  root.setModalOpen = setModalOpen;
   root.CompanyApp = { id, info, isOtras, draftKey, choose, clearSession, paint, onChange, setId, hasSessionPick };
 })(typeof globalThis !== "undefined" ? globalThis : this);
