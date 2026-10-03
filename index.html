@@ -12,7 +12,7 @@
     <link rel="icon" href="favicon.ico" sizes="any" />
     <link rel="icon" href="assets/app-icon.png?v=1" type="image/png" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-    <link rel="stylesheet" href="styles.css?v=modal-scroll-2" />
+    <link rel="stylesheet" href="styles.css?v=reports-sep-2" />
   </head>
   <body>
     <div id="authGate" class="auth-gate auth-play login-screen" data-mode="login">
@@ -154,6 +154,11 @@
               <span class="nav-copy"><span class="nav-title">Otro formato de horas</span><span class="nav-sub">Varios días y descripción</span></span>
               <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M9.4 6.4 15 12l-5.6 5.6-1.4-1.4 4.2-4.2-4.2-4.2z"/></svg></span>
             </button>
+            <button class="nav-item" type="button" data-nav="reports">
+              <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M5 4h14v3H5zm0 5h14v11H5zm3 3v1.6h8V12zm0 3.2V16h5.5v-1.8z"/></svg></span>
+              <span class="nav-copy"><span class="nav-title">Reportes a Trenton</span><span class="nav-sub">Kanban y cheques A3</span></span>
+              <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M9.4 6.4 15 12l-5.6 5.6-1.4-1.4 4.2-4.2-4.2-4.2z"/></svg></span>
+            </button>
           </nav>
           <div class="nav-kicker">
             <span class="nav-kicker-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M10.2 4 12 6.2h7.8v2.2H4.2V6.2h6zm-6 5.8h15.6V19H4.2z"/></svg></span>
@@ -169,7 +174,12 @@
             </button>
             <button class="nav-item" type="button" data-nav="hours-archive">
               <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M5 18.5V10h2.8v8.5zm5.6 0V6h2.8v12.5zm5.6 0v-7.2H19v7.2z"/></svg></span>
-              <span class="nav-copy"><span class="nav-title">Horas / PDFs</span><span class="nav-sub">Jornada y otro formato</span></span>
+              <span class="nav-copy"><span class="nav-title">Horas / PDFs</span><span class="nav-sub">Solo reportes de jornada</span></span>
+              <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M9.4 6.4 15 12l-5.6 5.6-1.4-1.4 4.2-4.2-4.2-4.2z"/></svg></span>
+            </button>
+            <button class="nav-item" type="button" data-nav="job-archive">
+              <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 6.2h16v3.1H4zm1.4 4.6h13.2V18H5.4zm3.2 2.1v1.6h6.8v-1.6z"/></svg></span>
+              <span class="nav-copy"><span class="nav-title">Reportes / PDFs</span><span class="nav-sub">Formato enviado a Trenton</span></span>
               <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M9.4 6.4 15 12l-5.6 5.6-1.4-1.4 4.2-4.2-4.2-4.2z"/></svg></span>
             </button>
             <button class="nav-item sidebar-passkey js-register-passkey" type="button">
@@ -315,16 +325,10 @@
             <div class="board" id="hoursHomeBoard" aria-label="Tablero Kanban de horas"></div>
           </section>
 
-          <section class="board-section dash-board hours-home-board">
-            <span class="dash-board-orb dash-board-orb-a" aria-hidden="true"></span>
-            <span class="dash-board-orb dash-board-orb-b" aria-hidden="true"></span>
-            <div class="board-toolbar">
-              <div><h2>Reporte final enviado a Trenton</h2><p>El otro formato de horas (A3). Mueve el reporte, sube el cheque y anota el saldo.</p></div>
-              <div class="toolbar-controls">
-                <label class="search-control"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M10 3a7 7 0 0 1 5.5 11.3l4.1 4.1-1.4 1.4-4.1-4.1A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg><input id="jobBoardSearch" type="search" placeholder="Buscar reporte..." aria-label="Buscar reporte enviado a Trenton" /></label>
-              </div>
-            </div>
-            <div class="board" id="jobHomeBoard" aria-label="Tablero Kanban de reportes a Trenton"></div>
+          <section class="archive-callout dash-archive">
+            <div class="dash-archive-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4.2 6.2h15.6V8H4.2zm0 3.6h15.6v8.2H4.2zm2.4 2.2v1.6h4.2v-1.6zm0 3.2v1.6h8.6v-1.6z"/></svg></div>
+            <div><h2>Reportes finales enviados a Trenton</h2><p>El otro formato (A3) tiene su propio tablero, cheques y saldo. No se mezcla con invoices ni con horas.</p></div>
+            <button class="dash-link" type="button" id="openReportsButton">Abrir reportes →</button>
           </section>
 
           <section class="archive-callout dash-archive">
@@ -334,7 +338,7 @@
           </section>
           <section class="archive-callout dash-archive">
             <div class="dash-archive-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm1 5h-2v6l5 3 .9-1.5-3.9-2.3z"/></svg></div>
-            <div><h2>Archivo de horas de trabajo</h2><p>Al generar un reporte de horas o del otro formato, su PDF queda aquí. No se mezcla con las invoices.</p></div>
+            <div><h2>Archivo de horas de trabajo</h2><p>Al generar un reporte de horas, su PDF queda aquí. Los reportes a Trenton van en su propio archivo.</p></div>
             <button class="dash-link" type="button" id="openHoursArchiveButton">Abrir horas / PDFs →</button>
           </section>
           <section class="archive-callout dash-archive passkey-callout" id="passkeyPanel">
@@ -389,27 +393,52 @@
             <input id="hoursCheckDeskFile" type="file" accept="image/*,image/jpeg,image/png,image/webp,image/heic,image/heif" multiple hidden>
             <input id="hoursCheckDeskCamera" type="file" accept="image/*" capture="environment" hidden>
           </section>
-          <section class="archive-callout dash-archive check-callout is-empty" id="jobCheckDesk">
-            <div class="dash-archive-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zm1.2 3.2v1.4h6.2V9.2zm0 3.2V14h4.4v-1.6zm8.4 3.1 1.4 1.4 3.6-3.6-1.4-1.4-2.2 2.2-.8-.8z"/></svg></div>
-            <div class="check-desk-copy">
-              <h2>Cheques de reportes enviados a Trenton</h2>
-              <p>Cuando un reporte final pase a Enviado a Trenton o Pagado, sube aquí la foto. Queda aparte de invoices y de horas Letter.</p>
-              <div class="check-desk-actions">
-                <label class="check-desk-select">
-                  <span>Reporte a Trenton</span>
-                  <select id="jobCheckDeskReport"></select>
-                </label>
-                <div class="check-desk-upload-row">
-                  <button class="button button-primary" type="button" id="jobCheckDeskGalleryButton">Desde galería</button>
-                  <button class="button button-ghost" type="button" id="jobCheckDeskCameraButton">Tomar foto</button>
+          </section>
+
+          <section class="page-view hidden reports-view" id="reportsView">
+            <div class="hours-page-heading">
+              <div>
+                <p class="eyebrow">Formato A3 para Trenton</p>
+                <h1>Reportes finales enviados a Trenton</h1>
+                <p class="hero-copy">Kanban, cheques y saldo de este formato. No se mezcla con invoices ni con horas trabajadas.</p>
+              </div>
+              <div class="hours-heading-actions">
+                <button class="button button-ghost" type="button" id="openJobArchiveFromReports">Archivo de PDFs</button>
+                <button class="button button-primary" type="button" id="openJobFormFromReports">＋ Nuevo reporte</button>
+              </div>
+            </div>
+            <section class="board-section dash-board hours-home-board">
+              <span class="dash-board-orb dash-board-orb-a" aria-hidden="true"></span>
+              <span class="dash-board-orb dash-board-orb-b" aria-hidden="true"></span>
+              <div class="board-toolbar">
+                <div><h2>Seguimiento del reporte</h2><p>Arrastra cada reporte: creado, enviado a Trenton o pagado.</p></div>
+                <div class="toolbar-controls">
+                  <label class="search-control"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M10 3a7 7 0 0 1 5.5 11.3l4.1 4.1-1.4 1.4-4.1-4.1A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg><input id="jobBoardSearch" type="search" placeholder="Buscar reporte..." aria-label="Buscar reporte enviado a Trenton" /></label>
                 </div>
               </div>
-              <p class="check-desk-status" id="jobCheckDeskStatus">Todavía no hay reportes listos para adjuntar el cheque.</p>
-              <div class="check-photo-grid" id="jobCheckDeskGrid"></div>
-            </div>
-            <input id="jobCheckDeskFile" type="file" accept="image/*,image/jpeg,image/png,image/webp,image/heic,image/heif" multiple hidden>
-            <input id="jobCheckDeskCamera" type="file" accept="image/*" capture="environment" hidden>
-          </section>
+              <div class="board board-3" id="jobHomeBoard" aria-label="Tablero Kanban de reportes a Trenton"></div>
+            </section>
+            <section class="archive-callout dash-archive check-callout is-empty" id="jobCheckDesk">
+              <div class="dash-archive-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zm1.2 3.2v1.4h6.2V9.2zm0 3.2V14h4.4v-1.6zm8.4 3.1 1.4 1.4 3.6-3.6-1.4-1.4-2.2 2.2-.8-.8z"/></svg></div>
+              <div class="check-desk-copy">
+                <h2>Cheques de reportes enviados a Trenton</h2>
+                <p>Cuando un reporte pase a Enviado a Trenton o Pagado, sube aquí la foto. Queda aparte de invoices y de horas.</p>
+                <div class="check-desk-actions">
+                  <label class="check-desk-select">
+                    <span>Reporte a Trenton</span>
+                    <select id="jobCheckDeskReport"></select>
+                  </label>
+                  <div class="check-desk-upload-row">
+                    <button class="button button-primary" type="button" id="jobCheckDeskGalleryButton">Desde galería</button>
+                    <button class="button button-ghost" type="button" id="jobCheckDeskCameraButton">Tomar foto</button>
+                  </div>
+                </div>
+                <p class="check-desk-status" id="jobCheckDeskStatus">Todavía no hay reportes listos para adjuntar el cheque.</p>
+                <div class="check-photo-grid" id="jobCheckDeskGrid"></div>
+              </div>
+              <input id="jobCheckDeskFile" type="file" accept="image/*,image/jpeg,image/png,image/webp,image/heic,image/heif" multiple hidden>
+              <input id="jobCheckDeskCamera" type="file" accept="image/*" capture="environment" hidden>
+            </section>
           </section>
 
           <section class="page-view hidden hours-view" id="hoursView">
@@ -584,15 +613,12 @@
 
           <section class="page-view hidden archive-view" id="hoursArchiveView">
             <div class="archive-heading">
-              <div><p class="eyebrow">Reportes de jornada por dirección</p><h1 id="hoursArchiveTitle">Todos los reportes de horas</h1><p>Consulta las horas trabajadas y el otro formato de horas (A3). Este archivo es independiente de Invoices / PDFs.</p></div>
+              <div><p class="eyebrow">Reportes de jornada por dirección</p><h1 id="hoursArchiveTitle">Todos los reportes de horas</h1><p>Solo el formato de jornada (Letter). Los reportes enviados a Trenton viven en Reportes / PDFs.</p></div>
               <div class="archive-heading-actions">
                 <button class="button button-ghost" type="button" id="backupHoursButton">Descargar respaldo</button>
                 <button class="button button-primary" type="button" id="importHoursArchiveButton">＋ Subir reportes anteriores</button>
                 <input id="importHoursFiles" type="file" accept="application/pdf,.pdf,application/zip,.zip" multiple hidden>
-                <button class="button button-ghost" type="button" id="importJobArchiveButton">＋ Subir otro formato</button>
-                <input id="importJobFiles" type="file" accept="application/pdf,.pdf" multiple hidden>
                 <button class="button button-ghost" type="button" id="openHoursFormButton">＋ Horas trabajadas</button>
-                <button class="button button-ghost" type="button" id="openJobFormButton">＋ Otro formato</button>
               </div>
             </div>
             <div class="archive-filters hours-archive-filters">
@@ -613,14 +639,16 @@
               <p id="hoursImportError" class="form-error" role="alert"></p>
             </section>
             <div class="archive-grid" id="hoursArchiveGrid"></div>
-            <p class="archive-help">Los PDFs de horas y del otro formato se guardan en la nube y en este navegador, aparte de las invoices.</p>
+            <p class="archive-help">Los PDFs de horas de jornada se guardan en la nube y en este navegador, aparte de invoices y de reportes a Trenton.</p>
           </section>
 
           <section class="page-view hidden archive-view" id="jobArchiveView">
             <div class="archive-heading">
-              <div><p class="eyebrow">Otro formato de horas</p><h1 id="jobArchiveTitle">Todos los reportes de este formato</h1><p>Estos PDFs ahora se ven en Horas / PDFs.</p></div>
+              <div><p class="eyebrow">Reportes enviados a Trenton</p><h1 id="jobArchiveTitle">Todos los reportes de este formato</h1><p>PDFs A3 de este formato. No se mezcla con invoices ni con horas trabajadas.</p></div>
               <div class="archive-heading-actions">
-                <button class="button button-ghost" type="button" id="openJobFormButtonLegacy">＋ Nuevo reporte</button>
+                <button class="button button-ghost" type="button" id="importJobArchiveButton">＋ Subir PDFs</button>
+                <input id="importJobFiles" type="file" accept="application/pdf,.pdf" multiple hidden>
+                <button class="button button-ghost" type="button" id="openJobFormButton">＋ Nuevo reporte</button>
               </div>
             </div>
             <div class="archive-filters hours-archive-filters">
@@ -989,12 +1017,12 @@
     <script src="hours-pdf.js?v=hours-import-1" defer></script>
     <script src="hours-whatsapp.js?v=2" defer></script>
     <script src="hours-app.js?v=modal-scroll-2" defer></script>
-    <script src="hours-archive.js?v=hours-import-1" defer></script>
+    <script src="hours-archive.js?v=reports-sep-2" defer></script>
     <script src="job-pdf.js?v=job-a3-4" defer></script>
-    <script src="job-app.js?v=modal-scroll-2" defer></script>
+    <script src="job-app.js?v=reports-sep-2" defer></script>
     <script src="job-archive.js?v=job-a3-3" defer></script>
     <script src="translator.js?v=grow-1" defer></script>
     <script src="auth-app.js?v=company-1" defer></script>
-    <script src="app.js?v=modal-scroll-2" defer></script>
+    <script src="app.js?v=reports-sep-2" defer></script>
   </body>
 </html>

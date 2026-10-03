@@ -703,12 +703,14 @@
     $("#jobArchiveView")?.classList.toggle("hidden", view !== "jobArchive");
     $("#hoursView").classList.toggle("hidden", view !== "hours");
     $("#jobView")?.classList.toggle("hidden", view !== "job");
+    $("#reportsView")?.classList.toggle("hidden", view !== "reports");
     setSidebarOpen(false);
     replayViewAnimation(view);
     if (view === "board") window.AuthApp?.replayWelcome?.();
     if (view === "invoice") updateInvoicePreview();
     if (view === "hours") window.HoursApp?.open();
     if (view === "job") window.JobApp?.open();
+    if (view === "reports") window.JobApp?.render?.();
   }
 
   function fillInvoiceFromText() {
@@ -908,13 +910,15 @@
 
   function navClick(stage) {
     document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.nav === stage));
-    const titles = {board: "Inicio", invoice: "Crear invoice", hours: "Horas trabajadas", job: "Otro formato de horas", archive: "Invoices / PDFs", "hours-archive": "Horas / PDFs", "job-archive": "Horas / PDFs", created: "Facturas creadas", working: "En trabajo", waiting: "Esperando cheque", paid: "Pagadas"};
+    const titles = {board: "Inicio", invoice: "Crear invoice", hours: "Horas trabajadas", job: "Otro formato de horas", reports: "Reportes a Trenton", archive: "Invoices / PDFs", "hours-archive": "Horas / PDFs", "job-archive": "Reportes / PDFs", created: "Facturas creadas", working: "En trabajo", waiting: "Esperando cheque", paid: "Pagadas"};
     const label = $("#topbarSection");
     if (label) label.textContent = titles[stage] || "Inicio";
     if (stage === "invoice") { showView("invoice"); setDock("archive"); return; }
     if (stage === "hours") { showView("hours"); setDock("hours"); return; }
     if (stage === "job") { showView("job"); setDock("hours"); return; }
-    if (stage === "hours-archive" || stage === "job-archive") { hoursArchive.open(); setDock("hours"); return; }
+    if (stage === "reports") { showView("reports"); setDock("hours"); return; }
+    if (stage === "hours-archive") { hoursArchive.open(); setDock("hours"); return; }
+    if (stage === "job-archive") { jobArchive.open(); setDock("hours"); return; }
     if (stage === "board") { showView("board"); renderBoard(); setDock("board"); return; }
     archive.open(stage === "archive" ? "all" : stage);
     setDock("archive");
@@ -986,18 +990,10 @@
     }
   });
   hoursArchive = window.HoursArchive({
-    records: () => {
-      const hours = (window.HoursApp?.reports?.() || []).map(record => {
-        record.hoursFormat = "letter";
-        return record;
-      });
-      const jobs = (window.JobApp?.reports?.() || []).map(record => {
-        record.hoursFormat = "a3";
-        record.reportDate = record.reportDate || record.startDate || record.entries?.[0]?.date || "";
-        return record;
-      });
-      return hours.concat(jobs);
-    },
+    records: () => (window.HoursApp?.reports?.() || []).map(record => {
+      record.hoursFormat = "letter";
+      return record;
+    }),
     showView,
     download,
     toast: showToast,
@@ -1023,10 +1019,7 @@
       await window.JobApp.removeReport(record);
     }
   });
-  const jobRender = jobArchive.render.bind(jobArchive);
-  jobArchive.render = () => { hoursArchive.render(); jobRender(); };
-  jobArchive.open = () => hoursArchive.open();
-  window.TrentonControl = { toast: showToast, records: () => records, hoursArchive, jobArchive, download, showView };
+  window.TrentonControl = { toast: showToast, records: () => records, hoursArchive, jobArchive, download, showView, navClick };
   document.querySelectorAll("[data-archive]").forEach(button => button.addEventListener("click", () => navClick(button.dataset.archive === "all" ? "archive" : button.dataset.archive)));
   $("#editGeneratedInvoiceButton").addEventListener("click", editGeneratedInvoice);
   $("#newInvoiceButton").addEventListener("click", () => { if (builderRecordId) resetInvoiceBuilder(); navClick("invoice"); });
@@ -1061,7 +1054,10 @@
   $("#openArchiveButton").addEventListener("click", () => navClick("archive"));
   $("#openHoursArchiveButton")?.addEventListener("click", () => navClick("hours-archive"));
   $("#openHoursArchiveFromHours")?.addEventListener("click", () => navClick("hours-archive"));
-  $("#openJobArchiveFromJob")?.addEventListener("click", () => navClick("hours-archive"));
+  $("#openJobArchiveFromJob")?.addEventListener("click", () => navClick("job-archive"));
+  $("#openReportsButton")?.addEventListener("click", () => navClick("reports"));
+  $("#openJobFormFromReports")?.addEventListener("click", () => navClick("job"));
+  $("#openJobArchiveFromReports")?.addEventListener("click", () => navClick("job-archive"));
   $("#closeModalButton").addEventListener("click", closeModal);
   $("#cancelButton").addEventListener("click", closeModal);
   $("#modalBackdrop").addEventListener("click", (event) => { if (event.target === $("#modalBackdrop")) closeModal(); });

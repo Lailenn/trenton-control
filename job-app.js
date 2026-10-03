@@ -835,7 +835,7 @@
       return;
     }
     if (action === "add") {
-      window.TrentonControl?.showView?.("job");
+      window.TrentonControl?.navClick?.("job") || window.TrentonControl?.showView?.("job");
       return;
     }
     if (action === "menu" && record) openJobModal(record);
@@ -855,7 +855,7 @@
     const record = reports.find(item => item.id === editingJobId);
     closeJobModal();
     if (record) applyImported(record);
-    window.TrentonControl?.showView?.("job");
+    window.TrentonControl?.navClick?.("job") || window.TrentonControl?.showView?.("job");
   });
   $("#jobEditCheckGallery")?.addEventListener("click", () => {
     if (editingJobId) $("#jobEditCheckFile")?.click();
