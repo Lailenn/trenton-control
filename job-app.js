@@ -144,6 +144,12 @@
 
   async function load() {
     reports = await root.CloudDB.listJobs();
+    reports.forEach(record => {
+      if (isOriginalPdfJob(record)) {
+        record.keepOriginalPdf = true;
+        record.source = "imported";
+      }
+    });
   }
 
   function reset(options = {}) {
@@ -400,6 +406,10 @@
 
   async function rebuildPdf(record, persist = false, fromPaper = false) {
     if (!record) return null;
+    if (!fromPaper && isOriginalPdfJob(record)) {
+      if (!record.pdfBlob) await root.CloudDB.ensureJobPdf(record);
+      return record.pdfBlob || null;
+    }
     const canBuild = (record.entries || []).some(entry => String(entry.employee || "").trim());
     if (!canBuild) {
       if (!record.pdfBlob) await root.CloudDB.ensureJobPdf(record);
@@ -472,11 +482,36 @@
   const expandedJobColumns = new Set();
   let editingJobId = null;
   let draggedJobId = null;
+  let creatingJob = false;
+  let creatingJobStage = "created";
+  let pendingJobPdf = null;
+  const IMPORTED_PDF_EMPLOYEE = "Imported PDF";
+  const MAX_JOB_PDF_BYTES = 15 * 1024 * 1024;
 
+  function isOriginalPdfJob(record) {
+    if (!record) return false;
+    if (record.keepOriginalPdf || record.source === "imported") return true;
+    const rows = record.entries || [];
+    return rows.length === 1 && String(rows[0].employee || "") === IMPORTED_PDF_EMPLOYEE;
+  }
+  function importedPdfEntry(address, date, amount) {
+    return {
+      date,
+      employee: IMPORTED_PDF_EMPLOYEE,
+      description: address,
+      timeIn: "",
+      timeOut: "",
+      lunch: 0,
+      rate: amount,
+      hoursOverride: 1,
+      hours: 1
+    };
+  }
   function jobPay(record) {
     return (record.entries || []).reduce((sum, entry) => sum + Number(entry.hours || JobPDF.calcHours(entry) || 0) * Number(entry.rate || 0), 0);
   }
   function jobTotalHours(record) {
+    if (isOriginalPdfJob(record)) return 0;
     return (record.entries || []).reduce((sum, entry) => sum + Number(entry.hours || JobPDF.calcHours(entry) || 0), 0);
   }
   function jobDollars(value) {
@@ -497,6 +532,7 @@
     return stage === "waiting" ? "sent" : stage;
   }
   function jobDateText(record) {
+    if (isOriginalPdfJob(record) && record.startDate) return record.startDate;
     return JobPDF.rangeLabel((record.entries || []).map(entry => entry.date)) || record.startDate || "Sin fecha";
   }
   function matchesJobSearch(record) {
@@ -505,11 +541,9 @@
     return [record.jobAddress, record.note, jobDateText(record)].some(value => String(value || "").toLowerCase().includes(q));
   }
   function syncJobBalance() {
-    const record = reports.find(item => item.id === editingJobId);
-    const total = record ? jobPay(record) : 0;
+    const total = parseJobMoney($("#jobEditTotal")?.value);
     const received = parseJobMoney($("#jobEditReceived")?.value);
     const due = jobDollars(total - received);
-    if ($("#jobEditTotal")) $("#jobEditTotal").value = jobDollars(total).toFixed(2);
     if ($("#jobEditDue")) $("#jobEditDue").value = due.toFixed(2);
     if ($("#jobBalanceLive")) $("#jobBalanceLive").textContent = `Total ${money(total)} · recibido ${money(received)} · se debe ${money(due)}`;
     return { received, due, total };
@@ -529,7 +563,7 @@
       <div class="card-top"><span class="card-invoice"><i class="card-dot"></i>TRENTON</span><button class="card-menu" type="button" data-job-home="menu" data-id="${esc(record.id)}" aria-label="Editar reporte">•••</button></div>
       <p class="card-date">${esc(jobDateText(record))}</p>
       <h4 class="card-address">${esc(record.jobAddress || "Sin dirección")}</h4>
-      <div class="card-details"><span class="card-hours">${esc(formatHours(hours))} hrs</span><span class="card-amount">${money(pay)}</span></div>
+      <div class="card-details"><span class="card-hours">${isOriginalPdfJob(record) ? "PDF" : `${esc(formatHours(hours))} hrs`}</span><span class="card-amount">${money(pay)}</span></div>
       ${dueHtml}
       ${record.note ? `<p class="card-date">${esc(record.note)}</p>` : ""}
       ${checks}
@@ -613,45 +647,164 @@
     }
     grid.innerHTML = cards.join("");
   }
-  function openJobModal(record) {
-    if (!record) return;
-    editingJobId = record.id;
-    $("#jobModalTitle").textContent = "Editar reporte final";
-    $("#jobEditAddress").value = record.jobAddress || "";
-    $("#jobEditStage").value = jobStageId(record);
-    $("#jobEditNote").value = record.note || "";
-    $("#jobEditReceived").value = jobDollars(record.received).toFixed(2);
-    $("#jobBoardFormError").textContent = "";
+  function setJobPdfStatus(file, existingName) {
+    const status = $("#jobBoardFileStatus");
+    const current = $("#jobCurrentFile");
+    if (file) {
+      if (status) status.textContent = `PDF listo: ${file.name}`;
+      if (current) {
+        current.classList.remove("hidden");
+        current.textContent = `Se adjuntará ${file.name} al guardar.`;
+      }
+      return;
+    }
+    if (existingName) {
+      if (status) status.textContent = "Puedes dejar este PDF o elegir otro.";
+      if (current) {
+        current.classList.remove("hidden");
+        current.textContent = `PDF actual: ${existingName}`;
+      }
+      return;
+    }
+    if (status) status.textContent = "Formato PDF · hasta 15 MB";
+    current?.classList.add("hidden");
+  }
+  function fillJobModalFromParsed(parsed, file) {
+    const fields = parsed?.fields || {};
+    const imported = (parsed?.entries || []);
+    const dates = datesOf(imported);
+    const pay = imported.reduce((sum, entry) => sum + Number(entry.hours || JobPDF.calcHours(entry) || 0) * Number(entry.rate || 0), 0);
+    if ($("#jobEditAddress") && !$("#jobEditAddress").value.trim()) {
+      $("#jobEditAddress").value = String(fields.jobAddress || "").trim();
+    }
+    if ($("#jobEditDate") && !$("#jobEditDate").value) {
+      $("#jobEditDate").value = dates[0] || today();
+    }
+    if ($("#jobEditTotal") && !String($("#jobEditTotal").value || "").trim() && pay > 0) {
+      $("#jobEditTotal").value = jobDollars(pay).toFixed(2);
+    }
+    setJobPdfStatus(file, "");
     syncJobBalance();
-    renderJobEditChecks(record);
+  }
+  function showJobModal() {
+    $("#jobBoardFormError").textContent = "";
     $("#jobModalBackdrop")?.classList.remove("hidden");
     if (root.setModalOpen) root.setModalOpen(true);
     else document.body.classList.add("modal-open");
+  }
+  function openJobCreateModal(stage = "created") {
+    creatingJob = true;
+    creatingJobStage = stage || "created";
+    editingJobId = null;
+    $("#jobModalTitle").textContent = "Nuevo reporte a Trenton";
+    $("#jobEditAddress").value = "";
+    if ($("#jobEditDate")) $("#jobEditDate").value = today();
+    if ($("#jobEditTotal")) $("#jobEditTotal").value = "";
+    $("#jobEditStage").value = creatingJobStage;
+    $("#jobEditReceived").value = "";
+    $("#jobEditOpenForm")?.classList.add("hidden");
+    if ($("#saveJobBoardButton")) $("#saveJobBoardButton").textContent = "Guardar reporte";
+    setJobPdfStatus(pendingJobPdf, "");
+    renderJobEditChecks(null);
+    syncJobBalance();
+    showJobModal();
+  }
+  function openJobModal(record) {
+    if (!record) return;
+    creatingJob = false;
+    pendingJobPdf = null;
+    editingJobId = record.id;
+    $("#jobModalTitle").textContent = "Editar reporte final";
+    $("#jobEditAddress").value = record.jobAddress || "";
+    if ($("#jobEditDate")) $("#jobEditDate").value = record.startDate || (record.entries || []).map(entry => entry.date).filter(Boolean).sort()[0] || "";
+    if ($("#jobEditTotal")) $("#jobEditTotal").value = jobDollars(jobPay(record)).toFixed(2);
+    $("#jobEditStage").value = jobStageId(record);
+    $("#jobEditReceived").value = jobDollars(record.received).toFixed(2);
+    $("#jobEditOpenForm")?.classList.add("hidden");
+    if ($("#saveJobBoardButton")) $("#saveJobBoardButton").textContent = "Guardar cambios";
+    setJobPdfStatus(null, record.pdfName || "");
+    syncJobBalance();
+    renderJobEditChecks(record);
+    showJobModal();
   }
   function closeJobModal() {
     $("#jobModalBackdrop")?.classList.add("hidden");
     if (root.setModalOpen) root.setModalOpen(false);
     else document.body.classList.remove("modal-open");
     editingJobId = null;
+    creatingJob = false;
+    pendingJobPdf = null;
+    const picker = $("#jobBoardPdfFile");
+    if (picker) picker.value = "";
+  }
+  async function acceptJobPdf(file) {
+    if (!file) return;
+    if (file.size > MAX_JOB_PDF_BYTES) {
+      $("#jobBoardFormError").textContent = "El PDF supera el límite de 15 MB.";
+      return;
+    }
+    if (file.type && file.type !== "application/pdf" && !/\.pdf$/i.test(file.name)) {
+      $("#jobBoardFormError").textContent = "Solo puedes subir archivos PDF.";
+      return;
+    }
+    pendingJobPdf = file;
+    $("#jobBoardFormError").textContent = "Leyendo el PDF…";
+    try {
+      const parsed = await JobPDF.read(file);
+      fillJobModalFromParsed(parsed, file);
+      $("#jobBoardFormError").textContent = "";
+    } catch (_) {
+      fillJobModalFromParsed({}, file);
+      $("#jobBoardFormError").textContent = "No se pudieron leer los datos. Completa nombre, fecha y monto a mano; el PDF sí se adjuntará.";
+    }
   }
   async function saveJobBoardForm(event) {
     event.preventDefault();
-    const record = reports.find(item => item.id === editingJobId);
-    if (!record) return;
     const address = $("#jobEditAddress").value.trim();
-    if (!address) { $("#jobBoardFormError").textContent = "Escribe la dirección del trabajo."; return; }
+    const date = $("#jobEditDate")?.value || "";
     const balance = syncJobBalance();
-    record.jobAddress = address;
-    record.stage = $("#jobEditStage").value || record.stage;
-    record.note = $("#jobEditNote").value.trim();
-    record.received = balance.received;
-    record.due = balance.due;
+    if (!address) { $("#jobBoardFormError").textContent = "Escribe el nombre o la dirección."; return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { $("#jobBoardFormError").textContent = "Elige la fecha del reporte."; return; }
+    if (!(balance.total > 0)) { $("#jobBoardFormError").textContent = "Escribe un monto válido."; return; }
+    const record = creatingJob ? null : reports.find(item => item.id === editingJobId);
+    if (!creatingJob && !record) return;
+    if (creatingJob && !pendingJobPdf) {
+      $("#jobBoardFormError").textContent = "Sube el PDF antiguo antes de guardar.";
+      return;
+    }
+    const target = record || {
+      id: makeId(),
+      source: "imported",
+      keepOriginalPdf: true,
+      note: "",
+      checkPhotos: [],
+      defaultRate: 30,
+      updatedAt: new Date().toISOString()
+    };
+    target.jobAddress = address;
+    target.startDate = date;
+    target.endDate = date;
+    target.stage = $("#jobEditStage").value || target.stage || creatingJobStage || "created";
+    target.received = balance.received;
+    target.due = balance.due;
+    target.keepOriginalPdf = true;
+    target.source = "imported";
+    target.entries = [importedPdfEntry(address, date, balance.total)];
+    if (pendingJobPdf) {
+      target.pdfBlob = pendingJobPdf;
+      target.pdfName = pendingJobPdf.name;
+      try { target.pdfHash = JobPDF.hash ? await JobPDF.hash(pendingJobPdf) : `pdf-${Date.now()}`; }
+      catch (_) { target.pdfHash = `pdf-${Date.now()}`; }
+    }
+    const wasCreate = creatingJob;
     try {
-      await root.CloudDB.saveJob(record);
+      await root.CloudDB.saveJob(target);
+      if (wasCreate) reports = [target, ...reports.filter(item => item.id !== target.id)];
       closeJobModal();
       renderJobBoard();
       renderHistory();
-      if (root.TrentonControl?.toast) root.TrentonControl.toast("Reporte a Trenton actualizado");
+      window.TrentonControl?.jobArchive?.render?.();
+      if (root.TrentonControl?.toast) root.TrentonControl.toast(wasCreate ? "PDF adjunto y reporte en el tablero." : "Reporte a Trenton actualizado");
     } catch (error) {
       $("#jobBoardFormError").textContent = error.message || "No se pudo guardar. Corre el SQL de reportes a Trenton.";
     }
@@ -824,22 +977,57 @@
   function resetSession() { reports = []; renderHistory(); renderJobBoard(); window.TrentonControl?.jobArchive?.render?.(); }
   $("#jobHomeBoard")?.addEventListener("click", event => {
     const button = event.target.closest("[data-job-home]");
-    if (!button) return;
-    const action = button.dataset.jobHome;
-    const record = reports.find(item => item.id === button.dataset.id);
-    if (action === "toggle-column") {
-      const stage = button.dataset.stage;
-      if (expandedJobColumns.has(stage)) expandedJobColumns.delete(stage);
-      else expandedJobColumns.add(stage);
-      renderJobBoard();
+    if (button) {
+      const action = button.dataset.jobHome;
+      const record = reports.find(item => item.id === button.dataset.id);
+      if (action === "toggle-column") {
+        const stage = button.dataset.stage;
+        if (expandedJobColumns.has(stage)) expandedJobColumns.delete(stage);
+        else expandedJobColumns.add(stage);
+        renderJobBoard();
+        return;
+      }
+      if (action === "add") {
+        pendingJobPdf = null;
+        openJobCreateModal(button.dataset.stage || "created");
+        return;
+      }
+      if (action === "menu" && record) openJobModal(record);
+      if (action === "attach-check" && record) openJobCheckPicker(record.id, false);
       return;
     }
-    if (action === "add") {
-      window.TrentonControl?.navClick?.("job") || window.TrentonControl?.showView?.("job");
-      return;
+    const card = event.target.closest(".invoice-card[data-job-id]");
+    if (card) {
+      const record = reports.find(item => item.id === card.dataset.jobId);
+      if (record) openJobModal(record);
     }
-    if (action === "menu" && record) openJobModal(record);
-    if (action === "attach-check" && record) openJobCheckPicker(record.id, false);
+  });
+  $("#jobBoardUploadButton")?.addEventListener("click", () => {
+    pendingJobPdf = null;
+    openJobCreateModal("created");
+    $("#jobBoardPdfFile")?.click();
+  });
+  $("#jobChoosePdfButton")?.addEventListener("click", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    $("#jobBoardPdfFile")?.click();
+  });
+  $("#jobBoardPdfFile")?.addEventListener("change", event => {
+    const file = event.target.files && event.target.files[0];
+    if (file) acceptJobPdf(file);
+    event.target.value = "";
+  });
+  $("#jobUploadArea")?.addEventListener("click", event => {
+    if (event.target.closest("button, input")) return;
+    $("#jobBoardPdfFile")?.click();
+  });
+  $("#jobUploadArea")?.addEventListener("dragover", event => { event.preventDefault(); $("#jobUploadArea").classList.add("dragging"); });
+  $("#jobUploadArea")?.addEventListener("dragleave", () => $("#jobUploadArea")?.classList.remove("dragging"));
+  $("#jobUploadArea")?.addEventListener("drop", event => {
+    event.preventDefault();
+    $("#jobUploadArea")?.classList.remove("dragging");
+    const file = event.dataTransfer?.files && event.dataTransfer.files[0];
+    if (file) acceptJobPdf(file);
   });
   $("#jobBoardSearch")?.addEventListener("input", () => renderJobBoard());
   $("#jobBoardForm")?.addEventListener("submit", saveJobBoardForm);
@@ -847,7 +1035,12 @@
   $("#cancelJobModalButton")?.addEventListener("click", closeJobModal);
   $("#jobModalBackdrop")?.addEventListener("click", event => { if (event.target === $("#jobModalBackdrop")) closeJobModal(); });
   $("#jobEditReceived")?.addEventListener("input", syncJobBalance);
+  $("#jobEditTotal")?.addEventListener("input", syncJobBalance);
   $("#jobEditReceived")?.addEventListener("blur", event => {
+    event.target.value = jobDollars(parseJobMoney(event.target.value)).toFixed(2);
+    syncJobBalance();
+  });
+  $("#jobEditTotal")?.addEventListener("blur", event => {
     event.target.value = jobDollars(parseJobMoney(event.target.value)).toFixed(2);
     syncJobBalance();
   });
