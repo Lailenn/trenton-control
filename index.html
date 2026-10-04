@@ -12,7 +12,7 @@
     <link rel="icon" href="favicon.ico" sizes="any" />
     <link rel="icon" href="assets/app-icon.png?v=1" type="image/png" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-    <link rel="stylesheet" href="styles.css?v=board-in-card-1" />
+    <link rel="stylesheet" href="styles.css?v=modal-form-scroll-1" />
   </head>
   <body>
     <div id="authGate" class="auth-gate auth-play login-screen" data-mode="login">
@@ -845,11 +845,13 @@
           <input type="hidden" id="recordId" />
           <div class="modal-body">
             <div class="company-lock"><span class="lock-icon">▣</span><div><small>Compañía que solicita</small><strong>Trenton Builders LLC</strong></div><span class="locked-label">Fijo</span></div>
+            <div class="upload-area" id="uploadArea"><input id="pdfFile" type="file" accept="application/pdf,.pdf" hidden /><div class="upload-symbol">↑</div><div><strong>Sube el PDF de la invoice</strong><p>Con el archivo basta: revisa tema, fecha y dinero y entra al tablero. Arrástralo aquí o <button type="button" id="choosePdfButton">selecciona un archivo</button></p><small id="fileStatus">Formato PDF · hasta 15 MB</small></div></div>
+            <p class="current-file hidden" id="currentFile"></p>
             <div class="form-grid">
-              <label class="field field-wide"><span>Dirección del trabajo <em>*</em></span><input id="address" type="text" list="addressHistory" required placeholder="Ej. 1117 C St SE, Washington, DC" autocomplete="street-address" /></label>
-              <label class="field"><span>Número de invoice <em>*</em></span><input id="invoiceNumber" type="text" required placeholder="#001" /></label>
-              <label class="field"><span>Monto de la invoice <em>*</em></span><div class="money-input"><b>$</b><input id="amount" type="text" inputmode="decimal" required placeholder="0.00" autocomplete="off" /></div></label>
+              <label class="field field-wide"><span>Tema / dirección del trabajo <em>*</em></span><input id="address" type="text" list="addressHistory" required placeholder="Ej. 1117 C St SE, Washington, DC" autocomplete="street-address" /></label>
               <label class="field"><span>Fecha de emisión <em>*</em></span><input id="recordIssuedDate" type="date" required /></label>
+              <label class="field"><span>Monto / dinero <em>*</em></span><div class="money-input"><b>$</b><input id="amount" type="text" inputmode="decimal" required placeholder="0.00" autocomplete="off" /></div></label>
+              <label class="field"><span>Número de invoice <em>*</em></span><input id="invoiceNumber" type="text" required placeholder="#001" /></label>
               <label class="field"><span>Horas trabajadas</span><input id="hours" type="number" min="0" step="0.25" placeholder="0" /></label>
               <label class="field"><span>Fase inicial</span><select id="stage"><option value="created">Factura creada</option><option value="working">En trabajo</option><option value="waiting">Entregado / esperando cheque</option><option value="paid">Pagado</option></select></label>
               <label class="field field-wide"><span>Descripción del trabajo</span><textarea id="description" rows="2" placeholder="Ej. Preparation and installation of stucco"></textarea></label>
@@ -865,8 +867,6 @@
               </div>
               <p class="balance-live" id="balanceLive">Total $0.00 · recibido $0.00 · se debe $0.00</p>
             </section>
-            <div class="upload-area" id="uploadArea"><input id="pdfFile" type="file" accept="application/pdf,.pdf" hidden /><div class="upload-symbol">↑</div><div><strong>Sube el PDF de la invoice</strong><p>Arrástralo aquí o <button type="button" id="choosePdfButton">selecciona un archivo</button></p><small id="fileStatus">Formato PDF · hasta 15 MB</small></div></div>
-            <p class="current-file hidden" id="currentFile"></p>
             <section class="check-evidence hidden" id="checkEvidence">
               <p class="field-group-title">Evidencia del cheque</p>
               <p class="check-hint" id="checkPhotoHint">Si Trenton ya pagó, adjunta la foto del cheque. Puedes guardar pagada ahora y subirla después.</p>
