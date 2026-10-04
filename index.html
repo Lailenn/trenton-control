@@ -12,7 +12,7 @@
     <link rel="icon" href="favicon.ico" sizes="any" />
     <link rel="icon" href="assets/app-icon.png?v=1" type="image/png" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-    <link rel="stylesheet" href="styles.css?v=modal-form-scroll-1" />
+    <link rel="stylesheet" href="styles.css?v=reports-home-1" />
   </head>
   <body>
     <div id="authGate" class="auth-gate auth-play login-screen" data-mode="login">
@@ -329,10 +329,18 @@
             </div>
           </section>
 
-          <section class="archive-callout dash-archive">
-            <div class="dash-archive-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4.2 6.2h15.6V8H4.2zm0 3.6h15.6v8.2H4.2zm2.4 2.2v1.6h4.2v-1.6zm0 3.2v1.6h8.6v-1.6z"/></svg></div>
-            <div><h2>Reportes finales enviados a Trenton</h2><p>El otro formato (A3) tiene su propio tablero, cheques y saldo. No se mezcla con invoices ni con horas.</p></div>
-            <button class="dash-link" type="button" id="openReportsButton">Abrir reportes →</button>
+          <section class="board-section dash-board hours-home-board" id="jobHomeBoardSection">
+            <span class="dash-board-orb dash-board-orb-a" aria-hidden="true"></span>
+            <span class="dash-board-orb dash-board-orb-b" aria-hidden="true"></span>
+            <div class="board-toolbar">
+              <div><h2>Reportes finales enviados a Trenton</h2><p>Formato A3. Arrastra cada reporte: creado, enviado a Trenton o pagado.</p></div>
+              <div class="toolbar-controls">
+                <label class="search-control"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M10 3a7 7 0 0 1 5.5 11.3l4.1 4.1-1.4 1.4-4.1-4.1A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg><input id="jobBoardSearch" type="search" placeholder="Buscar reporte..." aria-label="Buscar reporte enviado a Trenton" /></label>
+              </div>
+            </div>
+            <div class="board-scroll">
+              <div class="board board-3" id="jobHomeBoard" aria-label="Tablero Kanban de reportes a Trenton"></div>
+            </div>
           </section>
 
           <section class="archive-callout dash-archive">
@@ -397,54 +405,27 @@
             <input id="hoursCheckDeskFile" type="file" accept="image/*,image/jpeg,image/png,image/webp,image/heic,image/heif" multiple hidden>
             <input id="hoursCheckDeskCamera" type="file" accept="image/*" capture="environment" hidden>
           </section>
-          </section>
-
-          <section class="page-view hidden reports-view" id="reportsView">
-            <div class="hours-page-heading">
-              <div>
-                <p class="eyebrow">Formato A3 para Trenton</p>
-                <h1>Reportes finales enviados a Trenton</h1>
-                <p class="hero-copy">Kanban, cheques y saldo de este formato. No se mezcla con invoices ni con horas trabajadas.</p>
+          <section class="archive-callout dash-archive check-callout is-empty" id="jobCheckDesk">
+            <div class="dash-archive-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zm1.2 3.2v1.4h6.2V9.2zm0 3.2V14h4.4v-1.6zm8.4 3.1 1.4 1.4 3.6-3.6-1.4-1.4-2.2 2.2-.8-.8z"/></svg></div>
+            <div class="check-desk-copy">
+              <h2>Cheques de reportes enviados a Trenton</h2>
+              <p>Cuando un reporte pase a Enviado a Trenton o Pagado, sube aquí la foto. Queda aparte de invoices y de horas.</p>
+              <div class="check-desk-actions">
+                <label class="check-desk-select">
+                  <span>Reporte a Trenton</span>
+                  <select id="jobCheckDeskReport"></select>
+                </label>
+                <div class="check-desk-upload-row">
+                  <button class="button button-primary" type="button" id="jobCheckDeskGalleryButton">Desde galería</button>
+                  <button class="button button-ghost" type="button" id="jobCheckDeskCameraButton">Tomar foto</button>
+                </div>
               </div>
-              <div class="hours-heading-actions">
-                <button class="button button-ghost" type="button" id="openJobArchiveFromReports">Archivo de PDFs</button>
-                <button class="button button-primary" type="button" id="openJobFormFromReports">＋ Nuevo reporte</button>
-              </div>
+              <p class="check-desk-status" id="jobCheckDeskStatus">Todavía no hay reportes listos para adjuntar el cheque.</p>
+              <div class="check-photo-grid" id="jobCheckDeskGrid"></div>
             </div>
-            <section class="board-section dash-board hours-home-board">
-              <span class="dash-board-orb dash-board-orb-a" aria-hidden="true"></span>
-              <span class="dash-board-orb dash-board-orb-b" aria-hidden="true"></span>
-              <div class="board-toolbar">
-                <div><h2>Seguimiento del reporte</h2><p>Arrastra cada reporte: creado, enviado a Trenton o pagado.</p></div>
-                <div class="toolbar-controls">
-                  <label class="search-control"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M10 3a7 7 0 0 1 5.5 11.3l4.1 4.1-1.4 1.4-4.1-4.1A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg><input id="jobBoardSearch" type="search" placeholder="Buscar reporte..." aria-label="Buscar reporte enviado a Trenton" /></label>
-                </div>
-              </div>
-              <div class="board-scroll">
-                <div class="board board-3" id="jobHomeBoard" aria-label="Tablero Kanban de reportes a Trenton"></div>
-              </div>
-            </section>
-            <section class="archive-callout dash-archive check-callout is-empty" id="jobCheckDesk">
-              <div class="dash-archive-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zm1.2 3.2v1.4h6.2V9.2zm0 3.2V14h4.4v-1.6zm8.4 3.1 1.4 1.4 3.6-3.6-1.4-1.4-2.2 2.2-.8-.8z"/></svg></div>
-              <div class="check-desk-copy">
-                <h2>Cheques de reportes enviados a Trenton</h2>
-                <p>Cuando un reporte pase a Enviado a Trenton o Pagado, sube aquí la foto. Queda aparte de invoices y de horas.</p>
-                <div class="check-desk-actions">
-                  <label class="check-desk-select">
-                    <span>Reporte a Trenton</span>
-                    <select id="jobCheckDeskReport"></select>
-                  </label>
-                  <div class="check-desk-upload-row">
-                    <button class="button button-primary" type="button" id="jobCheckDeskGalleryButton">Desde galería</button>
-                    <button class="button button-ghost" type="button" id="jobCheckDeskCameraButton">Tomar foto</button>
-                  </div>
-                </div>
-                <p class="check-desk-status" id="jobCheckDeskStatus">Todavía no hay reportes listos para adjuntar el cheque.</p>
-                <div class="check-photo-grid" id="jobCheckDeskGrid"></div>
-              </div>
-              <input id="jobCheckDeskFile" type="file" accept="image/*,image/jpeg,image/png,image/webp,image/heic,image/heif" multiple hidden>
-              <input id="jobCheckDeskCamera" type="file" accept="image/*" capture="environment" hidden>
-            </section>
+            <input id="jobCheckDeskFile" type="file" accept="image/*,image/jpeg,image/png,image/webp,image/heic,image/heif" multiple hidden>
+            <input id="jobCheckDeskCamera" type="file" accept="image/*" capture="environment" hidden>
+          </section>
           </section>
 
           <section class="page-view hidden hours-view" id="hoursView">
@@ -1031,6 +1012,6 @@
     <script src="job-archive.js?v=job-a3-3" defer></script>
     <script src="translator.js?v=grow-1" defer></script>
     <script src="auth-app.js?v=company-1" defer></script>
-    <script src="app.js?v=reports-sep-2" defer></script>
+    <script src="app.js?v=reports-home-1" defer></script>
   </body>
 </html>

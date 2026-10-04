@@ -703,14 +703,15 @@
     $("#jobArchiveView")?.classList.toggle("hidden", view !== "jobArchive");
     $("#hoursView").classList.toggle("hidden", view !== "hours");
     $("#jobView")?.classList.toggle("hidden", view !== "job");
-    $("#reportsView")?.classList.toggle("hidden", view !== "reports");
     setSidebarOpen(false);
     replayViewAnimation(view);
-    if (view === "board") window.AuthApp?.replayWelcome?.();
+    if (view === "board") {
+      window.AuthApp?.replayWelcome?.();
+      window.JobApp?.render?.();
+    }
     if (view === "invoice") updateInvoicePreview();
     if (view === "hours") window.HoursApp?.open();
     if (view === "job") window.JobApp?.open();
-    if (view === "reports") window.JobApp?.render?.();
   }
 
   function fillInvoiceFromText() {
@@ -916,7 +917,14 @@
     if (stage === "invoice") { showView("invoice"); setDock("archive"); return; }
     if (stage === "hours") { showView("hours"); setDock("hours"); return; }
     if (stage === "job") { showView("job"); setDock("hours"); return; }
-    if (stage === "reports") { showView("reports"); setDock("hours"); return; }
+    if (stage === "reports") {
+      showView("board");
+      renderBoard();
+      setDock("board");
+      const card = $("#jobHomeBoardSection") || $("#jobHomeBoard")?.closest(".board-section");
+      if (card) setTimeout(() => card.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+      return;
+    }
     if (stage === "hours-archive") { hoursArchive.open(); setDock("hours"); return; }
     if (stage === "job-archive") { jobArchive.open(); setDock("hours"); return; }
     if (stage === "board") { showView("board"); renderBoard(); setDock("board"); return; }
@@ -1055,9 +1063,6 @@
   $("#openHoursArchiveButton")?.addEventListener("click", () => navClick("hours-archive"));
   $("#openHoursArchiveFromHours")?.addEventListener("click", () => navClick("hours-archive"));
   $("#openJobArchiveFromJob")?.addEventListener("click", () => navClick("job-archive"));
-  $("#openReportsButton")?.addEventListener("click", () => navClick("reports"));
-  $("#openJobFormFromReports")?.addEventListener("click", () => navClick("job"));
-  $("#openJobArchiveFromReports")?.addEventListener("click", () => navClick("job-archive"));
   $("#closeModalButton").addEventListener("click", closeModal);
   $("#cancelButton").addEventListener("click", closeModal);
   $("#modalBackdrop").addEventListener("click", (event) => { if (event.target === $("#modalBackdrop")) closeModal(); });
