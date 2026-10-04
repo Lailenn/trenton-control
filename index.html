@@ -3,7 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#3b6eea" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <meta name="theme-color" content="#eef2f8" />
     <meta name="description" content="Tablero, archivo de PDFs, importación y resumen anual de invoices de Ruben Perla." />
     <title>Ruben Perla | Control de invoices</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -12,7 +14,7 @@
     <link rel="icon" href="favicon.ico" sizes="any" />
     <link rel="icon" href="assets/app-icon.png?v=1" type="image/png" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-    <link rel="stylesheet" href="styles.css?v=reports-sep-2" />
+    <link rel="stylesheet" href="styles.css?v=board-scroll-3" />
   </head>
   <body>
     <div id="authGate" class="auth-gate auth-play login-screen" data-mode="login">
@@ -310,7 +312,9 @@
                 </button>
               </div>
             </div>
-            <div class="board" id="board" aria-label="Tablero Kanban"></div>
+            <div class="board-scroll">
+              <div class="board" id="board" aria-label="Tablero Kanban"></div>
+            </div>
           </section>
 
           <section class="board-section dash-board hours-home-board">
@@ -322,7 +326,9 @@
                 <label class="search-control"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M10 3a7 7 0 0 1 5.5 11.3l4.1 4.1-1.4 1.4-4.1-4.1A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg><input id="hoursBoardSearch" type="search" placeholder="Buscar horas..." aria-label="Buscar reporte de horas" /></label>
               </div>
             </div>
-            <div class="board" id="hoursHomeBoard" aria-label="Tablero Kanban de horas"></div>
+            <div class="board-scroll">
+              <div class="board" id="hoursHomeBoard" aria-label="Tablero Kanban de horas"></div>
+            </div>
           </section>
 
           <section class="archive-callout dash-archive">
@@ -416,7 +422,9 @@
                   <label class="search-control"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M10 3a7 7 0 0 1 5.5 11.3l4.1 4.1-1.4 1.4-4.1-4.1A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg><input id="jobBoardSearch" type="search" placeholder="Buscar reporte..." aria-label="Buscar reporte enviado a Trenton" /></label>
                 </div>
               </div>
-              <div class="board board-3" id="jobHomeBoard" aria-label="Tablero Kanban de reportes a Trenton"></div>
+              <div class="board-scroll">
+                <div class="board board-3" id="jobHomeBoard" aria-label="Tablero Kanban de reportes a Trenton"></div>
+              </div>
             </section>
             <section class="archive-callout dash-archive check-callout is-empty" id="jobCheckDesk">
               <div class="dash-archive-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zm1.2 3.2v1.4h6.2V9.2zm0 3.2V14h4.4v-1.6zm8.4 3.1 1.4 1.4 3.6-3.6-1.4-1.4-2.2 2.2-.8-.8z"/></svg></div>
@@ -468,7 +476,9 @@
                   <p>Mueve cada reporte como en el tablero de invoices. Solo existe en Otra empresa.</p>
                 </div>
               </div>
-              <div id="hoursBoard" class="board hours-board"></div>
+              <div class="board-scroll">
+                <div id="hoursBoard" class="board hours-board"></div>
+              </div>
             </section>
             <section class="whatsapp-import hours-whatsapp-import" aria-labelledby="hoursWhatsappTitle">
               <div class="whatsapp-heading"><div><p class="eyebrow">Desde el mensaje de Rubén</p><h2 id="hoursWhatsappTitle">Pegar texto de WhatsApp</h2></div><span class="whatsapp-badge">Texto → horas</span></div>
