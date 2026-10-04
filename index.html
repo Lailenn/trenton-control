@@ -12,7 +12,7 @@
     <link rel="icon" href="favicon.ico" sizes="any" />
     <link rel="icon" href="assets/app-icon.png?v=1" type="image/png" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-    <link rel="stylesheet" href="styles.css?v=job-pdf-board-2" />
+    <link rel="stylesheet" href="styles.css?v=hours-pdf-board-1" />
   </head>
   <body>
     <div id="authGate" class="auth-gate auth-play login-screen" data-mode="login">
@@ -319,8 +319,9 @@
             <span class="dash-board-orb dash-board-orb-a" aria-hidden="true"></span>
             <span class="dash-board-orb dash-board-orb-b" aria-hidden="true"></span>
             <div class="board-toolbar">
-              <div><h2>Seguimiento de horas</h2><p>Igual que las invoices: mueve el reporte, sube el cheque y anota el saldo.</p></div>
+              <div><h2>Seguimiento de horas</h2><p>Sube un PDF antiguo, revisa nombre, fecha y monto, y entra al tablero.</p></div>
               <div class="toolbar-controls">
+                <button class="button button-ghost" type="button" id="hoursBoardUploadButton">Subir PDF antiguo</button>
                 <label class="search-control"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M10 3a7 7 0 0 1 5.5 11.3l4.1 4.1-1.4 1.4-4.1-4.1A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg><input id="hoursBoardSearch" type="search" placeholder="Buscar horas..." aria-label="Buscar reporte de horas" /></label>
               </div>
             </div>
@@ -872,21 +873,30 @@
         <div class="modal-header"><div><p class="eyebrow">Reporte de horas</p><h2 id="hoursModalTitle">Editar horas</h2></div><button class="close-button" id="closeHoursModalButton" type="button" aria-label="Cerrar">×</button></div>
         <form id="hoursBoardForm" novalidate>
           <div class="modal-body">
+            <div class="upload-area" id="hoursUploadArea">
+              <input id="hoursBoardPdfFile" type="file" accept="application/pdf,.pdf" hidden>
+              <div class="upload-symbol">↑</div>
+              <div>
+                <strong>Sube un PDF antiguo</strong>
+                <p>Luego puedes cambiar el nombre, la fecha y el monto. Arrástralo aquí o <button type="button" id="hoursChoosePdfButton">selecciona un archivo</button></p>
+                <small id="hoursBoardFileStatus">Formato PDF · hasta 15 MB</small>
+              </div>
+            </div>
+            <p class="current-file hidden" id="hoursCurrentFile"></p>
             <div class="form-grid">
-              <label class="field field-wide"><span>Dirección del trabajo <em>*</em></span><input id="hoursEditAddress" type="text" required></label>
-              <label class="field"><span>Fecha</span><input id="hoursEditDate" type="date"></label>
+              <label class="field field-wide"><span>Nombre / dirección <em>*</em></span><input id="hoursEditAddress" type="text" required placeholder="Ej. 1117 C St SE, Washington, DC"></label>
+              <label class="field"><span>Fecha <em>*</em></span><input id="hoursEditDate" type="date" required></label>
+              <label class="field"><span>Monto <em>*</em></span><div class="money-input"><b>$</b><input id="hoursEditTotal" type="text" inputmode="decimal" required placeholder="0.00" autocomplete="off"></div></label>
               <label class="field"><span>Fase</span><select id="hoursEditStage"><option value="created">Reporte creado</option><option value="working">En trabajo</option><option value="waiting">Esperando cheque</option><option value="paid">Pagado</option></select></label>
-              <label class="field field-wide"><span>Nota interna</span><textarea id="hoursEditNote" rows="2" placeholder="Observación del trabajo o del pago, no el saldo."></textarea></label>
             </div>
             <section class="balance-panel" aria-label="Saldo de horas">
               <div class="balance-panel-head">
                 <p class="field-group-title">Saldo de pago</p>
-                <p>El total sale de las horas × tarifa. Escribe 4500 o 4,500; el saldo se calcula solo.</p>
+                <p>El monto del PDF y lo recibido. Escribe 4500 o 4,500; el saldo se calcula solo.</p>
               </div>
               <div class="balance-grid">
-                <label class="field"><span>Total del reporte</span><div class="money-input"><b>$</b><input id="hoursEditTotal" type="text" readonly tabindex="-1"></div></label>
                 <label class="field"><span>Anticipo / recibido</span><div class="money-input"><b>$</b><input id="hoursEditReceived" type="text" inputmode="decimal" placeholder="0.00" autocomplete="off"></div></label>
-                <label class="field"><span>Se debe</span><div class="money-input"><b>$</b><input id="hoursEditDue" type="text" readonly tabindex="-1"></div></label>
+                <label class="field"><span>Se debe</span><div class="money-input"><b>$</b><input id="hoursEditDue" type="text" inputmode="decimal" readonly tabindex="-1"></div></label>
               </div>
               <p class="balance-live" id="hoursBalanceLive">Total $0.00 · recibido $0.00 · se debe $0.00</p>
             </section>
@@ -904,7 +914,7 @@
             <p class="form-error" id="hoursBoardFormError" role="alert"></p>
           </div>
           <div class="modal-footer">
-            <button class="button button-ghost" id="hoursEditOpenForm" type="button">Abrir formulario de horas</button>
+            <button class="button button-ghost hidden" id="hoursEditOpenForm" type="button">Abrir formulario de horas</button>
             <button class="button button-ghost" id="cancelHoursModalButton" type="button">Cancelar</button>
             <button class="button button-primary" type="submit" id="saveHoursBoardButton">Guardar cambios</button>
           </div>
@@ -1016,7 +1026,7 @@
     <script src="invoice-archive.js?v=pc-menu-1" defer></script>
     <script src="hours-pdf.js?v=hours-import-1" defer></script>
     <script src="hours-whatsapp.js?v=2" defer></script>
-    <script src="hours-app.js?v=modal-scroll-2" defer></script>
+    <script src="hours-app.js?v=hours-pdf-board-1" defer></script>
     <script src="hours-archive.js?v=reports-sep-2" defer></script>
     <script src="job-pdf.js?v=job-a3-4" defer></script>
     <script src="job-app.js?v=job-pdf-board-2" defer></script>

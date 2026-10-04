@@ -3913,7 +3913,7 @@ body {
   font-weight: 700;
 }
 .card-due.is-clear { color: #187054; }
-#amountDue, #hoursEditDue, #hoursEditTotal, #jobEditDue { background: #f7f8fc; }
+#amountDue, #hoursEditDue, #jobEditDue { background: #f7f8fc; }
 
 .modal-backdrop { z-index: 120; }
 body.modal-open {

@@ -149,6 +149,12 @@
 
   async function load() {
     reports = await root.CloudDB.listHours();
+    reports.forEach(record => {
+      if (isOriginalPdfHours(record)) {
+        record.keepOriginalPdf = true;
+        record.source = "imported";
+      }
+    });
   }
 
   function reset(options = {}) {
@@ -457,11 +463,36 @@
   const expandedHoursColumns = new Set();
   let editingHoursId = null;
   let draggedHoursId = null;
+  let creatingHours = false;
+  let creatingHoursStage = "created";
+  let pendingHoursPdf = null;
+  const IMPORTED_PDF_EMPLOYEE = "Imported PDF";
+  const MAX_HOURS_PDF_BYTES = 15 * 1024 * 1024;
+
+  function isOriginalPdfHours(record) {
+    if (!record) return false;
+    if (record.keepOriginalPdf || record.source === "imported") return true;
+    const rows = record.entries || [];
+    return rows.length === 1 && String(rows[0].employee || "") === IMPORTED_PDF_EMPLOYEE;
+  }
+  function importedHoursEntry(address, date, amount) {
+    return {
+      date,
+      employee: IMPORTED_PDF_EMPLOYEE,
+      timeIn: "07:00",
+      timeOut: "08:00",
+      lunch: 0,
+      rate: amount,
+      hoursOverride: 1,
+      hours: 1
+    };
+  }
 
   function hoursPay(record) {
     return (record.entries || []).reduce((sum, entry) => sum + Number(entry.hours || 0) * Number(entry.rate || 0), 0);
   }
   function hoursTotalHours(record) {
+    if (isOriginalPdfHours(record)) return 0;
     return (record.entries || []).reduce((sum, entry) => sum + Number(entry.hours || 0), 0);
   }
   function hoursDollars(value) {
@@ -483,11 +514,9 @@
     return [record.jobAddress, record.note, record.description, dateText(record.reportDate)].some(value => String(value || "").toLowerCase().includes(q));
   }
   function syncHoursBalance() {
-    const record = reports.find(item => item.id === editingHoursId);
-    const total = record ? hoursPay(record) : 0;
+    const total = parseHoursMoney($("#hoursEditTotal")?.value);
     const received = parseHoursMoney($("#hoursEditReceived")?.value);
     const due = hoursDollars(total - received);
-    if ($("#hoursEditTotal")) $("#hoursEditTotal").value = hoursDollars(total).toFixed(2);
     if ($("#hoursEditDue")) $("#hoursEditDue").value = due.toFixed(2);
     if ($("#hoursBalanceLive")) $("#hoursBalanceLive").textContent = `Total ${money(total)} · recibido ${money(received)} · se debe ${money(due)}`;
     return { received, due, total };
@@ -498,6 +527,8 @@
     const pay = hoursPay(record);
     const due = hoursDueAmount(record);
     const received = Number(record.received || 0);
+    const pretty = prettyHoursAddress(record.jobAddress || "");
+    const date = record.reportDate || pretty.date;
     const dueHtml = received > 0 || due > 0
       ? (due > 0.004 ? `<p class="card-due">Se debe ${money(due)}</p>` : `<p class="card-due is-clear">Saldo cubierto</p>`)
       : "";
@@ -506,9 +537,9 @@
       : "";
     return `<article class="invoice-card" draggable="true" data-hours-id="${esc(record.id)}" tabindex="0">
       <div class="card-top"><span class="card-invoice"><i class="card-dot"></i>HORAS</span><button class="card-menu" type="button" data-hours-home="menu" data-id="${esc(record.id)}" aria-label="Editar horas">•••</button></div>
-      <p class="card-date">${esc(dateText(record.reportDate))}</p>
-      <h4 class="card-address">${esc(record.jobAddress || "Sin dirección")}</h4>
-      <div class="card-details"><span class="card-hours">${esc(formatHours(hours))} hrs</span><span class="card-amount">${money(pay)}</span></div>
+      <p class="card-date">${esc(dateText(date))}</p>
+      <h4 class="card-address">${esc(pretty.address || record.jobAddress || "Sin dirección")}</h4>
+      <div class="card-details"><span class="card-hours">${isOriginalPdfHours(record) ? "PDF" : `${esc(formatHours(hours))} hrs`}</span><span class="card-amount">${money(pay)}</span></div>
       ${dueHtml}
       ${record.note ? `<p class="card-date">${esc(record.note)}</p>` : ""}
       ${checks}
@@ -606,48 +637,179 @@
     grid.innerHTML = cards.join("");
   }
 
-  function openHoursModal(record) {
-    if (!record) return;
-    editingHoursId = record.id;
-    $("#hoursModalTitle").textContent = "Editar horas";
-    $("#hoursEditAddress").value = record.jobAddress || "";
-    $("#hoursEditDate").value = record.reportDate || "";
-    $("#hoursEditStage").value = record.stage || "created";
-    $("#hoursEditNote").value = record.note || "";
-    $("#hoursEditReceived").value = hoursDollars(record.received).toFixed(2);
-    $("#hoursBoardFormError").textContent = "";
+  function setHoursPdfStatus(file, existingName) {
+    const status = $("#hoursBoardFileStatus");
+    const current = $("#hoursCurrentFile");
+    if (file) {
+      if (status) status.textContent = `PDF listo: ${file.name}`;
+      if (current) {
+        current.classList.remove("hidden");
+        current.textContent = `Se adjuntará ${file.name} al guardar.`;
+      }
+      return;
+    }
+    if (existingName) {
+      if (status) status.textContent = "Puedes dejar este PDF o elegir otro.";
+      if (current) {
+        current.classList.remove("hidden");
+        current.textContent = `PDF actual: ${existingName}`;
+      }
+      return;
+    }
+    if (status) status.textContent = "Formato PDF · hasta 15 MB";
+    current?.classList.add("hidden");
+  }
+  function prettyHoursAddress(value) {
+    let text = String(value || "").trim();
+    const dates = [...text.matchAll(/\d{4}-\d{2}-\d{2}/g)].map(match => match[0]);
+    text = text.replace(/\d{4}-\d{2}-\d{2}/g, " ").replace(/[_]+/g, " ").replace(/\s+/g, " ").trim();
+    if (text.includes("-") && !text.includes(",") && !/\s/.test(text.replace(/-/g, ""))) {
+      text = text.replace(/-/g, " ");
+    } else if (/^[A-Za-z0-9]+(?:-[A-Za-z0-9]+){2,}$/.test(text)) {
+      text = text.replace(/-/g, " ");
+    }
+    return { address: text.replace(/\s+/g, " ").trim(), date: dates[0] || "" };
+  }
+  function fillHoursModalFromParsed(parsed, file) {
+    const fields = parsed?.fields || {};
+    const imported = parsed?.entries || [];
+    const pay = imported.reduce((sum, entry) => sum + Number(entry.hours || HoursPDF.calcHours(entry) || 0) * Number(entry.rate || 0), 0);
+    const guessed = prettyHoursAddress(fields.jobAddress || file?.name || "");
+    const totalMatch = String(parsed?.text || "").match(/TOTAL\s+PAY[^\d$]*\$?\s*([\d,]+(?:\.\d{2})?)/i);
+    const textPay = totalMatch ? parseHoursMoney(totalMatch[1]) : 0;
+    if ($("#hoursEditAddress") && !$("#hoursEditAddress").value.trim()) {
+      $("#hoursEditAddress").value = guessed.address;
+    }
+    if ($("#hoursEditDate") && !$("#hoursEditDate").value) {
+      $("#hoursEditDate").value = fields.reportDate || guessed.date || today();
+    }
+    if ($("#hoursEditTotal") && !String($("#hoursEditTotal").value || "").trim()) {
+      const amount = pay > 0 ? pay : textPay;
+      if (amount > 0) $("#hoursEditTotal").value = hoursDollars(amount).toFixed(2);
+    }
+    setHoursPdfStatus(file, "");
     syncHoursBalance();
-    renderHoursEditChecks(record);
+  }
+  function showHoursModal() {
+    $("#hoursBoardFormError").textContent = "";
     $("#hoursModalBackdrop")?.classList.remove("hidden");
     if (root.setModalOpen) root.setModalOpen(true);
     else document.body.classList.add("modal-open");
+  }
+  function openHoursCreateModal(stage = "created") {
+    creatingHours = true;
+    creatingHoursStage = stage || "created";
+    editingHoursId = null;
+    $("#hoursModalTitle").textContent = "Nuevas horas";
+    if ($("#hoursEditAddress")) $("#hoursEditAddress").value = "";
+    if ($("#hoursEditDate")) $("#hoursEditDate").value = today();
+    if ($("#hoursEditTotal")) $("#hoursEditTotal").value = "";
+    if ($("#hoursEditStage")) $("#hoursEditStage").value = creatingHoursStage;
+    if ($("#hoursEditReceived")) $("#hoursEditReceived").value = "";
+    $("#hoursEditOpenForm")?.classList.add("hidden");
+    if ($("#saveHoursBoardButton")) $("#saveHoursBoardButton").textContent = "Guardar horas";
+    setHoursPdfStatus(pendingHoursPdf, "");
+    renderHoursEditChecks(null);
+    syncHoursBalance();
+    showHoursModal();
+  }
+  function openHoursModal(record) {
+    if (!record) return;
+    creatingHours = false;
+    pendingHoursPdf = null;
+    editingHoursId = record.id;
+    $("#hoursModalTitle").textContent = "Editar horas";
+    $("#hoursEditAddress").value = prettyHoursAddress(record.jobAddress || "").address || record.jobAddress || "";
+    if ($("#hoursEditDate")) $("#hoursEditDate").value = record.reportDate || "";
+    if ($("#hoursEditTotal")) $("#hoursEditTotal").value = hoursDollars(hoursPay(record)).toFixed(2);
+    $("#hoursEditStage").value = record.stage || "created";
+    $("#hoursEditReceived").value = hoursDollars(record.received).toFixed(2);
+    $("#hoursEditOpenForm")?.classList.add("hidden");
+    if ($("#saveHoursBoardButton")) $("#saveHoursBoardButton").textContent = "Guardar cambios";
+    setHoursPdfStatus(null, record.pdfName || "");
+    $("#hoursBoardFormError").textContent = "";
+    syncHoursBalance();
+    renderHoursEditChecks(record);
+    showHoursModal();
   }
   function closeHoursModal() {
     $("#hoursModalBackdrop")?.classList.add("hidden");
     if (root.setModalOpen) root.setModalOpen(false);
     else document.body.classList.remove("modal-open");
     editingHoursId = null;
+    creatingHours = false;
+    pendingHoursPdf = null;
+    const picker = $("#hoursBoardPdfFile");
+    if (picker) picker.value = "";
   }
-
+  async function acceptHoursPdf(file) {
+    if (!file) return;
+    if (file.size > MAX_HOURS_PDF_BYTES) {
+      $("#hoursBoardFormError").textContent = "El PDF supera el límite de 15 MB.";
+      return;
+    }
+    if (file.type && file.type !== "application/pdf" && !/\.pdf$/i.test(file.name)) {
+      $("#hoursBoardFormError").textContent = "Solo puedes subir archivos PDF.";
+      return;
+    }
+    pendingHoursPdf = file;
+    $("#hoursBoardFormError").textContent = "Leyendo el PDF…";
+    try {
+      const parsed = await HoursPDF.read(file);
+      fillHoursModalFromParsed(parsed, file);
+      $("#hoursBoardFormError").textContent = "";
+    } catch (_) {
+      fillHoursModalFromParsed({}, file);
+      $("#hoursBoardFormError").textContent = "No se pudieron leer los datos. Completa nombre, fecha y monto a mano; el PDF sí se adjuntará.";
+    }
+  }
   async function saveHoursBoardForm(event) {
     event.preventDefault();
-    const record = reports.find(item => item.id === editingHoursId);
-    if (!record) return;
     const address = $("#hoursEditAddress").value.trim();
-    if (!address) { $("#hoursBoardFormError").textContent = "Escribe la dirección del trabajo."; return; }
+    const date = $("#hoursEditDate")?.value || "";
     const balance = syncHoursBalance();
-    record.jobAddress = address;
-    record.reportDate = $("#hoursEditDate").value || record.reportDate;
-    record.stage = $("#hoursEditStage").value || record.stage;
-    record.note = $("#hoursEditNote").value.trim();
-    record.received = balance.received;
-    record.due = balance.due;
+    if (!address) { $("#hoursBoardFormError").textContent = "Escribe el nombre o la dirección."; return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { $("#hoursBoardFormError").textContent = "Elige la fecha del reporte."; return; }
+    if (!(balance.total > 0)) { $("#hoursBoardFormError").textContent = "Escribe un monto válido."; return; }
+    const record = creatingHours ? null : reports.find(item => item.id === editingHoursId);
+    if (!creatingHours && !record) return;
+    if (creatingHours && !pendingHoursPdf) {
+      $("#hoursBoardFormError").textContent = "Sube el PDF antiguo antes de guardar.";
+      return;
+    }
+    const target = record || {
+      id: makeId(),
+      source: "imported",
+      keepOriginalPdf: true,
+      note: "",
+      description: "",
+      checkPhotos: [],
+      defaultRate: 30,
+      updatedAt: new Date().toISOString()
+    };
+    target.jobAddress = address;
+    target.reportDate = date;
+    target.stage = $("#hoursEditStage").value || target.stage || creatingHoursStage || "created";
+    target.received = balance.received;
+    target.due = balance.due;
+    target.keepOriginalPdf = true;
+    target.source = "imported";
+    target.entries = [importedHoursEntry(address, date, balance.total)];
+    if (pendingHoursPdf) {
+      target.pdfBlob = pendingHoursPdf;
+      target.pdfName = pendingHoursPdf.name;
+      try { target.pdfHash = HoursPDF.hash ? await HoursPDF.hash(pendingHoursPdf) : `pdf-${Date.now()}`; }
+      catch (_) { target.pdfHash = `pdf-${Date.now()}`; }
+    }
+    const wasCreate = creatingHours;
     try {
-      await root.CloudDB.saveHours(record);
+      await root.CloudDB.saveHours(target);
+      if (wasCreate) reports = [target, ...reports.filter(item => item.id !== target.id)];
       closeHoursModal();
       renderHoursBoard();
       renderHistory();
-      if (root.TrentonControl?.toast) root.TrentonControl.toast("Reporte de horas actualizado");
+      window.TrentonControl?.hoursArchive?.render?.();
+      if (root.TrentonControl?.toast) root.TrentonControl.toast(wasCreate ? "PDF adjunto y horas en el tablero." : "Reporte de horas actualizado");
     } catch (error) {
       $("#hoursBoardFormError").textContent = error.message || "No se pudo guardar. Corre el SQL de saldo de horas.";
     }
@@ -803,22 +965,57 @@
   function resetSession() { reports = []; renderHistory(); renderHoursBoard(); window.TrentonControl?.hoursArchive?.render?.(); }
   $("#hoursHomeBoard")?.addEventListener("click", event => {
     const button = event.target.closest("[data-hours-home]");
-    if (!button) return;
-    const action = button.dataset.hoursHome;
-    const record = reports.find(item => item.id === button.dataset.id);
-    if (action === "toggle-column") {
-      const stage = button.dataset.stage;
-      if (expandedHoursColumns.has(stage)) expandedHoursColumns.delete(stage);
-      else expandedHoursColumns.add(stage);
-      renderHoursBoard();
+    if (button) {
+      const action = button.dataset.hoursHome;
+      const record = reports.find(item => item.id === button.dataset.id);
+      if (action === "toggle-column") {
+        const stage = button.dataset.stage;
+        if (expandedHoursColumns.has(stage)) expandedHoursColumns.delete(stage);
+        else expandedHoursColumns.add(stage);
+        renderHoursBoard();
+        return;
+      }
+      if (action === "add") {
+        pendingHoursPdf = null;
+        openHoursCreateModal(button.dataset.stage || "created");
+        return;
+      }
+      if (action === "menu" && record) openHoursModal(record);
+      if (action === "attach-check" && record) openHoursCheckPicker(record.id, false);
       return;
     }
-    if (action === "add") {
-      window.TrentonControl?.showView?.("hours");
-      return;
+    const card = event.target.closest(".invoice-card[data-hours-id]");
+    if (card) {
+      const record = reports.find(item => item.id === card.dataset.hoursId);
+      if (record) openHoursModal(record);
     }
-    if (action === "menu" && record) openHoursModal(record);
-    if (action === "attach-check" && record) openHoursCheckPicker(record.id, false);
+  });
+  $("#hoursBoardUploadButton")?.addEventListener("click", () => {
+    pendingHoursPdf = null;
+    openHoursCreateModal("created");
+    $("#hoursBoardPdfFile")?.click();
+  });
+  $("#hoursChoosePdfButton")?.addEventListener("click", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    $("#hoursBoardPdfFile")?.click();
+  });
+  $("#hoursBoardPdfFile")?.addEventListener("change", event => {
+    const file = event.target.files && event.target.files[0];
+    if (file) acceptHoursPdf(file);
+    event.target.value = "";
+  });
+  $("#hoursUploadArea")?.addEventListener("click", event => {
+    if (event.target.closest("button, input")) return;
+    $("#hoursBoardPdfFile")?.click();
+  });
+  $("#hoursUploadArea")?.addEventListener("dragover", event => { event.preventDefault(); $("#hoursUploadArea").classList.add("dragging"); });
+  $("#hoursUploadArea")?.addEventListener("dragleave", () => $("#hoursUploadArea")?.classList.remove("dragging"));
+  $("#hoursUploadArea")?.addEventListener("drop", event => {
+    event.preventDefault();
+    $("#hoursUploadArea")?.classList.remove("dragging");
+    const file = event.dataTransfer?.files && event.dataTransfer.files[0];
+    if (file) acceptHoursPdf(file);
   });
   $("#hoursBoardSearch")?.addEventListener("input", () => renderHoursBoard());
   $("#hoursBoardForm")?.addEventListener("submit", saveHoursBoardForm);
@@ -826,7 +1023,12 @@
   $("#cancelHoursModalButton")?.addEventListener("click", closeHoursModal);
   $("#hoursModalBackdrop")?.addEventListener("click", event => { if (event.target === $("#hoursModalBackdrop")) closeHoursModal(); });
   $("#hoursEditReceived")?.addEventListener("input", syncHoursBalance);
+  $("#hoursEditTotal")?.addEventListener("input", syncHoursBalance);
   $("#hoursEditReceived")?.addEventListener("blur", event => {
+    event.target.value = hoursDollars(parseHoursMoney(event.target.value)).toFixed(2);
+    syncHoursBalance();
+  });
+  $("#hoursEditTotal")?.addEventListener("blur", event => {
     event.target.value = hoursDollars(parseHoursMoney(event.target.value)).toFixed(2);
     syncHoursBalance();
   });
