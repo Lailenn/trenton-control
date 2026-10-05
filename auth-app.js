@@ -45,6 +45,7 @@
       [$("#topbarAvatarImg"), $("#topbarAvatarInitials")],
       [$("#topbarBrandAvatarImg"), $("#topbarBrandInitials")],
       [$("#sidebarAvatarImg"), $("#sidebarAvatarInitials")],
+      [$("#dockAvatarImg"), $("#dockAvatarInitials")],
       [$("#profilePhotoImg"), $("#profilePhotoInitials")]
     ];
     pairs.forEach(([img, initialsEl]) => {
@@ -64,11 +65,22 @@
     return year >= 1990 && year <= 2099 ? String(year) : "2026";
   }
 
+  // Phone lives in the Supabase user metadata (El Salvador, +503 ####-####).
+  function formatPhoneLocal(value) {
+    const digits = String(value || "").replace(/^\s*\+?503/, "").replace(/\D/g, "").slice(0, 8);
+    return digits.length > 4 ? `${digits.slice(0, 4)}-${digits.slice(4)}` : digits;
+  }
+
+  function accountPhone() {
+    return formatPhoneLocal(root.TrentonSupabase?.sessionUser?.()?.user_metadata?.phone || "");
+  }
+
   function profileDraft() {
     return {
       displayName: ($("#profileNameInput")?.value || "").trim() || "Lilian",
       jobTitle: ($("#profileRoleInput")?.value || "").trim() || "Secretaria",
-      memberYear: memberYearFrom($("#profileSinceInput")?.value || profile.createdAt)
+      memberYear: memberYearFrom($("#profileSinceInput")?.value || profile.createdAt),
+      phone: formatPhoneLocal($("#profilePhoneInput")?.value)
     };
   }
 
@@ -76,7 +88,8 @@
     return {
       displayName: String(profile.displayName || "Lilian").trim() || "Lilian",
       jobTitle: String(profile.jobTitle || "Secretaria").trim() || "Secretaria",
-      memberYear: memberYearFrom(profile.createdAt)
+      memberYear: memberYearFrom(profile.createdAt),
+      phone: formatPhoneLocal(profile.phone)
     };
   }
 
@@ -85,7 +98,8 @@
     const saved = savedProfileMark();
     return draft.displayName !== saved.displayName
       || draft.jobTitle !== saved.jobTitle
-      || draft.memberYear !== saved.memberYear;
+      || draft.memberYear !== saved.memberYear
+      || draft.phone !== saved.phone;
   }
 
   function syncProfileSaveState() {
@@ -111,6 +125,7 @@
     if ($("#profileNameInput")) $("#profileNameInput").value = profile.displayName || "Lilian";
     if ($("#profileRoleInput")) $("#profileRoleInput").value = profile.jobTitle || "Secretaria";
     if ($("#profileSinceInput")) $("#profileSinceInput").value = year;
+    if ($("#profilePhoneInput")) $("#profilePhoneInput").value = formatPhoneLocal(profile.phone);
     if ($("#profileEmail")) $("#profileEmail").textContent = profile.email || sessionEmail() || "—";
     if ($("#profileEmailLine")) $("#profileEmailLine").textContent = profile.email || sessionEmail() || "";
     if ($("#profileHello")) $("#profileHello").textContent = helloLine().replace(",", "");
@@ -129,10 +144,15 @@
   }
 
   function setProfileOpen(open) {
-    $("#profileLayer")?.classList.toggle("hidden", !open);
+    const layer = $("#profileLayer");
+    const wasOpen = Boolean(layer && !layer.classList.contains("hidden"));
+    // Freeze the page behind the profile (the mobile menu already freezes it when open).
+    if (open !== wasOpen && !document.body.classList.contains("sidebar-lock")) root.setModalOpen?.(open);
+    layer?.classList.toggle("hidden", !open);
     $("#profileAvatarButton")?.setAttribute("aria-expanded", String(open));
     $("#topbarProfileButton")?.setAttribute("aria-expanded", String(open));
     $("#sidebarProfileButton")?.setAttribute("aria-expanded", String(open));
+    $("#dockProfileButton")?.setAttribute("aria-expanded", String(open));
   }
 
   function restoreLocalProfile(userId) {
@@ -184,10 +204,10 @@
       const blob = await root.CloudDB.ensureAvatar(next);
       if (avatarObjectUrl) URL.revokeObjectURL(avatarObjectUrl);
       avatarObjectUrl = blob ? URL.createObjectURL(blob) : null;
-      profile = { ...next, email: next.email || sessionEmail(), avatarUrl: avatarObjectUrl };
+      profile = { ...next, email: next.email || sessionEmail(), avatarUrl: avatarObjectUrl, phone: accountPhone() };
     } catch (error) {
       console.warn("No se pudo leer el perfil", error);
-      profile = { ...profile, email: profile.email || sessionEmail() };
+      profile = { ...profile, email: profile.email || sessionEmail(), phone: accountPhone() };
       try {
         const blob = await root.CloudDB.ensureAvatar(profile);
         if (blob) {
@@ -208,6 +228,14 @@
       return;
     }
     setProfileStatus("Guardando perfil…");
+    if (draft.phone !== formatPhoneLocal(profile.phone)) {
+      const auth = authClient();
+      if (!auth?.updateUser) throw new Error("No se pudo guardar el teléfono. Vuelve a entrar e inténtalo de nuevo.");
+      const { data, error } = await auth.updateUser({ data: { phone: draft.phone ? `+503 ${draft.phone}` : "" } });
+      if (error) throw error;
+      if (data?.user) root.TrentonSupabase?.setSessionUser?.(data.user);
+      profile = { ...profile, phone: draft.phone };
+    }
     const saved = await root.CloudDB.saveProfile({
       ...profile,
       displayName: draft.displayName,
@@ -217,9 +245,9 @@
       email: profile.email || sessionEmail()
     });
     const avatarUrl = profile.avatarUrl;
-    profile = { ...profile, ...saved, displayName: saved.displayName, jobTitle: saved.jobTitle, email: saved.email || sessionEmail(), avatarUrl };
+    profile = { ...profile, ...saved, displayName: saved.displayName, jobTitle: saved.jobTitle, email: saved.email || sessionEmail(), avatarUrl, phone: profile.phone };
     paintProfile();
-    setProfileStatus("Nombre, cargo y año guardados en la nube.");
+    setProfileStatus("Perfil guardado.");
     syncProfileSaveState();
   }
 
@@ -249,6 +277,7 @@
   function bindProfile() {
     const openProfile = async () => {
       setProfileStatus("");
+      profile = { ...profile, phone: accountPhone() };
       paintProfile();
       setProfileOpen(true);
       try { await loadProfile(); syncProfileSaveState(); }
@@ -257,7 +286,13 @@
     $("#profileAvatarButton")?.addEventListener("click", openProfile);
     $("#topbarProfileButton")?.addEventListener("click", openProfile);
     $("#sidebarProfileButton")?.addEventListener("click", openProfile);
+    $("#dockProfileButton")?.addEventListener("click", openProfile);
     $("#profileScrim")?.addEventListener("click", () => setProfileOpen(false));
+    $("#profileClose")?.addEventListener("click", () => setProfileOpen(false));
+    $("#profilePhoneInput")?.addEventListener("input", event => {
+      const formatted = formatPhoneLocal(event.target.value);
+      if (event.target.value !== formatted) event.target.value = formatted;
+    });
     $("#profilePhotoFile")?.addEventListener("change", async event => {
       const picked = event.target.files?.[0];
       if (!picked) return;
@@ -287,7 +322,7 @@
       catch (error) { setProfileStatus(error.message || "No se pudo guardar el perfil.", true); syncProfileSaveState(); }
       finally { if (isProfileDirty()) button.disabled = false; }
     });
-    ["profileNameInput", "profileRoleInput", "profileSinceInput"].forEach(id => {
+    ["profileNameInput", "profileRoleInput", "profileSinceInput", "profilePhoneInput"].forEach(id => {
       $(`#${id}`)?.addEventListener("input", syncProfileSaveState);
     });
     document.addEventListener("keydown", event => {
@@ -454,7 +489,7 @@
       return "Este aparato aún no está registrado. Entra con contraseña y pulsa “Registrar este aparato”.";
     }
     if (blob.includes("webauthn_credential_exists")) {
-      return "Este aparato ya tiene la huella registrada. Prueba “Entrar con huella”.";
+      return "Este aparato ya tiene la huella registrada. Prueba “Usar huella digital”.";
     }
     if (blob.includes("too_many_passkeys")) {
       techNote("Borra un aparato en Supabase → Authentication → Users → el usuario → Passkeys.");
@@ -464,7 +499,7 @@
       return "Se canceló la huella o este aparato no la ofreció.";
     }
     if (blob.includes("invalidstate")) {
-      return "Este navegador ya tiene la huella guardada. Prueba “Entrar con huella”.";
+      return "Este navegador ya tiene la huella guardada. Prueba “Usar huella digital”.";
     }
     if (!window.isSecureContext) {
       return "La huella no funciona en esta dirección. Entra con tu correo y contraseña.";
@@ -715,10 +750,8 @@
       if (!input) return;
       const hidden = input.type === "password";
       input.type = hidden ? "text" : "password";
+      $("#togglePassword").classList.toggle("is-visible", hidden);
       $("#togglePassword").setAttribute("aria-label", hidden ? "Ocultar contraseña" : "Mostrar contraseña");
-    });
-    $("#forgotPassword")?.addEventListener("click", () => {
-      $("#authError").textContent = "Pídele a quien mantiene la app que te restablezca la contraseña. Lilian no cambia claves desde aquí.";
     });
 
     $("#loginForm")?.addEventListener("submit", async event => {

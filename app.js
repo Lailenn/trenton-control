@@ -968,13 +968,13 @@
     if (stage === "reports") {
       showView("board");
       renderBoard();
-      setDock("board");
+      setDock("reports");
       const card = $("#jobHomeBoardSection") || $("#jobHomeBoard")?.closest(".board-section");
       if (card) setTimeout(() => card.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
       return;
     }
     if (stage === "hours-archive") { hoursArchive.open(); setDock("hours"); return; }
-    if (stage === "job-archive") { jobArchive.open(); setDock("hours"); return; }
+    if (stage === "job-archive") { jobArchive.open(); setDock("reports"); return; }
     if (stage === "board") { showView("board"); renderBoard(); setDock("board"); return; }
     archive.open(stage === "archive" ? "all" : stage);
     setDock("archive");

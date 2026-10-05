@@ -12,7 +12,7 @@
     <link rel="icon" href="favicon.ico" sizes="any" />
     <link rel="icon" href="assets/app-icon.png?v=1" type="image/png" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-    <link rel="stylesheet" href="styles.css?v=ui-polish-8" />
+    <link rel="stylesheet" href="styles.css?v=ui-polish-19" />
   </head>
   <body>
     <div id="authGate" class="auth-gate auth-play login-screen" data-mode="login">
@@ -27,12 +27,10 @@
           <div class="auth-brand">
             <div class="brand-mark"><span>RP</span></div>
             <div>
-              <small>Trabajando para</small>
               <strong>Ruben Perla</strong>
-              <span>Trenton Builders LLC</span>
             </div>
           </div>
-          <p class="login-status"><i></i> Sistema activo</p>
+          <p class="login-status"><i></i> Activo</p>
         </div>
         <div class="login-hero">
           <div class="login-art">
@@ -53,7 +51,7 @@
           </div>
           <div class="login-copy">
             <h1 class="login-hello"><span id="authHelloLine">Buenos días,</span> <em>Lilian</em> <span aria-hidden="true">👋</span></h1>
-            <p class="login-lead">Todo el trabajo de Ruben Perla, en un solo lugar.</p>
+            <p class="login-lead">Bienvenida de nuevo</p>
           </div>
         </div>
         <div id="authConfigPanel" class="login-config hidden">
@@ -73,20 +71,19 @@
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17 9V7a5 5 0 0 0-10 0v2H5v12h14V9zm-8-2a3 3 0 1 1 6 0v2H9zm3 7.2a1.8 1.8 0 1 1 0 3.6 1.8 1.8 0 0 1 0-3.6z"/></svg>
                 <input id="loginPassword" type="password" required autocomplete="current-password" placeholder="Ingresa tu contraseña">
                 <button type="button" class="login-eye" id="togglePassword" aria-label="Mostrar contraseña">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 5c5.5 0 9.5 4.5 10.5 7-1 2.5-5 7-10.5 7S2.5 14.5 1.5 12C2.5 9.5 6.5 5 12 5zm0 3.5A3.5 3.5 0 1 0 12 15a3.5 3.5 0 0 0 0-6.5z"/></svg>
+                  <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg class="eye-closed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/></svg>
                 </button>
               </span>
             </label>
             <div class="login-row">
               <label class="login-remember"><input type="checkbox" id="rememberMe"> Recordarme</label>
-              <button type="button" class="login-forgot" id="forgotPassword">¿Olvidaste tu contraseña?</button>
             </div>
             <button class="button button-primary login-submit" id="loginButton" type="submit">Iniciar sesión <span aria-hidden="true">→</span></button>
           </form>
-          <div class="login-or" aria-hidden="true"><span>o</span></div>
           <button class="login-passkey" id="passkeyLoginButton" type="button">
-            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 11.2v3.6M8.8 10.6A3.2 3.2 0 0 1 12 7.4a3.2 3.2 0 0 1 3.2 3.2M7 12.2A5 5 0 0 1 12 7.2a5 5 0 0 1 5 5M5.4 13.6A6.6 6.6 0 0 1 12 6.2a6.6 6.6 0 0 1 6.6 7.4M9.2 15.2c.4 1.6 1.5 2.8 2.8 3.4M14.8 15.4c.5 1.3.4 2.7-.4 3.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-            Entrar con huella
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V5.5A2.5 2.5 0 0 1 5.5 3H8"/><path d="M16 3h2.5A2.5 2.5 0 0 1 21 5.5V8"/><path d="M21 16v2.5a2.5 2.5 0 0 1-2.5 2.5H16"/><path d="M8 21H5.5A2.5 2.5 0 0 1 3 18.5V16"/><path d="M9.4 6.7a6 6 0 0 1 5.6.2"/><path d="M7.3 9.4a5.6 5.6 0 0 1 10.3 2.9c0 1.4-.1 2.7-.4 3.9"/><path d="M6.6 13.6c.2-.7.3-1.4.3-2.1"/><path d="M8.3 17.9c.8-1.6 1.2-3.5 1.2-5.7a2.5 2.5 0 0 1 5 0c0 1.9-.2 3.6-.7 5.1"/><path d="M12 12.4c0 2.9-.5 5.2-1.5 7"/><path d="M16 17.6c.3-.8.5-1.7.6-2.6"/></svg>
+            Usar huella digital
           </button>
           <p class="login-passkey-hint" id="loginPasskeyHint" hidden></p>
         </div>
@@ -106,7 +103,7 @@
             </button>
           </div>
         </div>
-        <p class="login-legal">© 2026. Todos los derechos reservados.</p>
+        <p class="login-legal">© 2026 Diperlin</p>
       </section>
     </div>
     <div class="app-shell app-locked" id="appShell" hidden>
@@ -796,25 +793,17 @@
           </section>
         </main>
       </section>
-      <nav class="mobile-dock" aria-label="Navegación inferior">
-        <button type="button" class="dock-item is-active" data-dock="board">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-7H10v7H5a1 1 0 0 1-1-1z"/></svg>
-          <span>Inicio</span>
-        </button>
-        <button type="button" class="dock-item" data-dock="archive">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 3h8l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm7 1.5V9h4.5zM8 12h8v1.6H8zm0 3.2h8v1.6H8z"/></svg>
-          <span>Invoices</span>
-        </button>
-        <button type="button" class="dock-fab" id="dockNewInvoice" aria-label="Nueva invoice">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>
-        </button>
-        <button type="button" class="dock-item" data-dock="hours">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6h7v5H4zm9 0h7v5h-7zM4 13h7v5H4zm9 0h7v5h-7z"/></svg>
-          <span>Horas</span>
-        </button>
-        <button type="button" class="dock-item" id="dockMore">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 10.5A1.5 1.5 0 1 1 5 13.5 1.5 1.5 0 0 1 5 10.5zm7 0A1.5 1.5 0 1 1 12 13.5 1.5 1.5 0 0 1 12 10.5zm7 0A1.5 1.5 0 1 1 19 13.5 1.5 1.5 0 0 1 19 10.5z"/></svg>
-          <span>Más</span>
+      <nav class="mobile-dock dock-pills" aria-label="Navegación inferior">
+        <div class="dock-track">
+          <button type="button" class="dock-item is-active" data-dock="board">Inicio</button>
+          <button type="button" class="dock-item" data-dock="archive">Invoices</button>
+          <button type="button" class="dock-item" data-dock="hours">Horas</button>
+          <button type="button" class="dock-item" data-dock="reports">Reportes</button>
+          <button type="button" class="dock-item" id="dockMore">Más</button>
+        </div>
+        <button type="button" class="dock-avatar" id="dockProfileButton" aria-label="Tu perfil" aria-expanded="false">
+          <img id="dockAvatarImg" alt="" hidden>
+          <span id="dockAvatarInitials">LP</span>
         </button>
       </nav>
     </div>
@@ -981,31 +970,42 @@
     <div class="profile-layer hidden" id="profileLayer">
       <button class="profile-scrim" id="profileScrim" type="button" aria-label="Cerrar perfil"></button>
       <section class="profile-card" id="profileCard" role="dialog" aria-labelledby="profileDisplayName" aria-modal="true">
+        <button class="profile-close" id="profileClose" type="button" aria-label="Cerrar perfil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
         <div class="profile-hero">
           <div class="profile-photo-wrap">
-            <input id="profilePhotoFile" class="profile-photo-input" type="file" accept="image/*">
+            <input id="profilePhotoFile" class="profile-photo-input" type="file" accept="image/*" aria-label="Cambiar foto">
             <label class="profile-photo" id="profilePhotoButton" for="profilePhotoFile">
               <img id="profilePhotoImg" alt="Foto de perfil" hidden>
               <span id="profilePhotoInitials">LP</span>
               <span class="profile-camera" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3zm3 5a5 5 0 1 1 0 10 5 5 0 0 1 0-10z"/></svg>
+                <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3zm3 5a5 5 0 1 1 0 10 5 5 0 0 1 0-10z"/></svg>
               </span>
             </label>
           </div>
-          <label class="profile-photo-action" for="profilePhotoFile">Cambiar foto</label>
           <p class="profile-hello" id="profileHello">Buenas tardes</p>
           <h2 id="profileDisplayName">Lilian</h2>
           <p class="profile-mail" id="profileEmailLine"></p>
         </div>
         <div class="profile-rows">
-          <div class="profile-row"><span>Correo</span><strong id="profileEmail"></strong></div>
-          <label class="profile-row profile-edit"><span>Nombre</span><input id="profileNameInput" type="text" maxlength="60" autocomplete="name"></label>
-          <label class="profile-row profile-edit"><span>Cargo</span><input id="profileRoleInput" type="text" maxlength="40" placeholder="Secretaria"></label>
-          <label class="profile-row profile-edit"><span>Miembro desde</span><input id="profileSinceInput" type="number" min="1990" max="2099" step="1" inputmode="numeric"></label>
+          <label class="profile-row profile-edit profile-phone">
+            <span class="profile-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.6a1 1 0 0 1-.25 1z"/></svg></span>
+            <span class="profile-row-body"><span class="profile-row-label">Teléfono</span><span class="profile-phone-field"><b>+503</b><input id="profilePhoneInput" type="tel" inputmode="numeric" maxlength="9" placeholder="0000-0000" autocomplete="tel-national"></span></span>
+          </label>
+          <label class="profile-row profile-edit">
+            <span class="profile-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0z"/></svg></span>
+            <span class="profile-row-body"><span class="profile-row-label">Nombre</span><input id="profileNameInput" type="text" readonly tabindex="-1"></span>
+          </label>
+          <label class="profile-row profile-edit">
+            <span class="profile-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 4h6a2 2 0 0 1 2 2v1h3a2 2 0 0 1 2 2v3H2V9a2 2 0 0 1 2-2h3V6a2 2 0 0 1 2-2zm0 3h6V6H9zM2 13.5h8.5V15h3v-1.5H22V18a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg></span>
+            <span class="profile-row-body"><span class="profile-row-label">Cargo</span><input id="profileRoleInput" type="text" readonly tabindex="-1"></span>
+          </label>
+          <label class="profile-row profile-edit">
+            <span class="profile-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2zM5 9v10h14V9zm2 2h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zm-8 4h2v2H7zm4 0h2v2h-2z"/></svg></span>
+            <span class="profile-row-body"><span class="profile-row-label">Miembro desde</span><input id="profileSinceInput" type="text" readonly tabindex="-1"></span>
+          </label>
         </div>
-        <p class="profile-quote" id="profileQuote">“Disciplina hoy, resultados mañana.”</p>
         <p class="form-error" id="profileError" role="status"></p>
-        <button class="button button-primary" type="button" id="saveProfileButton">Guardar perfil</button>
+        <button class="button button-primary profile-save" type="button" id="saveProfileButton">Guardar cambios</button>
       </section>
     </div>
     <datalist id="addressHistory"></datalist>
@@ -1030,7 +1030,7 @@
     <script src="job-app.js?v=ui-polish-2" defer></script>
     <script src="job-archive.js?v=job-a3-3" defer></script>
     <script src="translator.js?v=grow-1" defer></script>
-    <script src="auth-app.js?v=ui-polish-4" defer></script>
-    <script src="app.js?v=ui-polish-5" defer></script>
+    <script src="auth-app.js?v=ui-polish-9" defer></script>
+    <script src="app.js?v=ui-polish-6" defer></script>
   </body>
 </html>
