@@ -689,6 +689,7 @@
     const sidebar = $("#sidebar");
     if (!sidebar) return;
     sidebar.classList.toggle("open", open);
+    sidebar.classList.remove("footer-hidden");
     $("#sidebarScrim")?.classList.toggle("visible", open);
     $("#sidebarScrim")?.setAttribute("aria-hidden", String(!open));
     document.body.classList.toggle("sidebar-lock", open);
@@ -697,6 +698,31 @@
     menu?.setAttribute("aria-label", open ? "Cerrar menú" : "Abrir menú");
     $("#dockMore")?.classList.toggle("is-active", Boolean(open));
   }
+
+  // On phone/tablet, hide "Cambiar empresa" / "Salir" while scrolling down the menu.
+  function bindSidebarFooterAutoHide() {
+    const sidebar = $("#sidebar");
+    const scroller = sidebar?.querySelector(".sidebar-scroll");
+    if (!scroller) return;
+    const mobile = window.matchMedia("(max-width: 820px)");
+    let lastTop = scroller.scrollTop;
+    let lockUntil = 0;
+    const setHidden = hidden => {
+      if (sidebar.classList.contains("footer-hidden") === hidden) return;
+      sidebar.classList.toggle("footer-hidden", hidden);
+      lockUntil = Date.now() + 350; // ignore the scroll jump while the footer animates
+    };
+    scroller.addEventListener("scroll", () => {
+      const top = scroller.scrollTop;
+      const delta = top - lastTop;
+      lastTop = top;
+      if (!mobile.matches || Date.now() < lockUntil) return;
+      const atEnd = top + scroller.clientHeight >= scroller.scrollHeight - 4;
+      if (top <= 8 || atEnd || delta < -6) setHidden(false);
+      else if (delta > 6) setHidden(true);
+    }, { passive: true });
+  }
+  bindSidebarFooterAutoHide();
 
   function showView(view) {
     if (view !== "job") window.JobApp?.flushDraft?.();
