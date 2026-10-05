@@ -511,12 +511,19 @@
   function jobPay(record) {
     return (record.entries || []).reduce((sum, entry) => sum + Number(entry.hours || JobPDF.calcHours(entry) || 0) * Number(entry.rate || 0), 0);
   }
+  // Hours and rates are stored with 2 decimals, so hours × rate can miss the typed amount
+  // by a few cents. received + due is stored in cents: when it matches within $1 it is the exact amount.
+  function jobAmount(record) {
+    const pay = jobPay(record);
+    const stored = Number(record.received || 0) + Number(record.due || 0);
+    return stored > 0 && Math.abs(stored - pay) <= 1 ? stored : pay;
+  }
   // New total for an app-built report: scale every rate so hours × rate add up to it.
   function scaleJobRates(record, total) {
     const current = jobDollars(jobPay(record));
     if (!(current > 0) || Math.abs(current - total) < 0.005) return;
     const factor = total / current;
-    record.entries = (record.entries || []).map(entry => ({ ...entry, rate: Math.round(Number(entry.rate || 0) * factor * 10000) / 10000 }));
+    record.entries = (record.entries || []).map(entry => ({ ...entry, rate: Number(entry.rate || 0) * factor }));
   }
   function jobTotalHours(record) {
     if (isOriginalPdfJob(record)) return 0;
@@ -533,7 +540,7 @@
     return Number.isFinite(fallback) ? jobDollars(fallback) : 0;
   }
   function jobDueAmount(record) {
-    return jobDollars(jobPay(record) - Number(record.received || 0));
+    return jobDollars(jobAmount(record) - Number(record.received || 0));
   }
   function jobStageId(record) {
     const stage = record?.stage || "created";
@@ -558,7 +565,7 @@
   }
   function jobCard(record) {
     const hours = jobTotalHours(record);
-    const pay = jobPay(record);
+    const pay = jobAmount(record);
     const due = jobDueAmount(record);
     const received = Number(record.received || 0);
     const dueHtml = received > 0 || due > 0
@@ -725,7 +732,7 @@
     $("#jobModalTitle").textContent = "Editar reporte final";
     $("#jobEditAddress").value = record.jobAddress || "";
     if ($("#jobEditDate")) $("#jobEditDate").value = record.startDate || (record.entries || []).map(entry => entry.date).filter(Boolean).sort()[0] || "";
-    if ($("#jobEditTotal")) $("#jobEditTotal").value = jobDollars(jobPay(record)).toFixed(2);
+    if ($("#jobEditTotal")) $("#jobEditTotal").value = jobDollars(jobAmount(record)).toFixed(2);
     $("#jobEditStage").value = jobStageId(record);
     $("#jobEditReceived").value = jobDollars(record.received).toFixed(2);
     $("#jobEditOpenForm")?.classList.add("hidden");

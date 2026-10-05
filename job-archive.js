@@ -11,13 +11,15 @@ window.JobArchive = function (app) {
   const fileName = record => record.pdfName || window.JobApp?.fileName?.(record) || "job.pdf";
   // An imported PDF is stored as one placeholder row ("Imported PDF", 1 h × amount): no real hours or employees.
   const isPlaceholder = entry => String(entry?.employee || "") === "Imported PDF";
+  // received + due is stored in cents; when it matches hours x rate within $1 it is the exact amount.
+  const exactPay = (record, pay) => { const stored = Number(record.received || 0) + Number(record.due || 0); return stored > 0 && Math.abs(stored - pay) <= 1 ? stored : pay; };
   const totals = record => {
     const entries = record.entries || [];
     const real = entries.filter(entry => !isPlaceholder(entry));
     return {
       imported: entries.length > 0 && !real.length,
       hours: real.reduce((sum, entry) => sum + Number(entry.hours || 0), 0),
-      pay: entries.reduce((sum, entry) => sum + Number(entry.hours || 0) * Number(entry.rate || 0), 0),
+      pay: exactPay(record, entries.reduce((sum, entry) => sum + Number(entry.hours || 0) * Number(entry.rate || 0), 0)),
       people: [...new Set(real.map(entry => String(entry.employee || "").trim()).filter(Boolean))]
     };
   };

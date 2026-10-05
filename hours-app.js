@@ -501,19 +501,31 @@
       hours: 1
     };
   }
-  // "Horas" field in the edit window: editable for imported PDFs, read-only (sum of
-  // the employees' hours) for reports built in the app.
+  // "Horas" field in the edit window. For a report built in the app it starts as the
+  // employees' total; a new value is spread among them in proportion.
   function setHoursField(record) {
     const input = $("#hoursEditHours");
     if (!input) return;
     const built = Boolean(record) && !isOriginalPdfHours(record);
     const hours = record ? hoursTotalHours(record) : 0;
     input.value = hours > 0 ? String(Math.round(hours * 100) / 100) : "";
-    input.readOnly = built;
-    input.tabIndex = built ? -1 : 0;
-    input.closest(".field")?.classList.toggle("is-readonly", built);
     const hint = $("#hoursEditHoursHint");
-    if (hint) hint.textContent = built ? "Suma de las horas de cada empleado." : "Opcional. Si las sabes, se mostrarán en el tablero.";
+    if (hint) hint.textContent = built ? "Suma de los empleados. Si la cambias, se reparte entre ellos." : "Opcional. Si las sabes, se mostrarán en el tablero.";
+  }
+  // Spread a new total of hours among the employees in proportion; the last row absorbs rounding.
+  function scaleHoursTotal(record, total) {
+    const rows = record.entries || [];
+    const current = rows.reduce((sum, entry) => sum + Number(entry.hours || 0), 0);
+    if (!(total > 0) || !(current > 0) || Math.abs(current - total) < 0.005) return;
+    const factor = total / current;
+    let assigned = 0;
+    record.entries = rows.map((entry, index) => {
+      const hours = index === rows.length - 1
+        ? Math.round((total - assigned) * 100) / 100
+        : Math.round(Number(entry.hours || 0) * factor * 100) / 100;
+      assigned += hours;
+      return { ...entry, hours, hoursOverride: hours };
+    });
   }
   function readHoursField() {
     const value = Number(String($("#hoursEditHours")?.value || "").replace(",", "."));
@@ -528,12 +540,19 @@
   function hoursPay(record) {
     return (record.entries || []).reduce((sum, entry) => sum + Number(entry.hours || 0) * Number(entry.rate || 0), 0);
   }
+  // Hours and rates are stored with 2 decimals, so hours × rate can miss the typed amount
+  // by a few cents. received + due is stored in cents: when it matches within $1 it is the exact amount.
+  function hoursAmount(record) {
+    const pay = hoursPay(record);
+    const stored = Number(record.received || 0) + Number(record.due || 0);
+    return stored > 0 && Math.abs(stored - pay) <= 1 ? stored : pay;
+  }
   // New total for an app-built report: scale every rate so hours × rate add up to it.
   function scaleHoursRates(record, total) {
     const current = hoursDollars(hoursPay(record));
     if (!(current > 0) || Math.abs(current - total) < 0.005) return;
     const factor = total / current;
-    record.entries = (record.entries || []).map(entry => ({ ...entry, rate: Math.round(Number(entry.rate || 0) * factor * 10000) / 10000 }));
+    record.entries = (record.entries || []).map(entry => ({ ...entry, rate: Number(entry.rate || 0) * factor }));
   }
   function hoursTotalHours(record) {
     if (isOriginalPdfHours(record)) return importedKnownHours(record);
@@ -550,7 +569,7 @@
     return Number.isFinite(fallback) ? hoursDollars(fallback) : 0;
   }
   function hoursDueAmount(record) {
-    return hoursDollars(hoursPay(record) - Number(record.received || 0));
+    return hoursDollars(hoursAmount(record) - Number(record.received || 0));
   }
   function matchesHoursSearch(record) {
     const q = ($("#hoursBoardSearch")?.value || "").trim().toLowerCase();
@@ -568,7 +587,7 @@
 
   function hoursCard(record) {
     const hours = hoursTotalHours(record);
-    const pay = hoursPay(record);
+    const pay = hoursAmount(record);
     const due = hoursDueAmount(record);
     const received = Number(record.received || 0);
     const pretty = prettyHoursAddress(record.jobAddress || "");
@@ -771,7 +790,7 @@
     $("#hoursModalTitle").textContent = "Editar horas";
     $("#hoursEditAddress").value = prettyHoursAddress(record.jobAddress || "").address || record.jobAddress || "";
     if ($("#hoursEditDate")) $("#hoursEditDate").value = record.reportDate || "";
-    if ($("#hoursEditTotal")) $("#hoursEditTotal").value = hoursDollars(hoursPay(record)).toFixed(2);
+    if ($("#hoursEditTotal")) $("#hoursEditTotal").value = hoursDollars(hoursAmount(record)).toFixed(2);
     setHoursField(record);
     $("#hoursEditStage").value = record.stage || "created";
     $("#hoursEditReceived").value = hoursDollars(record.received).toFixed(2);
@@ -847,6 +866,7 @@
     target.received = balance.received;
     target.due = balance.due;
     if (keepEntries) {
+      scaleHoursTotal(target, readHoursField());
       scaleHoursRates(target, balance.total);
     } else {
       target.keepOriginalPdf = true;
