@@ -376,15 +376,25 @@
     };
   }
 
+  // Technical setup details go to the browser console (F12), not to Lilian's screen.
+  function techNote(detail) {
+    if (detail) console.info(`[Huella] ${detail}`);
+  }
+
+  function setupDetail(info = originInfo()) {
+    return `Supabase → Authentication → Passkeys: RP ID “${info.rpId}”, Origins “${info.origin}”. URL Configuration → Site URL = ${info.origin}.`;
+  }
+
   function dashboardHint() {
     const info = originInfo();
     if (info.ipHost) {
-      return "Para usar la huella en esta computadora, abre la app en http://localhost:5500 en lugar de 127.0.0.1. En el celular, usa la versión publicada en GitHub.";
+      techNote("En la PC abre http://localhost:5500 en lugar de 127.0.0.1; la huella no funciona en una IP.");
+      return "La huella no funciona en esta dirección. Entra con tu correo y contraseña.";
     }
-    if (info.loopback) {
-      return `Estás usando la copia local de la app. En el celular, abre la versión publicada en GitHub. Para probar la huella aquí, en Supabase configura RP ID “localhost” y Origins “${info.origin}”.`;
-    }
-    return `Esta es la web del celular. En Supabase → Authentication → Passkeys pon: Nombre “Ruben Perla”, RP ID “${info.rpId}”, Origins “${info.origin}”. No uses localhost. Luego Authentication → URL Configuration → Site URL = ${info.origin}.`;
+    techNote(info.loopback
+      ? `Copia local. Para probar la huella aquí: Supabase → Passkeys, RP ID “localhost” y Origins “${info.origin}”.`
+      : setupDetail(info));
+    return "";
   }
 
   function paintPasskeyHints() {
@@ -392,11 +402,16 @@
     const loginHint = $("#loginPasskeyHint");
     const originHint = $("#passkeyOriginHint");
     let text = dashboardHint();
-    if (!info.supported) text = "Este navegador no admite huella / Windows Hello. Sigue usando correo y contraseña.";
-    else if (info.ipHost) text = dashboardHint();
-    else if (!info.secure) text = "Abre la app en https:// (GitHub) o en http://localhost. En una IP de red la huella no funciona.";
-    if (loginHint) loginHint.textContent = text;
-    if (originHint) originHint.textContent = text;
+    if (!info.supported) text = "Este navegador no permite usar la huella. Entra con tu correo y contraseña.";
+    else if (!info.secure && !info.ipHost) {
+      techNote("La huella necesita https:// (GitHub) o http://localhost.");
+      text = "La huella no funciona en esta dirección. Entra con tu correo y contraseña.";
+    }
+    [loginHint, originHint].forEach(el => {
+      if (!el) return;
+      el.textContent = text;
+      el.hidden = !text;
+    });
   }
 
   function passkeyMessage(error) {
@@ -405,59 +420,64 @@
     const code = String(error.code || error.error_code || error.name || "");
     const msg = String(error.message || "");
     const blob = `${status} ${code} ${msg}`.toLowerCase();
+    techNote(`Error: ${status || ""} ${code} ${msg}`.trim());
     if (blob.includes("passkey_disabled") || blob.includes("passkeys are not enabled")) {
-      return "Falta activar Passkeys en Supabase. Ve a Authentication → Passkeys, enciéndelo, pulsa Save changes y recarga.";
+      techNote("Activa Passkeys en Supabase → Authentication → Passkeys y pulsa Save changes.");
+      return "La huella todavía no está activada. Por ahora entra con tu correo y contraseña.";
     }
     if (blob.includes("email_not_confirmed") || blob.includes("email not confirmed")) {
-      return "El correo de Lilian no está confirmado. En Supabase → Authentication → Users abre el usuario y márcalo como Email confirmed.";
+      techNote("Supabase → Authentication → Users: marca el usuario como Email confirmed.");
+      return "Esta cuenta aún no está confirmada, así que no se puede registrar la huella.";
     }
     if (blob.includes("insufficient_aal") || blob.includes("authenticator assurance")) {
-      return "Esta cuenta tiene un segundo factor (MFA). Completa ese paso o quítalo en Authentication → Users → el usuario → MFA, y luego registra la huella.";
+      techNote("La cuenta tiene MFA. Complétalo o quítalo en Authentication → Users → MFA.");
+      return "Esta cuenta necesita un paso extra de seguridad antes de registrar la huella.";
     }
     if (blob.includes("anonymous") || blob.includes("is_anonymous")) {
-      return "Esta sesión es anónima. Entra con el correo y la contraseña de Lilian, no como invitada.";
+      return "Entra con tu correo y contraseña para usar la huella.";
     }
     if (blob.includes("session_not_found") || blob.includes("session from session_id") || blob.includes("bad_jwt") || blob.includes("invalid jwt")) {
-      return "La sesión no vale para la huella. Pulsa Salir, entra otra vez con correo y contraseña, y registra el aparato enseguida.";
+      return "Tu sesión caducó. Pulsa Salir, entra de nuevo con tu contraseña y registra el aparato.";
     }
     if (blob.includes("failed to fetch") || blob.includes("networkerror") || blob.includes("load failed")) {
-      const info = originInfo();
-      return `El botón de huella no pudo hablar con Supabase. En el celular hay que configurar Passkeys para esta web, no para localhost. RP ID “${info.rpId}”, Origins “${info.origin}”. Guarda, recarga y registra el aparato una vez con contraseña. Samsung Pass en el correo es otra cosa: desbloquea la contraseña guardada y sí puede entrar.`;
+      techNote(`No se pudo hablar con Supabase. ${setupDetail()}`);
+      return "No hay conexión con el servidor. Revisa tu internet e inténtalo de nuevo.";
     }
     if (status === 403 || blob.includes("forbidden") || blob.includes("no_authorization")) {
-      const info = originInfo();
-      return `Supabase rechazó la huella (403). 1) Authentication → Users → el correo Confirmed. 2) URL Configuration → Site URL = ${info.origin}. 3) Passkeys RP ID “${info.rpId}” y Origins “${info.origin}”. 4) Salir y entrar de nuevo. Detalle: ${msg || code || "Forbidden"}`;
+      techNote(`Supabase rechazó la huella (403). Revisa: usuario confirmado. ${setupDetail()}`);
+      return "No se pudo activar la huella en este aparato. Entra con tu correo y contraseña.";
     }
     if (blob.includes("invalid domain")) {
-      return "La huella no está disponible en esta dirección.";
+      return "La huella no funciona en esta dirección. Entra con tu correo y contraseña.";
     }
     if (blob.includes("webauthn_credential_not_found") || blob.includes("credential_not_found")) {
       return "Este aparato aún no está registrado. Entra con contraseña y pulsa “Registrar este aparato”.";
     }
     if (blob.includes("webauthn_credential_exists")) {
-      return "Este aparato ya tenía una huella guardada. Prueba “Entrar con huella / Windows Hello”.";
+      return "Este aparato ya tiene la huella registrada. Prueba “Entrar con huella”.";
     }
     if (blob.includes("too_many_passkeys")) {
-      return "Ya hay demasiados aparatos registrados. Borra uno en Supabase o registra solo el celular y la PC.";
+      techNote("Borra un aparato en Supabase → Authentication → Users → el usuario → Passkeys.");
+      return "Ya hay demasiados aparatos registrados con huella.";
     }
     if (blob.includes("notallowed") || blob.includes("abort") || blob.includes("timed out")) {
-      return "Se canceló la huella o Windows Hello, o este aparato no la ofreció.";
+      return "Se canceló la huella o este aparato no la ofreció.";
     }
     if (blob.includes("invalidstate")) {
-      return "Este navegador ya tiene una llave para esta cuenta. Prueba entrar con huella, o usa otro aparato.";
+      return "Este navegador ya tiene la huella guardada. Prueba “Entrar con huella”.";
     }
     if (!window.isSecureContext) {
-      return "Abre la app en https:// o en http://localhost. Desde una IP de red no se puede usar la huella.";
+      return "La huella no funciona en esta dirección. Entra con tu correo y contraseña.";
     }
     if (typeof window.PublicKeyCredential !== "function") {
-      return "Este navegador no admite huella / Windows Hello.";
+      return "Este navegador no permite usar la huella.";
     }
     if (blob.includes("registerpasskey is not") || blob.includes("signinwithpasskey is not")) {
-      return "Recarga la página con Ctrl+F5. Falta la librería nueva de Supabase.";
+      techNote("Falta la versión nueva de la librería de Supabase; recarga con Ctrl+F5.");
+      return "Recarga la página e inténtalo de nuevo.";
     }
-    return msg || "No se pudo usar la huella. Revisa el panel de Passkeys en Supabase.";
+    return "No se pudo usar la huella. Inténtalo de nuevo o entra con tu contraseña.";
   }
-
   function userIsConfirmed(user) {
     return Boolean(user?.email_confirmed_at || user?.confirmed_at || user?.phone_confirmed_at);
   }
@@ -528,8 +548,8 @@
     if (!status) return;
     if (!info.supported || !info.secure) {
       status.textContent = info.supported
-        ? "Este aparato no puede registrar huella aquí. Abre la app en https:// o en http://localhost."
-        : "Este navegador no admite huella / Windows Hello. El correo y la contraseña siguen igual.";
+        ? "La huella no funciona en esta dirección. Entra con tu correo y contraseña."
+        : "Este navegador no permite usar la huella. Entra con tu correo y contraseña.";
       buttons.forEach(button => { button.disabled = true; });
       return;
     }

@@ -4177,3 +4177,69 @@ body.workspace-otras #heroWorkspaceTitle { font-size: clamp(24px, 2.9vw, 36px); 
   .sidebar-scroll { overscroll-behavior: contain; }
   .sidebar-scrim { touch-action: none; }
 }
+
+/* Kanban tabs (phone/tablet only) */
+.board-tabs { display: none; }
+@media (max-width: 820px) {
+  .board-tabs {
+    display: flex;
+    gap: 8px;
+    margin: 18px 0 2px;
+    padding: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-radius: 16px;
+    background: #f1f4fa;
+    position: relative;
+    z-index: 1;
+  }
+  .board-tabs::-webkit-scrollbar { display: none; }
+  .board-tab {
+    flex: 1 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 40px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: #6b7690;
+    font: 600 13px "Plus Jakarta Sans", sans-serif;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .board-tab span {
+    min-width: 20px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: #e3e8f3;
+    color: #5b6578;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .board-tab.is-active {
+    background: #fff;
+    color: #1e2b44;
+    box-shadow: 0 4px 12px rgba(80, 100, 140, .12);
+  }
+  .board-tab.is-active span { background: #e8effc; color: #3b6eea; }
+  #boardView .board-scroll .board.has-tabs {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 12px 0 4px !important;
+  }
+  #boardView .board.has-tabs > .kanban-column { display: none !important; }
+  #boardView .board-scroll .board.has-tabs > .kanban-column.is-tab-active {
+    display: block !important;
+    flex: none !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    min-height: 0 !important;
+  }
+  #boardView .board.has-tabs .column-head { display: none; }
+  #boardView .board-scroll:has(> .board.has-tabs) { overflow-x: visible; }
+}

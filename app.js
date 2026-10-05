@@ -1075,6 +1075,43 @@
       await window.JobApp.removeReport(record);
     }
   });
+  // Phone/tablet: show one kanban column at a time, picked from a tab bar above the board.
+  function bindBoardTabs(boardId) {
+    const board = document.getElementById(boardId);
+    const holder = board?.closest(".board-scroll");
+    if (!board || !holder) return;
+    const tabs = document.createElement("div");
+    tabs.className = "board-tabs";
+    tabs.setAttribute("role", "tablist");
+    tabs.setAttribute("aria-label", "Fases del tablero");
+    holder.before(tabs);
+    board.classList.add("has-tabs");
+    let active = "";
+    const paint = () => {
+      const columns = [...board.querySelectorAll(":scope > .kanban-column")];
+      if (!columns.length) { tabs.innerHTML = ""; return; }
+      if (!columns.some(col => col.dataset.stage === active)) active = columns[0].dataset.stage;
+      columns.forEach(col => col.classList.toggle("is-tab-active", col.dataset.stage === active));
+      tabs.innerHTML = columns.map(col => {
+        const on = col.dataset.stage === active;
+        const title = esc(col.querySelector("h3")?.textContent || "");
+        const count = esc(col.querySelector(".column-count")?.textContent || "0");
+        return `<button type="button" role="tab" class="board-tab${on ? " is-active" : ""}" aria-selected="${on}" data-stage="${esc(col.dataset.stage)}">${title}<span>${count}</span></button>`;
+      }).join("");
+    };
+    tabs.addEventListener("click", event => {
+      const tab = event.target.closest(".board-tab");
+      if (!tab) return;
+      active = tab.dataset.stage;
+      paint();
+      const current = tabs.querySelector(".board-tab.is-active");
+      if (current) tabs.scrollLeft = current.offsetLeft - (tabs.clientWidth - current.offsetWidth) / 2;
+    });
+    new MutationObserver(paint).observe(board, { childList: true });
+    paint();
+  }
+  ["board", "hoursHomeBoard", "jobHomeBoard"].forEach(bindBoardTabs);
+
   window.TrentonControl = { toast: showToast, records: () => records, hoursArchive, jobArchive, download, showView, navClick };
   document.querySelectorAll("[data-archive]").forEach(button => button.addEventListener("click", () => navClick(button.dataset.archive === "all" ? "archive" : button.dataset.archive)));
   $("#editGeneratedInvoiceButton").addEventListener("click", editGeneratedInvoice);
