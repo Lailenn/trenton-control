@@ -583,6 +583,7 @@
     sidebar?.classList.remove("open");
     $("#sidebarScrim")?.classList.remove("visible");
     document.body.classList.remove("sidebar-lock");
+    document.body.style.top = "";
     const menu = $("#mobileMenu");
     menu?.setAttribute("aria-expanded", "false");
     menu?.setAttribute("aria-label", "Abrir menú");

@@ -685,6 +685,22 @@
     Object.entries(values).forEach(([selector, value]) => { const element = $(selector); if (element) element.textContent = value; });
   }
 
+  // Freeze the page behind the mobile menu so it can't scroll (and keep its position on close).
+  let sidebarLockedY = 0;
+  function lockPageBehindSidebar(lock) {
+    const body = document.body;
+    const locked = body.classList.contains("sidebar-lock");
+    if (lock && !locked) {
+      sidebarLockedY = window.scrollY || window.pageYOffset || 0;
+      body.style.top = `-${sidebarLockedY}px`;
+      body.classList.add("sidebar-lock");
+    } else if (!lock && locked) {
+      body.classList.remove("sidebar-lock");
+      body.style.top = "";
+      window.scrollTo(0, sidebarLockedY);
+    }
+  }
+
   function setSidebarOpen(open) {
     const sidebar = $("#sidebar");
     if (!sidebar) return;
@@ -692,7 +708,7 @@
     sidebar.classList.remove("footer-hidden");
     $("#sidebarScrim")?.classList.toggle("visible", open);
     $("#sidebarScrim")?.setAttribute("aria-hidden", String(!open));
-    document.body.classList.toggle("sidebar-lock", open);
+    lockPageBehindSidebar(open);
     const menu = $("#mobileMenu");
     menu?.setAttribute("aria-expanded", String(open));
     menu?.setAttribute("aria-label", open ? "Cerrar menú" : "Abrir menú");

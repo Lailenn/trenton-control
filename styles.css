@@ -4158,3 +4158,22 @@ body.workspace-otras #heroWorkspaceTitle { font-size: clamp(24px, 2.9vw, 36px); 
     pointer-events: none;
   }
 }
+
+/* Mobile menu: freeze the page behind it and keep the menu full height. */
+@media (max-width: 820px) {
+  body.sidebar-lock {
+    position: fixed;
+    left: 0;
+    right: 0;
+    width: 100%;
+    overflow: hidden;
+  }
+  body.sidebar-lock .sidebar {
+    top: 0 !important;
+    bottom: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+  .sidebar-scroll { overscroll-behavior: contain; }
+  .sidebar-scrim { touch-action: none; }
+}
