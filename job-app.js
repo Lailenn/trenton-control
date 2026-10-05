@@ -473,9 +473,10 @@
     }
   }
 
+  const toClient = () => root.CompanyApp?.toClient?.() || "a Trenton";
   const jobStages = [
     { id: "created", title: "Reporte creado", className: "column-created" },
-    { id: "sent", title: "Enviado a Trenton", className: "column-working" },
+    { id: "sent", get title() { return `Enviado ${toClient()}`; }, className: "column-working" },
     { id: "paid", title: "Pagado", className: "column-paid" }
   ];
   const JOB_COLUMN_PREVIEW = 5;
@@ -696,7 +697,7 @@
     creatingJob = true;
     creatingJobStage = stage || "created";
     editingJobId = null;
-    $("#jobModalTitle").textContent = "Nuevo reporte a Trenton";
+    $("#jobModalTitle").textContent = `Nuevo reporte ${toClient()}`;
     $("#jobEditAddress").value = "";
     if ($("#jobEditDate")) $("#jobEditDate").value = today();
     if ($("#jobEditTotal")) $("#jobEditTotal").value = "";
@@ -804,7 +805,7 @@
       renderJobBoard();
       renderHistory();
       window.TrentonControl?.jobArchive?.render?.();
-      if (root.TrentonControl?.toast) root.TrentonControl.toast(wasCreate ? "PDF adjunto y reporte en el tablero." : "Reporte a Trenton actualizado");
+      if (root.TrentonControl?.toast) root.TrentonControl.toast(wasCreate ? "PDF adjunto y reporte en el tablero." : `Reporte ${toClient()} actualizado`);
     } catch (error) {
       $("#jobBoardFormError").textContent = error.message || "No se pudo guardar. Corre el SQL de reportes a Trenton.";
     }
@@ -827,13 +828,13 @@
     if (current && list.some(record => record.id === current)) select.value = current;
     const record = reports.find(item => item.id === select.value);
     if (!record) {
-      status.textContent = "Mueve un reporte a Enviado a Trenton o Pagado y aquí podrás subir la foto.";
+      status.textContent = `Todavía no hay reportes en Enviado ${toClient()} o Pagado.`;
       grid.innerHTML = "";
       return;
     }
     const photos = record.checkPhotos || [];
     status.textContent = photos.length
-      ? `${photos.length} foto${photos.length === 1 ? "" : "s"} para ${record.jobAddress}.`
+      ? `${photos.length} foto${photos.length === 1 ? "" : "s"} del cheque guardada${photos.length === 1 ? "" : "s"} para ${record.jobAddress}.`
       : `Aún no hay foto del cheque de ${record.jobAddress}.`;
     if (!photos.length) { grid.innerHTML = ""; return; }
     const cards = [];
@@ -856,7 +857,7 @@
   }
   async function addJobCheck(reportId, files) {
     const record = reports.find(item => item.id === reportId);
-    if (!record) throw new Error("Elige primero un reporte enviado a Trenton.");
+    if (!record) throw new Error(`Elige primero un reporte enviado ${toClient()}.`);
     for (const file of Array.from(files || []).filter(Boolean)) {
       const photo = await root.CloudDB.addJobCheckPhoto(record.id, file);
       record.checkPhotos = [photo, ...(record.checkPhotos || [])];
@@ -1081,7 +1082,7 @@
   $("#jobCheckDeskReport")?.addEventListener("change", () => renderJobCheckDesk());
   $("#jobCheckDeskGalleryButton")?.addEventListener("click", () => {
     const record = reports.find(item => item.id === $("#jobCheckDeskReport")?.value);
-    if (!record) { if (root.TrentonControl?.toast) root.TrentonControl.toast("Mueve un reporte a Enviado a Trenton o Pagado."); return; }
+    if (!record) { if (root.TrentonControl?.toast) root.TrentonControl.toast(`Mueve un reporte a Enviado ${toClient()} o Pagado.`); return; }
     openJobCheckPicker(record.id, false);
   });
   $("#jobCheckDeskCameraButton")?.addEventListener("click", () => {
@@ -1093,7 +1094,7 @@
     const reportId = event.target.dataset.reportId || $("#jobCheckDeskReport")?.value;
     try {
       await addJobCheck(reportId, event.target.files);
-      if (root.TrentonControl?.toast) root.TrentonControl.toast("Foto del cheque del reporte a Trenton guardada.");
+      if (root.TrentonControl?.toast) root.TrentonControl.toast(`Foto del cheque del reporte ${toClient()} guardada.`);
     } catch (error) {
       if (root.TrentonControl?.toast) root.TrentonControl.toast(error.message || "No se pudo subir la foto.");
     }

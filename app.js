@@ -275,13 +275,13 @@
     if (current && list.some(record => record.id === current)) select.value = current;
     const record = records.find(item => item.id === select.value);
     if (!record) {
-      status.textContent = "Mueve una invoice a Esperando cheque o Pagado y aquí podrás subir la foto.";
+      status.textContent = "Todavía no hay invoices en Esperando cheque o Pagado.";
       grid.innerHTML = "";
       return;
     }
     const photos = record.checkPhotos || [];
     status.textContent = photos.length
-      ? `${photos.length} foto${photos.length === 1 ? "" : "s"} en la nube para ${record.invoiceNumber}.`
+      ? `${photos.length} foto${photos.length === 1 ? "" : "s"} del cheque guardada${photos.length === 1 ? "" : "s"} para ${record.invoiceNumber}.`
       : `Aún no hay foto del cheque de ${record.invoiceNumber}.`;
     if (!photos.length) { grid.innerHTML = ""; return; }
     const cards = [];
@@ -505,7 +505,7 @@
       issuedDate: $("#builderIssuedDate").value,
       approval: $("#builderApproval").value.trim() || "ESTIMATED AND APPROVED BY DIEGO",
       fromName: $("#builderFromName").value.trim() || "Ruben Perla",
-      billName: $("#builderBillName").value.trim() || "Trenton Builders LLC",
+      billName: $("#builderBillName").value.trim() || defaultBill().name,
       fromPhone: $("#builderFromPhone").value.trim(),
       billAddress: $("#builderBillAddress").value.trim(),
       workAddress: $("#builderWorkAddress").value.trim(),
@@ -521,14 +521,20 @@
     };
   }
 
+  function defaultBill() {
+    return window.CompanyApp?.isOtras?.()
+      ? { name: "", address: "" }
+      : { name: "Trenton Builders LLC", address: "1117 C St SE, Washington, DC 20003" };
+  }
+
   function invoiceDraftDefaults() {
     return {
       builderIssuedDate: WhatsAppInvoiceParser.dateValue(),
       builderApproval: "ESTIMATED AND APPROVED BY DIEGO",
       builderFromName: "Ruben Perla",
-      builderBillName: "Trenton Builders LLC",
+      builderBillName: defaultBill().name,
       builderFromPhone: "+1 (469) 650-4958",
-      builderBillAddress: "1117 C St SE, Washington, DC 20003",
+      builderBillAddress: defaultBill().address,
       builderWorkAddress: "",
       builderFromEmail: "pr391665@gmail.com",
       builderFromAddress: DEFAULT_FROM_ADDRESS,
@@ -785,9 +791,9 @@
     $("#builderIssuedDate").value = WhatsAppInvoiceParser.dateValue();
     $("#builderApproval").value = "ESTIMATED AND APPROVED BY DIEGO";
     $("#builderFromName").value = "Ruben Perla";
-    $("#builderBillName").value = "Trenton Builders LLC";
+    $("#builderBillName").value = defaultBill().name;
     $("#builderFromPhone").value = "+1 (469) 650-4958";
-    $("#builderBillAddress").value = "1117 C St SE, Washington, DC 20003";
+    $("#builderBillAddress").value = defaultBill().address;
     $("#builderWorkAddress").value = "";
     $("#builderFromEmail").value = "pr391665@gmail.com";
     $("#builderFromAddress").value = DEFAULT_FROM_ADDRESS;
@@ -911,7 +917,7 @@
 
   function navClick(stage) {
     document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.nav === stage));
-    const titles = {board: "Inicio", invoice: "Crear invoice", hours: "Horas trabajadas", job: "Otro formato de horas", reports: "Reportes a Trenton", archive: "Invoices / PDFs", "hours-archive": "Horas / PDFs", "job-archive": "Reportes / PDFs", created: "Facturas creadas", working: "En trabajo", waiting: "Esperando cheque", paid: "Pagadas"};
+    const titles = {board: "Inicio", invoice: "Crear invoice", hours: "Horas trabajadas", job: "Otro formato de horas", reports: `Reportes ${window.CompanyApp?.toClient?.() || "a Trenton"}`, archive: "Invoices / PDFs", "hours-archive": "Horas / PDFs", "job-archive": "Reportes / PDFs", created: "Facturas creadas", working: "En trabajo", waiting: "Esperando cheque", paid: "Pagadas"};
     const label = $("#topbarSection");
     if (label) label.textContent = titles[stage] || "Inicio";
     if (stage === "invoice") { showView("invoice"); setDock("archive"); return; }

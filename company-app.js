@@ -15,7 +15,7 @@
       id: "otras",
       title: "Otra empresa",
       crumb: "Otra empresa",
-      hero: "Misma estructura, <span>datos aparte</span>. Sin logo ni nombre.",
+      hero: "Registra trabajos de <span>diferentes clientes y empresas</span>, controla invoices, horas, pagos y documentos desde un solo lugar.",
       hint: "Invoices, horas, otro formato y el tablero de horas en Inicio. No se mezcla con Trenton."
     }
   };
@@ -37,6 +37,9 @@
   function isOtras() {
     return id() === "otras";
   }
+  function toClient() {
+    return isOtras() ? "al cliente" : "a Trenton";
+  }
   function draftKey(kind) {
     return isOtras() ? `trenton.draft.${kind}.otras` : `trenton.draft.${kind}`;
   }
@@ -50,6 +53,10 @@
     if ($("#topbarCompanyName")) $("#topbarCompanyName").textContent = current.crumb;
     if ($("#heroWorkspaceTitle")) $("#heroWorkspaceTitle").innerHTML = current.hero;
     $("#hoursKanban")?.classList.add("hidden");
+    document.querySelectorAll("[data-otras]").forEach(el => {
+      if (!("trenton" in el.dataset)) el.dataset.trenton = el.textContent;
+      el.textContent = current.id === "otras" ? el.dataset.otras : el.dataset.trenton;
+    });
     document.querySelectorAll("[data-company-choice]").forEach(button => {
       button.classList.toggle("is-selected", button.dataset.companyChoice === current.id);
     });
@@ -134,5 +141,5 @@
   else bind();
 
   root.setModalOpen = setModalOpen;
-  root.CompanyApp = { id, info, isOtras, draftKey, choose, clearSession, paint, onChange, setId, hasSessionPick };
+  root.CompanyApp = { id, info, isOtras, toClient, draftKey, choose, clearSession, paint, onChange, setId, hasSessionPick };
 })(typeof globalThis !== "undefined" ? globalThis : this);

@@ -379,10 +379,10 @@
   function dashboardHint() {
     const info = originInfo();
     if (info.ipHost) {
-      return "Estás en una IP (127.0.0.1). En el celular usa la web de GitHub. En la PC abre http://localhost:5500, no la IP.";
+      return "Para usar la huella en esta computadora, abre la app en http://localhost:5500 en lugar de 127.0.0.1. En el celular, usa la versión publicada en GitHub.";
     }
     if (info.loopback) {
-      return `Esta es la copia local. En el celular no uses localhost: abre la web de GitHub. Si pruebas huella aquí, en Supabase pon RP ID “localhost” y Origins “${info.origin}”.`;
+      return `Estás usando la copia local de la app. En el celular, abre la versión publicada en GitHub. Para probar la huella aquí, en Supabase configura RP ID “localhost” y Origins “${info.origin}”.`;
     }
     return `Esta es la web del celular. En Supabase → Authentication → Passkeys pon: Nombre “Ruben Perla”, RP ID “${info.rpId}”, Origins “${info.origin}”. No uses localhost. Luego Authentication → URL Configuration → Site URL = ${info.origin}.`;
   }
@@ -427,6 +427,9 @@
     if (status === 403 || blob.includes("forbidden") || blob.includes("no_authorization")) {
       const info = originInfo();
       return `Supabase rechazó la huella (403). 1) Authentication → Users → el correo Confirmed. 2) URL Configuration → Site URL = ${info.origin}. 3) Passkeys RP ID “${info.rpId}” y Origins “${info.origin}”. 4) Salir y entrar de nuevo. Detalle: ${msg || code || "Forbidden"}`;
+    }
+    if (blob.includes("invalid domain")) {
+      return "La huella no está disponible en esta dirección.";
     }
     if (blob.includes("webauthn_credential_not_found") || blob.includes("credential_not_found")) {
       return "Este aparato aún no está registrado. Entra con contraseña y pulsa “Registrar este aparato”.";
@@ -535,7 +538,7 @@
       await assertPasskeyUser();
       const passkeys = await listPasskeys();
       if (!passkeys.length) {
-        status.textContent = "Aún no hay huella en esta cuenta. Pulsa “Registrar este aparato” y confirma con el dedo, Face ID o Windows Hello.";
+        status.textContent = "Todavía no hay ningún aparato registrado. Pulsa “Registrar este aparato” y confírmalo con tu huella, Face ID o Windows Hello.";
         return;
       }
       const names = passkeys.map(item => item.friendly_name || item.friendlyName || "aparato").join(", ");

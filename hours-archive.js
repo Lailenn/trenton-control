@@ -74,7 +74,7 @@ window.HoursArchive = function (app) {
         <p class="archive-file">${esc(record.pdfName || fileName(record))}</p>
         <div class="archive-card-actions">${hasPdf ? `<button type="button" class="button button-primary" data-hours-record="${esc(record.id)}" data-task="view">Ver PDF</button><button type="button" class="button button-ghost" data-hours-record="${esc(record.id)}" data-task="download">Descargar</button>` : ""}<button type="button" class="button button-danger" data-hours-record="${esc(record.id)}" data-task="delete">Eliminar</button></div>
       </article>`;
-    }).join("") : '<div class="archive-empty"><span>◷</span><h2>No hay reportes de horas en esta selección</h2><p>Prueba otro año o crea un reporte en Horas trabajadas. Los reportes a Trenton van en Reportes / PDFs.</p></div>';
+    }).join("") : '<div class="archive-empty"><span>◷</span><h2>No hay reportes de horas en esta selección</h2><p>Prueba otro año o crea un reporte en Horas trabajadas. Los reportes ' + (window.CompanyApp?.toClient?.() || 'a Trenton') + ' van en Reportes / PDFs.</p></div>';
   }
 
   function open() {

@@ -833,13 +833,13 @@
     if (current && list.some(record => record.id === current)) select.value = current;
     const record = reports.find(item => item.id === select.value);
     if (!record) {
-      status.textContent = "Mueve un reporte de horas a Esperando cheque o Pagado y aquí podrás subir la foto.";
+      status.textContent = "Todavía no hay reportes de horas en Esperando cheque o Pagado.";
       grid.innerHTML = "";
       return;
     }
     const photos = record.checkPhotos || [];
     status.textContent = photos.length
-      ? `${photos.length} foto${photos.length === 1 ? "" : "s"} para ${record.jobAddress}.`
+      ? `${photos.length} foto${photos.length === 1 ? "" : "s"} del cheque guardada${photos.length === 1 ? "" : "s"} para ${record.jobAddress}.`
       : `Aún no hay foto del cheque de ${record.jobAddress}.`;
     if (!photos.length) { grid.innerHTML = ""; return; }
     const cards = [];
