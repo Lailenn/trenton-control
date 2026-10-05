@@ -511,6 +511,13 @@
   function jobPay(record) {
     return (record.entries || []).reduce((sum, entry) => sum + Number(entry.hours || JobPDF.calcHours(entry) || 0) * Number(entry.rate || 0), 0);
   }
+  // New total for an app-built report: scale every rate so hours × rate add up to it.
+  function scaleJobRates(record, total) {
+    const current = jobDollars(jobPay(record));
+    if (!(current > 0) || Math.abs(current - total) < 0.005) return;
+    const factor = total / current;
+    record.entries = (record.entries || []).map(entry => ({ ...entry, rate: Math.round(Number(entry.rate || 0) * factor * 10000) / 10000 }));
+  }
   function jobTotalHours(record) {
     if (isOriginalPdfJob(record)) return 0;
     return (record.entries || []).reduce((sum, entry) => sum + Number(entry.hours || JobPDF.calcHours(entry) || 0), 0);
@@ -782,15 +789,26 @@
       defaultRate: 30,
       updatedAt: new Date().toISOString()
     };
+    // A report built in the app keeps its days, employees and hours; only an imported PDF
+    // (or a newly attached one) is stored as a single amount.
+    const keepEntries = Boolean(record) && !isOriginalPdfJob(record) && !pendingJobPdf;
     target.jobAddress = address;
-    target.startDate = date;
-    target.endDate = date;
     target.stage = $("#jobEditStage").value || target.stage || creatingJobStage || "created";
     target.received = balance.received;
     target.due = balance.due;
-    target.keepOriginalPdf = true;
-    target.source = "imported";
-    target.entries = [importedPdfEntry(address, date, balance.total)];
+    if (keepEntries) {
+      if (date !== target.startDate) {
+        target.startDate = date;
+        if (!target.endDate || target.endDate < date) target.endDate = date;
+      }
+      scaleJobRates(target, balance.total);
+    } else {
+      target.startDate = date;
+      target.endDate = date;
+      target.keepOriginalPdf = true;
+      target.source = "imported";
+      target.entries = [importedPdfEntry(address, date, balance.total)];
+    }
     if (pendingJobPdf) {
       target.pdfBlob = pendingJobPdf;
       target.pdfName = pendingJobPdf.name;
@@ -1117,5 +1135,5 @@
   window.addEventListener("pagehide", () => persistJobDraft(true));
   reset({ keepDraft: true });
   restoreJobDraft();
-  root.JobApp = {open, render, boot, resetSession, flushDraft, restoreJobDraft, reports: () => reports, importJobFiles, applyImported, jobReady, recordFromImport, removeReport, fileName, download, rebuildPdf};
+  root.JobApp = {open, edit: openJobModal, render, boot, resetSession, flushDraft, restoreJobDraft, reports: () => reports, importJobFiles, applyImported, jobReady, recordFromImport, removeReport, fileName, download, rebuildPdf};
 })(typeof globalThis !== "undefined" ? globalThis : this);

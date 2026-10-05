@@ -491,6 +491,13 @@
   function hoursPay(record) {
     return (record.entries || []).reduce((sum, entry) => sum + Number(entry.hours || 0) * Number(entry.rate || 0), 0);
   }
+  // New total for an app-built report: scale every rate so hours × rate add up to it.
+  function scaleHoursRates(record, total) {
+    const current = hoursDollars(hoursPay(record));
+    if (!(current > 0) || Math.abs(current - total) < 0.005) return;
+    const factor = total / current;
+    record.entries = (record.entries || []).map(entry => ({ ...entry, rate: Math.round(Number(entry.rate || 0) * factor * 10000) / 10000 }));
+  }
   function hoursTotalHours(record) {
     if (isOriginalPdfHours(record)) return 0;
     return (record.entries || []).reduce((sum, entry) => sum + Number(entry.hours || 0), 0);
@@ -787,14 +794,21 @@
       defaultRate: 30,
       updatedAt: new Date().toISOString()
     };
+    // A report built in the app keeps its employees and hours; only an imported PDF
+    // (or a newly attached one) is stored as a single amount.
+    const keepEntries = Boolean(record) && !isOriginalPdfHours(record) && !pendingHoursPdf;
     target.jobAddress = address;
     target.reportDate = date;
     target.stage = $("#hoursEditStage").value || target.stage || creatingHoursStage || "created";
     target.received = balance.received;
     target.due = balance.due;
-    target.keepOriginalPdf = true;
-    target.source = "imported";
-    target.entries = [importedHoursEntry(address, date, balance.total)];
+    if (keepEntries) {
+      scaleHoursRates(target, balance.total);
+    } else {
+      target.keepOriginalPdf = true;
+      target.source = "imported";
+      target.entries = [importedHoursEntry(address, date, balance.total)];
+    }
     if (pendingHoursPdf) {
       target.pdfBlob = pendingHoursPdf;
       target.pdfName = pendingHoursPdf.name;
@@ -1104,5 +1118,5 @@
   window.addEventListener("pagehide", () => persistHoursDraft(true));
   reset({ keepDraft: true });
   restoreHoursDraft();
-  root.HoursApp = {open, render, boot, resetSession, flushDraft, restoreHoursDraft, reports: () => reports, importHoursFiles, applyImported, hoursReady, recordFromImport, removeReport};
+  root.HoursApp = {open, edit: openHoursModal, render, boot, resetSession, flushDraft, restoreHoursDraft, reports: () => reports, importHoursFiles, applyImported, hoursReady, recordFromImport, removeReport};
 })(typeof globalThis !== "undefined" ? globalThis : this);

@@ -9,12 +9,16 @@ window.JobArchive = function (app) {
   const dateLabel = value => isoDate(value) ? value.slice(8, 10) + "/" + value.slice(5, 7) + "/" + value.slice(0, 4) : "Sin fecha";
   const formatHours = value => Number(value || 0).toLocaleString("en-US", {maximumFractionDigits: 2});
   const fileName = record => record.pdfName || window.JobApp?.fileName?.(record) || "job.pdf";
+  // An imported PDF is stored as one placeholder row ("Imported PDF", 1 h × amount): no real hours or employees.
+  const isPlaceholder = entry => String(entry?.employee || "") === "Imported PDF";
   const totals = record => {
     const entries = record.entries || [];
+    const real = entries.filter(entry => !isPlaceholder(entry));
     return {
-      hours: entries.reduce((sum, entry) => sum + Number(entry.hours || 0), 0),
+      imported: entries.length > 0 && !real.length,
+      hours: real.reduce((sum, entry) => sum + Number(entry.hours || 0), 0),
       pay: entries.reduce((sum, entry) => sum + Number(entry.hours || 0) * Number(entry.rate || 0), 0),
-      people: [...new Set(entries.map(entry => String(entry.employee || "").trim()).filter(Boolean))]
+      people: [...new Set(real.map(entry => String(entry.employee || "").trim()).filter(Boolean))]
     };
   };
   const haystack = record => [record.jobAddress, record.pdfName, ...(record.entries || []).map(entry => `${entry.employee} ${entry.description}`)].join(" ").toLowerCase();
@@ -57,12 +61,12 @@ window.JobArchive = function (app) {
       const hasPdf = Boolean(record.pdfBlob || record.pdfPath);
       const range = window.JobPDF?.rangeLabel?.((record.entries || []).map(entry => entry.date)) || dateLabel(startDate(record));
       return `<article class="archive-card">
-        <div class="archive-card-top"><span class="stage-tag">${stats.people.length || 1} ${stats.people.length === 1 ? "empleado" : "empleados"}</span><span>${esc(range)}</span></div>
+        <div class="archive-card-top"><span class="stage-tag">${stats.imported ? "PDF importado" : `${stats.people.length || 1} ${stats.people.length === 1 ? "empleado" : "empleados"}`}</span><span>${esc(range)}</span></div>
         <button class="archive-address" type="button" data-job-record="${esc(record.id)}" data-task="${hasPdf ? "view" : "download"}">${esc(record.jobAddress || "Sin dirección")}</button>
         <p class="archive-date">${esc(range)} · ${hasPdf ? "PDF de job guardado" : "Falta el PDF"}</p>
-        <strong class="archive-amount">${esc(formatHours(stats.hours))} HRS · ${money(stats.pay)}</strong>
+        <strong class="archive-amount">${stats.imported ? money(stats.pay) : `${esc(formatHours(stats.hours))} HRS · ${money(stats.pay)}`}</strong>
         <p class="archive-file">${esc(record.pdfName || fileName(record))}</p>
-        <div class="archive-card-actions">${hasPdf ? `<button type="button" class="button button-primary" data-job-record="${esc(record.id)}" data-task="view">Ver PDF</button><button type="button" class="button button-ghost" data-job-record="${esc(record.id)}" data-task="download">Descargar</button>` : ""}<button type="button" class="button button-danger" data-job-record="${esc(record.id)}" data-task="delete">Eliminar</button></div>
+        <div class="archive-card-actions">${hasPdf ? `<button type="button" class="button button-primary" data-job-record="${esc(record.id)}" data-task="view">Ver PDF</button><button type="button" class="button button-ghost" data-job-record="${esc(record.id)}" data-task="download">Descargar</button>` : ""}<button type="button" class="button button-ghost" data-job-record="${esc(record.id)}" data-task="edit">Editar datos</button><button type="button" class="button button-danger" data-job-record="${esc(record.id)}" data-task="delete">Eliminar</button></div>
       </article>`;
     }).join("") : '<div class="archive-empty"><span>◷</span><h2>No hay reportes de este formato en esta selección</h2><p>Crea uno en Otro formato de horas. Este archivo no se mezcla con invoices ni con Horas / PDFs.</p></div>';
   }
@@ -118,6 +122,7 @@ window.JobArchive = function (app) {
     const record = app.records().find(item => item.id === button.dataset.jobRecord); if (!record) return;
     if (button.dataset.task === "view") view(record);
     else if (button.dataset.task === "delete") deleteRecord(record);
+    else if (button.dataset.task === "edit") window.JobApp?.edit?.(record);
     else downloadRecord(record);
   });
   $("#jobArchiveYear")?.addEventListener("change", render);
