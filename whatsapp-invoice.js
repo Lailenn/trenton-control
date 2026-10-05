@@ -168,7 +168,7 @@ const WhatsAppInvoiceParser = (() => {
 
       if (/^(?:hola|buenos dias|buenas tardes|buenas noches|gracias)[!.,\s]*$|^ruben perla:?$/i.test(normalized)) continue;
 
-      match = line.match(/^(?:compa[nñ][ií]a|empresa|cliente|bill to)\s*:\s*(.*)$/i);
+      match = line.match(/^(?:compa[nñ][ií]a|empresa|cliente|bill to)(?:\s*[:=\-]\s*|\s+)(.*)$/i);
       if (match) {
         const value = following(match[1]);
         add("billName", /\btrento(?:n)?\b/i.test(value) ? "Trenton Builders LLC" : value);
@@ -210,10 +210,10 @@ const WhatsAppInvoiceParser = (() => {
       match = line.match(/^(?:aprobaci[oó]n|approval)\s*:\s*(.*)$/i);
       if (match) { add("approval", following(match[1]).toUpperCase()); continue; }
 
-      match = line.match(/^(?:fecha(?: de emisi[oó]n)?|issued(?: date)?|date)\s*:\s*(.*)$/i);
+      match = line.match(/^(?:fecha(?: de emisi[oó]n)?|issued(?: date)?|date)(?:\s*[:=\-]\s*|\s+)(.*)$/i);
       if (match || /^(?:con\s+)?fecha\s+de\s+hoy[.!]?$|^con fecha\s+/i.test(line)) {
         const value = match ? following(match[1]) : line.replace(/^con fecha\s+(?!de hoy)/i, "");
-        const date = readDate(value, now);
+        const date = readDate(value, now) || readDate(line, now);
         if (date) {
           add("issuedDate", date);
           if (/^\d{1,2}[/-]\d{1,2}[/-]\d{4}$/.test(value)) review.push("La fecha numérica se leyó como día/mes/año.");

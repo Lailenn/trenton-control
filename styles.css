@@ -4505,3 +4505,5 @@ body.workspace-otras #heroWorkspaceTitle { font-size: clamp(24px, 2.9vw, 36px); 
   .profile-row .profile-row-icon svg { width: 20px; height: 20px; }
   .profile-save { min-height: 48px; }
 }
+.field .field-hint { display: block; margin-top: 5px; color: #8b93a8; font-size: 11px; font-weight: 500; }
+.field.is-readonly input { background: #f1f3f8; color: #5b6578; cursor: default; }

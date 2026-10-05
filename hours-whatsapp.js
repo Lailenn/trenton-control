@@ -82,6 +82,22 @@
     while ((match = bare.exec(source))) {
       if (!result.some(item => match.index >= item.index && match.index < item.index + item.length)) result.push({value: `${String(Number(match[1])).padStart(2, "0")}:${match[2]}`, index: match.index, length: match[0].length});
     }
+    // Ranges where one side has no minutes: "7-17:30", "7:00 a 3", "7 hasta 15:00".
+    const covered = index => result.some(item => index >= item.index && index < item.index + item.length);
+    const range = /\b([01]?\d|2[0-3])(?::([0-5]\d))?\s*(?:-|–|—|a|to|hasta)\s*([01]?\d|2[0-3])(?::([0-5]\d))?\b/gi;
+    while ((match = range.exec(source))) {
+      if (match[2] == null && match[4] == null) continue; // "1-9" could be a date, not a schedule
+      const startIndex = match.index;
+      const endIndex = match.index + match[0].lastIndexOf(match[3]);
+      if (match[2] == null && !covered(startIndex)) {
+        result.push({value: `${String(Number(match[1])).padStart(2, "0")}:00`, index: startIndex, length: match[1].length});
+      }
+      if (match[4] == null && !covered(endIndex)) {
+        let hour = Number(match[3]);
+        if (hour <= Number(match[1]) && hour < 12) hour += 12;
+        result.push({value: `${String(hour).padStart(2, "0")}:00`, index: endIndex, length: match[3].length});
+      }
+    }
     return result.sort((a, b) => a.index - b.index);
   }
 
@@ -154,6 +170,17 @@
     if (/^(?:total|description|descripci[oó]n|job|trabajo|address|direcci[oó]n)$/i.test(name)) return "";
     const uppercaseWords = words.filter(word => /^[A-ZÁÉÍÓÚÑÜ]/.test(word));
     return uppercaseWords.length >= 2 ? name : "";
+  }
+
+  // Text right before two clock times is almost always a name, even "pablo" or "Josué".
+  function looseName(value) {
+    let words = String(value || "").replace(/^[\s|,:;#.)-]+|[\s|,:;#.)-]+$/g, "").split(/\s+/).filter(Boolean);
+    while (words.length && weekdays.has(fold(words[0]).replace(/[,.:]/g, ""))) words.shift();
+    if (!words.length || words.length > 4) return "";
+    if (!words.every(word => /^[\p{L}'.-]{2,}$/u.test(word))) return "";
+    const name = words.join(" ");
+    if (/^(?:total|description|descripci[oó]n|job|trabajo|address|direcci[oó]n|entrada|salida|in|out|de|del)$/i.test(name)) return "";
+    return words.map(word => word[0].toUpperCase() + word.slice(1)).join(" ");
   }
 
   function addressLine(line) {
@@ -244,7 +271,7 @@
       }
       if (times.length >= 2) {
         const prefix = line.slice(0, times[0].index).replace(/[|,:;]+$/g, "").trim();
-        const name = cleanName(prefix) || (current && current.employee) || pendingEmployee;
+        const name = cleanName(prefix) || looseName(prefix) || (current && current.employee) || pendingEmployee;
         if (current && current.employee && !current.timeIn && (!prefix || name === current.employee)) {
           current.timeIn = times[0].value; current.timeOut = times[1].value;
           const lunch = parseLunch(line); if (lunch != null) current.lunch = lunch;

@@ -21,9 +21,11 @@ window.HoursArchive = function (app) {
   const totals = record => {
     const entries = record.entries || [];
     const real = entries.filter(entry => !isPlaceholder(entry));
+    // A placeholder without clock times carries the hours typed in "Editar datos".
+    const pdfHours = entries.filter(entry => isPlaceholder(entry) && !entry.timeIn).reduce((sum, entry) => sum + Number(entry.hours || 0), 0);
     return {
       imported: entries.length > 0 && !real.length,
-      hours: real.reduce((sum, entry) => sum + Number(entry.hours || 0), 0),
+      hours: real.reduce((sum, entry) => sum + Number(entry.hours || 0), 0) + pdfHours,
       pay: entries.reduce((sum, entry) => sum + Number(entry.hours || 0) * Number(entry.rate || 0), 0),
       people: [...new Set(real.map(entry => String(entry.employee || "").trim()).filter(Boolean))]
     };
@@ -74,7 +76,7 @@ window.HoursArchive = function (app) {
         <div class="archive-card-top"><span class="stage-tag">${other ? "Otro formato · A3" : stats.imported ? "PDF importado" : `${stats.people.length || 1} ${stats.people.length === 1 ? "empleado" : "empleados"}`}</span><span>${esc(range || dateLabel(reportDate(record)))}</span></div>
         <button class="archive-address" type="button" data-hours-record="${esc(record.id)}" data-task="${hasPdf ? "view" : "download"}">${esc(record.jobAddress || "Sin dirección")}</button>
         <p class="archive-date">${esc(range || dateLabel(reportDate(record)))} · ${hasPdf ? (other ? "PDF A3 guardado" : "PDF de horas guardado") : "Falta el PDF"}</p>
-        <strong class="archive-amount">${stats.imported ? money(stats.pay) : `${esc(formatHours(stats.hours))} HRS · ${money(stats.pay)}`}</strong>
+        <strong class="archive-amount">${stats.imported && !stats.hours ? money(stats.pay) : `${esc(formatHours(stats.hours))} HRS · ${money(stats.pay)}`}</strong>
         <p class="archive-file">${esc(record.pdfName || fileName(record))}</p>
         <div class="archive-card-actions">${hasPdf ? `<button type="button" class="button button-primary" data-hours-record="${esc(record.id)}" data-task="view">Ver PDF</button><button type="button" class="button button-ghost" data-hours-record="${esc(record.id)}" data-task="download">Descargar</button>` : ""}<button type="button" class="button button-ghost" data-hours-record="${esc(record.id)}" data-task="edit">Editar datos</button><button type="button" class="button button-danger" data-hours-record="${esc(record.id)}" data-task="delete">Eliminar</button></div>
       </article>`;

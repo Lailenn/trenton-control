@@ -475,7 +475,21 @@
     const rows = record.entries || [];
     return rows.length === 1 && String(rows[0].employee || "") === IMPORTED_PDF_EMPLOYEE;
   }
-  function importedHoursEntry(address, date, amount) {
+  // An imported PDF is one placeholder row. Without known hours it is 1 h × amount
+  // (with a 07:00–08:00 marker); with known hours it is hours × (amount / hours), no clock times.
+  function importedHoursEntry(address, date, amount, hours = 0) {
+    if (hours > 0) {
+      return {
+        date,
+        employee: IMPORTED_PDF_EMPLOYEE,
+        timeIn: "",
+        timeOut: "",
+        lunch: 0,
+        rate: Math.round((amount / hours) * 10000) / 10000,
+        hoursOverride: hours,
+        hours
+      };
+    }
     return {
       date,
       employee: IMPORTED_PDF_EMPLOYEE,
@@ -486,6 +500,29 @@
       hoursOverride: 1,
       hours: 1
     };
+  }
+  // "Horas" field in the edit window: editable for imported PDFs, read-only (sum of
+  // the employees' hours) for reports built in the app.
+  function setHoursField(record) {
+    const input = $("#hoursEditHours");
+    if (!input) return;
+    const built = Boolean(record) && !isOriginalPdfHours(record);
+    const hours = record ? hoursTotalHours(record) : 0;
+    input.value = hours > 0 ? String(Math.round(hours * 100) / 100) : "";
+    input.readOnly = built;
+    input.tabIndex = built ? -1 : 0;
+    input.closest(".field")?.classList.toggle("is-readonly", built);
+    const hint = $("#hoursEditHoursHint");
+    if (hint) hint.textContent = built ? "Suma de las horas de cada empleado." : "Opcional. Si las sabes, se mostrarán en el tablero.";
+  }
+  function readHoursField() {
+    const value = Number(String($("#hoursEditHours")?.value || "").replace(",", "."));
+    return Number.isFinite(value) && value > 0 && value <= 10000 ? Math.round(value * 100) / 100 : 0;
+  }
+  function importedKnownHours(record) {
+    const rows = record?.entries || [];
+    const row = rows.length === 1 && String(rows[0].employee || "") === IMPORTED_PDF_EMPLOYEE ? rows[0] : null;
+    return row && !row.timeIn ? Number(row.hours) || 0 : 0;
   }
 
   function hoursPay(record) {
@@ -499,7 +536,7 @@
     record.entries = (record.entries || []).map(entry => ({ ...entry, rate: Math.round(Number(entry.rate || 0) * factor * 10000) / 10000 }));
   }
   function hoursTotalHours(record) {
-    if (isOriginalPdfHours(record)) return 0;
+    if (isOriginalPdfHours(record)) return importedKnownHours(record);
     return (record.entries || []).reduce((sum, entry) => sum + Number(entry.hours || 0), 0);
   }
   function hoursDollars(value) {
@@ -546,7 +583,7 @@
       <div class="card-top"><span class="card-invoice"><i class="card-dot"></i>HORAS</span><button class="card-menu" type="button" data-hours-home="menu" data-id="${esc(record.id)}" aria-label="Editar horas">•••</button></div>
       <p class="card-date">${esc(dateText(date))}</p>
       <h4 class="card-address">${esc(pretty.address || record.jobAddress || "Sin dirección")}</h4>
-      <div class="card-details"><span class="card-hours">${isOriginalPdfHours(record) ? "PDF" : `${esc(formatHours(hours))} hrs`}</span><span class="card-amount">${money(pay)}</span></div>
+      <div class="card-details"><span class="card-hours">${isOriginalPdfHours(record) && !hours ? "PDF" : `${esc(formatHours(hours))} hrs`}</span><span class="card-amount">${money(pay)}</span></div>
       ${dueHtml}
       ${record.note ? `<p class="card-date">${esc(record.note)}</p>` : ""}
       ${checks}
@@ -694,6 +731,11 @@
       const amount = pay > 0 ? pay : textPay;
       if (amount > 0) $("#hoursEditTotal").value = hoursDollars(amount).toFixed(2);
     }
+    const readHours = imported.reduce((sum, entry) => sum + Number(entry.hours || HoursPDF.calcHours(entry) || 0), 0);
+    const hoursInput = $("#hoursEditHours");
+    if (hoursInput && !hoursInput.readOnly && !String(hoursInput.value || "").trim() && readHours > 0) {
+      hoursInput.value = String(Math.round(readHours * 100) / 100);
+    }
     setHoursPdfStatus(file, "");
     syncHoursBalance();
   }
@@ -711,6 +753,7 @@
     if ($("#hoursEditAddress")) $("#hoursEditAddress").value = "";
     if ($("#hoursEditDate")) $("#hoursEditDate").value = today();
     if ($("#hoursEditTotal")) $("#hoursEditTotal").value = "";
+    setHoursField(null);
     if ($("#hoursEditStage")) $("#hoursEditStage").value = creatingHoursStage;
     if ($("#hoursEditReceived")) $("#hoursEditReceived").value = "";
     $("#hoursEditOpenForm")?.classList.add("hidden");
@@ -729,6 +772,7 @@
     $("#hoursEditAddress").value = prettyHoursAddress(record.jobAddress || "").address || record.jobAddress || "";
     if ($("#hoursEditDate")) $("#hoursEditDate").value = record.reportDate || "";
     if ($("#hoursEditTotal")) $("#hoursEditTotal").value = hoursDollars(hoursPay(record)).toFixed(2);
+    setHoursField(record);
     $("#hoursEditStage").value = record.stage || "created";
     $("#hoursEditReceived").value = hoursDollars(record.received).toFixed(2);
     $("#hoursEditOpenForm")?.classList.add("hidden");
@@ -807,7 +851,7 @@
     } else {
       target.keepOriginalPdf = true;
       target.source = "imported";
-      target.entries = [importedHoursEntry(address, date, balance.total)];
+      target.entries = [importedHoursEntry(address, date, balance.total, readHoursField())];
     }
     if (pendingHoursPdf) {
       target.pdfBlob = pendingHoursPdf;

@@ -453,6 +453,11 @@
     if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
     const us = text.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
     if (us) return `${us[3]}-${String(us[1]).padStart(2, "0")}-${String(us[2]).padStart(2, "0")}`;
+    const spanish = text.match(/(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?:\s+(?:de|del))?\s+(\d{4})/i);
+    if (spanish) {
+      const month = MONTHS[spanish[2].toLowerCase().replace("setiembre", "septiembre")];
+      return `${spanish[3]}-${String(month + 1).padStart(2, "0")}-${String(Number(spanish[1])).padStart(2, "0")}`;
+    }
     const named = text.match(/(january|february|march|april|may|june|july|august|september|october|november|december|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\s+(\d{1,2}),?\s+(\d{4})/i);
     if (!named) return "";
     const month = MONTHS[named[1].toLowerCase()];
@@ -466,16 +471,22 @@
   function blankClock(value) {
     return !value || /^[—–\-]+$/.test(String(value).trim());
   }
-  function parseWorkLine(line, currentDate) {
-    const dayMatch = line.match(new RegExp(`^(${DAYS})\\s+(.+)$`, "i"));
-    if (!dayMatch) return null;
-    let rest = dayMatch[2].trim();
-    const hoursMatch = rest.match(/([\d.,]+)\s*HRS\s*$/i);
-    if (!hoursMatch) return null;
-    const hours = numberValue(hoursMatch[1]);
-    rest = rest.slice(0, -hoursMatch[0].length).trim();
+  // A work row: [day] Employee [description] [in] [out] [lunch MIN] [hours HRS].
+  // The day may be omitted (it comes from the last date line) and hours may be
+  // omitted when both clock times are present.
+  function parseWorkLine(line, currentDate, strict = false) {
+    if (/^(JOB|TOTAL|GRAND)\b/i.test(line)) return null;
+    // PDF text keeps the strict layout (day first) so summary rows are not read as work.
+    if (strict && !new RegExp(`^(${DAYS})\\s`, "i").test(line)) return null;
+    let rest = line.replace(new RegExp(`^(${DAYS})[,.]?\\s+`, "i"), "").trim();
+    let hours = null;
+    const hoursMatch = rest.match(/([\d.,]+)\s*(?:HRS?|HORAS?|H)\.?\s*$/i);
+    if (hoursMatch) {
+      hours = numberValue(hoursMatch[1]);
+      rest = rest.slice(0, -hoursMatch[0].length).trim();
+    }
     let lunch = 0;
-    const lunchMatch = rest.match(/(\d+)\s*MIN\s*$/i);
+    const lunchMatch = rest.match(/(\d+)\s*(?:MIN(?:UTOS?|S)?)\.?\s*$/i);
     if (lunchMatch) {
       lunch = Number(lunchMatch[1]) || 0;
       rest = rest.slice(0, -lunchMatch[0].length).trim();
@@ -483,10 +494,10 @@
       rest = rest.replace(/[—–\-]\s*$/, "").trim();
     }
     const takeTime = () => {
-      const clock = rest.match(/(\d{1,2}:\d{2})\s*([AaPp][Mm])?\s*$/);
+      const clock = rest.match(/(\d{1,2})(?::(\d{2}))?\s*([AaPp])\.?\s*[Mm]\.?\s*$/) || rest.match(/(\d{1,2}):(\d{2})\s*$/);
       if (clock) {
         rest = rest.slice(0, -clock[0].length).trim();
-        return to24(clock[1], clock[2]);
+        return to24(`${clock[1]}:${clock[2] || "00"}`, clock[3] ? `${clock[3]}m` : "");
       }
       if (/[—–\-]\s*$/.test(rest)) {
         rest = rest.replace(/[—–\-]\s*$/, "").trim();
@@ -495,9 +506,14 @@
       return "";
     };
     const timeOut = takeTime();
+    if (timeOut) rest = rest.replace(/\s*(?:-|–|—|a|to|hasta)\s*$/i, "").trim();
     const timeIn = takeTime();
     rest = rest.replace(/\s+/g, " ").trim();
     if (!rest) return null;
+    if (hours == null) {
+      if (!timeIn || !timeOut) return null;
+      hours = Math.round(calcHours({ timeIn, timeOut, lunch }) * 100) / 100;
+    }
     const bits = rest.split(" ");
     let employee = bits[0];
     let description = bits.slice(1).join(" ");
@@ -515,7 +531,7 @@
       rate: 0
     };
   }
-  function parseJobText(text, fallbackDate = "") {
+  function parseJobText(text, fallbackDate = "", options = {}) {
     const fields = { jobAddress: "", defaultRate: null };
     const entries = [];
     const warnings = [];
@@ -527,11 +543,12 @@
     lines.forEach(line => {
       if (/^GRAND TOTAL/i.test(line) || /^(DATE|EMPLOYEE|TOTAL HOURS|HOURLY RATE)\b/i.test(line)) return;
       const dated = parseEnglishDate(line);
-      if (dated && new RegExp(`^(${DAYS})[,\\s]`, "i").test(line)) {
+      // A line with a date and no clock times or hours is a day header.
+      if (dated && !/\d:\d{2}|\d\s*[ap]\.?\s*m\b|\d\s*(?:HRS?|HORAS?)\b/i.test(line)) {
         currentDate = dated;
         return;
       }
-      const row = parseWorkLine(line, currentDate);
+      const row = parseWorkLine(line, currentDate, options.strict);
       if (row) entries.push(row);
     });
     const rateMatch = blob.match(/\$?\s*(\d+(?:\.\d+)?)\s*\/\s*HR/i);
@@ -636,7 +653,7 @@
     try {
       const { text, subject } = await extractPdfText(file);
       extracted.text = text;
-      const parsed = parseJobText(text);
+      const parsed = parseJobText(text, "", { strict: true });
       extracted.fields = parsed.fields;
       extracted.warnings = parsed.warnings;
       extracted.sourceId = applyJobMeta(subject, extracted.fields, extracted.entries, extracted.warnings);
