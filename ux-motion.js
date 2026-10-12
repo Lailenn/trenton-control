@@ -147,9 +147,17 @@
     window.addEventListener("pointercancel", release, { once: true });
   }, { passive: true });
 
+  // ---- 4. The hero illustration only animates while it is on screen ----
+  function watchHeroArt() {
+    const art = document.querySelector(".hero-art2");
+    if (!art || !("IntersectionObserver" in window)) return;
+    new IntersectionObserver(([entry]) => art.classList.toggle("is-offscreen", !entry.isIntersecting)).observe(art);
+  }
+
   function start() {
     BOARDS.forEach(watchBoard);
     COUNTERS.forEach(watchCounter);
+    watchHeroArt();
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
   else start();
