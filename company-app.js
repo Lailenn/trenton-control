@@ -84,6 +84,10 @@
     $("#authGate")?.classList.remove("hidden");
     $("#authGate")?.setAttribute("data-mode", "company");
     paint();
+    // The login screen is taller on phones: start the chooser from the top, not where the login was scrolled.
+    const authGate = $("#authGate");
+    if (authGate) authGate.scrollTop = 0;
+    window.scrollTo(0, 0);
   }
   function hideChooser() {
     const gate = $("#companyGate");

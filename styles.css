@@ -6185,3 +6185,18 @@ body.pdf-viewer-open { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .login2-visual, .login2-visual::after, .login2-chip, .login2-copy *, .login2-form > *, .login2-brand img, .login-screen .login2 #loginButton.login-submit::after { animation: none !important; opacity: 1 !important; }
 }
+
+/* Phone company chooser: floating card with margins, like on the computer */
+@media (max-width: 600px) {
+  .login-screen.auth-gate[data-mode="company"] {
+    place-items: center !important;
+    padding: max(18px, env(safe-area-inset-top, 0px)) 14px max(18px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+  .login-screen[data-mode="company"] .login-card.auth-card.login2 {
+    width: 100%;
+    margin: auto 0;
+    padding: 18px 16px 12px !important;
+    border-radius: 28px;
+    box-shadow: 0 20px 50px rgba(36, 54, 96, .12);
+  }
+}
