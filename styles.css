@@ -5931,3 +5931,28 @@ body.pdf-viewer-open { overflow: hidden; }
   .company-choice { gap: 12px; }
   .company-logo, .company-choice-trenton .company-logo { width: 74px; height: 70px; }
 }
+
+/* Phone: company chooser fits on one screen without scrolling */
+@media (max-width: 600px) {
+  .login-screen.auth-gate[data-mode="company"] { padding-top: 12px !important; padding-bottom: 12px !important; }
+  .login-screen.auth-gate[data-mode="company"] .login-card { padding: 16px 16px 12px !important; }
+  .login-screen.auth-gate[data-mode="company"] .login-top { padding-bottom: 12px; }
+  .login-screen.auth-gate[data-mode="company"] .auth-brand .brand-mark { width: 42px !important; height: 42px !important; }
+  .login-screen.auth-gate[data-mode="company"] .auth-brand strong { font-size: 17px; }
+  .company-gate { margin-top: 12px; }
+  .company-gate > p.company-kicker { font-size: 11px; }
+  .company-gate h2 { margin: 6px 0; font-size: 21px; }
+  .company-gate > p.company-lead { margin-bottom: 12px; font-size: 13px; line-height: 1.4; }
+  .company-choice-grid { gap: 10px; }
+  .company-choice { gap: 12px; padding: 12px; border-radius: 18px; }
+  .company-logo, .company-choice-trenton .company-logo { width: 64px; height: 60px; border-radius: 13px; }
+  .company-logo-icon svg { width: 34px; height: 34px; }
+  .company-info { gap: 4px; }
+  .company-choice .company-info strong { font-size: 16px; }
+  .company-choice .company-tag { padding: 3px 10px; font-size: 11.5px; }
+  .company-choice .company-desc { font-size: 12px; line-height: 1.35; }
+  .company-go { margin-top: 2px; font-size: 13px; }
+  .company-mark { top: 12px; right: 12px; width: 28px; height: 28px; }
+  .company-chevron { top: 14px; right: 10px; }
+  .login-screen.auth-gate[data-mode="company"] .login-legal { margin-top: 12px; padding-top: 10px; }
+}
