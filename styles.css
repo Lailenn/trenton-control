@@ -6564,3 +6564,17 @@ a { color: var(--blue); }
 .ha-note-top { top: 0 !important; right: -3% !important; font-size: calc(4.4 * var(--u)) !important; }
 .ha-arrow-top { top: 5% !important; left: 58% !important; }
 .ha-check { top: 22% !important; left: 68% !important; }
+
+/* No sideways page scroll: decorative glows and the backdrop photo may bleed past the edge, the page must not move */
+html, body { overflow-x: hidden; }
+.app-shell, .main-shell { overflow-x: clip; }
+#boardView.dash-home { overflow-x: clip; }
+@media (min-width: 821px) {
+  #boardView .dash-board .board:not(.board-3) { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; width: auto !important; }
+  #boardView .dash-board .board.board-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+}
+@media (min-width: 821px) {
+  #boardView .dash-board .board { display: grid !important; gap: 12px; }
+  #boardView .dash-board .board > .kanban-column { min-width: 0 !important; width: auto !important; max-width: none !important; flex: none !important; }
+  #boardView .dash-board .board-scroll { overflow-x: visible; }
+}
