@@ -5815,3 +5815,119 @@ body.pdf-viewer-open { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .hero-art2, .hero-art2 * { animation: none !important; }
 }
+
+/* Login header uses Ruben Perla's logo */
+.login-screen .auth-brand .brand-mark.brand-mark-logo {
+  overflow: hidden;
+  border: 2px solid #e3e9f6;
+  background: #fff !important;
+  box-shadow: 0 8px 20px rgba(36, 48, 86, .1);
+}
+.login-screen .auth-brand .brand-mark.brand-mark-logo img { width: 86%; height: 86%; object-fit: contain; }
+.login-screen .auth-brand .brand-mark.brand-mark-logo span { display: none; }
+.login-screen .auth-brand .auth-role { display: block; margin-top: 2px; color: #6b7590; font: 500 13px/1.3 "Plus Jakarta Sans", sans-serif; }
+
+/* Company chooser */
+.login-screen.auth-gate[data-mode="company"] .login-top { padding-bottom: 18px; border-bottom: 1px solid #e4e9f4; }
+.company-gate { margin-top: 18px; padding-top: 0; }
+.company-kicker { margin: 0; color: #4f6bed; font: 800 13px/1.2 "Plus Jakarta Sans", sans-serif; letter-spacing: .14em; text-transform: uppercase; }
+.company-gate h2 { margin: 10px 0 10px; color: #151a33; font: 800 clamp(24px, 6vw, 30px)/1.12 "Plus Jakarta Sans", sans-serif; letter-spacing: -.035em; }
+.company-gate > p.company-lead { margin: 0 0 20px; color: #6b7590; font: 500 14.5px/1.5 "Plus Jakarta Sans", sans-serif; }
+.company-choice-grid { gap: 14px; }
+.company-choice {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+  padding: 16px;
+  border: 1.5px solid #e1e7f2;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(36, 48, 86, .05);
+  cursor: pointer;
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease, background .2s ease;
+}
+.company-choice:hover { border-color: #b9c7f4; background: #fff; transform: translateY(-2px); box-shadow: 0 14px 28px rgba(36, 48, 86, .1); }
+.company-choice.is-selected { border-color: #3b5bfd; background: linear-gradient(135deg, #f6f8ff, #eef2ff); box-shadow: 0 12px 28px rgba(59, 91, 253, .14); }
+.company-logo {
+  display: grid;
+  place-items: center;
+  width: 86px;
+  height: 80px;
+  padding: 6px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(36, 48, 86, .08);
+  box-sizing: border-box;
+}
+.company-logo img { width: 100%; height: 100%; object-fit: contain; }
+.company-logo-icon { background: linear-gradient(135deg, #efecff, #e4e4ff); color: #5b5ef0; box-shadow: none; }
+.company-logo-icon svg { width: 46px; height: 46px; }
+.company-info { display: grid; gap: 6px; min-width: 0; padding-right: 34px; }
+.company-choice .company-info strong { color: #151a33; font: 800 18px/1.2 "Plus Jakarta Sans", sans-serif; letter-spacing: -.02em; }
+.company-tag {
+  justify-self: start;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #e8edff;
+  color: #3b4fd8;
+  font: 700 12.5px/1.3 "Plus Jakarta Sans", sans-serif;
+  font-style: normal;
+}
+.company-choice-otras .company-tag { background: #eef0f5; color: #4a5470; }
+.company-choice .company-desc { color: #6b7590; font: 500 13px/1.45 "Plus Jakarta Sans", sans-serif; }
+.company-go {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 6px;
+  color: #2747f0;
+  font: 800 14px "Plus Jakarta Sans", sans-serif;
+}
+.company-go svg { transition: transform .2s ease; }
+.company-choice:hover .company-go svg { transform: translateX(4px); }
+.company-mark {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #2747f0;
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(39, 71, 240, .35);
+}
+.company-mark svg { width: 18px; height: 18px; }
+.company-choice.is-selected .company-mark { display: grid; animation: companyMarkIn .35s cubic-bezier(.3, 1.5, .5, 1) both; }
+.company-chevron { position: absolute; top: 18px; right: 14px; color: #2b3550; }
+.company-choice.is-selected .company-chevron { display: none; }
+@keyframes companyMarkIn { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.login-screen.auth-gate[data-mode="company"] .login-legal { margin-top: 18px; padding-top: 14px; border-top: 1px solid #e4e9f4; }
+@media (max-width: 380px) {
+  .company-choice { gap: 12px; padding: 14px; }
+  .company-logo { width: 70px; height: 66px; }
+  .company-logo-icon svg { width: 38px; height: 38px; }
+}
+.company-gate > p.company-kicker { margin: 0; color: #4f6bed; font-size: 13px; }
+.company-choice .company-mark { color: #fff; }
+.company-choice .company-go { color: #2747f0; }
+.company-choice .company-chevron { color: #2b3550; }
+.company-choice .company-logo-icon { color: #5b5ef0; }
+.company-choice .company-tag { color: #3b4fd8; font-size: 12.5px; }
+.company-choice.company-choice-otras .company-tag { color: #4a5470; }
+.company-choice .company-logo img { width: 112%; height: 112%; max-width: none; }
+.company-choice-trenton .company-logo { width: 96px; padding: 4px; }
+.login-screen .auth-brand .brand-mark.brand-mark-logo img { width: 100%; height: 100%; transform: scale(1.35); }
+.login-screen .auth-brand .auth-role { font-size: 12.5px; white-space: nowrap; }
+@media (max-width: 380px) { .login-screen .auth-brand .auth-role { white-space: normal; } }
+.company-choice .company-info { padding-right: 0; }
+.company-choice .company-info strong { padding-right: 36px; }
+.company-choice .company-tag { white-space: nowrap; }
+@media (max-width: 420px) {
+  .company-choice { gap: 12px; }
+  .company-logo, .company-choice-trenton .company-logo { width: 74px; height: 70px; }
+}

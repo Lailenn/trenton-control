@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet" />
     <link rel="icon" href="assets/app-icon.png?v=2" type="image/png" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2" />
-    <link rel="stylesheet" href="styles.css?v=phone-perf-2" />
+    <link rel="stylesheet" href="styles.css?v=company-gate-3" />
   </head>
   <body>
     <div id="authGate" class="auth-gate auth-play login-screen" data-mode="login">
@@ -24,9 +24,10 @@
       <section class="auth-card login-card">
         <div class="login-top">
           <div class="auth-brand">
-            <div class="brand-mark"><span>RP</span></div>
+            <div class="brand-mark brand-mark-logo"><img src="assets/logo-ruben.png" alt=""><span>RP</span></div>
             <div>
               <strong>Ruben Perla</strong>
+              <small class="auth-role">Administrador del espacio</small>
             </div>
           </div>
           <p class="login-status"><i></i> Activo</p>
@@ -88,17 +89,29 @@
         </div>
         <p class="form-error" id="authError" role="alert"></p>
         <div id="companyGate" class="company-gate hidden" hidden>
-          <p class="eyebrow">Espacio de trabajo</p>
+          <p class="company-kicker">Espacio de trabajo</p>
           <h2>¿En qué empresa quieres trabajar?</h2>
-          <p>Trenton queda igual. Otra empresa usa la misma estructura, vacía y sin mezclarse.</p>
+          <p class="company-lead">Cada empresa tiene su propia información. Sus facturas, horas y documentos se mantienen separados.</p>
           <div class="company-choice-grid">
-            <button type="button" class="company-choice" data-company-choice="trenton">
-              <strong>Trenton</strong>
-              <span>Invoices, horas, cheques y PDFs de siempre.</span>
+            <button type="button" class="company-choice company-choice-trenton" data-company-choice="trenton">
+              <span class="company-logo"><img src="assets/arrento-carpentry.png" alt="Trento Carpentry"></span>
+              <span class="company-info">
+                <strong>Trenton Builders</strong>
+                <em class="company-tag">Tu espacio principal</em>
+                <span class="company-desc">Facturas, horas, cheques y PDFs</span>
+                <span class="company-go">Continuar en Trenton <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span>
+              </span>
+              <span class="company-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 12.5l4 4 8-8.5"/></svg></span>
             </button>
-            <button type="button" class="company-choice" data-company-choice="otras">
-              <strong>Otra empresa</strong>
-              <span>Para trabajos de otros clientes y empresas. Invoices, horas y PDFs, todo aparte.</span>
+            <button type="button" class="company-choice company-choice-otras" data-company-choice="otras">
+              <span class="company-logo company-logo-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 21V5.2L13 3v18zm2-2h1.6v-1.8H7zm0-3.4h1.6v-1.8H7zm0-3.4h1.6v-1.8H7zm0-3.4h1.6V7H7zm3.2 10.2h1.6v-1.8h-1.6zm0-3.4h1.6v-1.8h-1.6zm0-3.4h1.6v-1.8h-1.6zm0-3.4h1.6V7h-1.6zM14 21V9.5l5 1.3V21zm1.6-2h1.8v-1.8h-1.8zm0-3.4h1.8v-1.8h-1.8zM3 21h18v1.4H3z"/></svg></span>
+              <span class="company-info">
+                <strong>Otra empresa</strong>
+                <em class="company-tag">Un espacio independiente</em>
+                <span class="company-desc">Para trabajos de otros clientes y empresas. Invoices, horas y PDFs, todo aparte.</span>
+              </span>
+              <span class="company-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 12.5l4 4 8-8.5"/></svg></span>
+              <span class="company-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
             </button>
           </div>
         </div>
