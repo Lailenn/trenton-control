@@ -5956,3 +5956,162 @@ body.pdf-viewer-open { overflow: hidden; }
   .company-chevron { top: 14px; right: 10px; }
   .login-screen.auth-gate[data-mode="company"] .login-legal { margin-top: 12px; padding-top: 10px; }
 }
+
+/* ===== Login v2: form on the left, construction scene on the right ===== */
+.login-screen[data-mode="login"] .login-top { display: none; }
+.login-screen[data-mode="company"] .login2-brand,
+.login-screen[data-mode="company"] .login2-head,
+.login-screen[data-mode="company"] .login2-visual { display: none !important; }
+.login-screen .auth-fx { display: none; }
+.login-screen.auth-gate { background: #eef2f9; }
+
+.login-screen .login-card.auth-card.login2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  width: min(1180px, 100%);
+  min-height: min(640px, calc(100dvh - 48px));
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 34px;
+  box-shadow: 0 30px 80px rgba(36, 54, 96, .14);
+}
+.login-screen[data-mode="company"] .login-card.auth-card.login2 {
+  display: block;
+  width: min(430px, 100%);
+  min-height: 0;
+  padding: 22px 22px 18px;
+  border-radius: 32px;
+}
+.login2-form {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 44px clamp(28px, 4.5vw, 56px) 26px;
+}
+.login-screen[data-mode="company"] .login2-form { padding: 0; }
+
+.login2-brand { display: grid; justify-items: center; gap: 2px; margin-bottom: 30px; text-align: center; }
+.login2-brand img { width: 170px; height: auto; margin-bottom: -6px; }
+.login2-brand strong { color: #16213e; font: 800 30px/1.1 "Plus Jakarta Sans", sans-serif; letter-spacing: -.03em; }
+.login2-brand small { color: #4a5470; font: 600 13px/1.4 "Plus Jakarta Sans", sans-serif; letter-spacing: .38em; text-transform: uppercase; padding-left: .38em; }
+.login2-head h1 { margin: 0; color: #16213e; font: 800 30px/1.15 "Plus Jakarta Sans", sans-serif; letter-spacing: -.03em; }
+.login2-head p { margin: 8px 0 22px; color: #6b7590; font: 500 15px/1.4 "Plus Jakarta Sans", sans-serif; }
+
+.login2 .login-field { margin-bottom: 14px; }
+.login2 .login-field > span:first-child {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+.login2 .login-input { min-height: 56px; border-color: #dfe5f0; border-radius: 14px; background: #f8fafd; }
+.login2 .login-input:focus-within { background: #fff; }
+.login2 .login-input input { font: 500 15px "Plus Jakarta Sans", sans-serif; }
+.login2 .login-row { display: flex; align-items: center; justify-content: space-between; margin: 4px 0 20px; }
+.login2 .login-remember { display: inline-flex; align-items: center; gap: 10px; color: #1e2a44; font: 600 14px "Plus Jakarta Sans", sans-serif; }
+.login2 .login-remember input { width: 20px; height: 20px; accent-color: #3b6eea; }
+.login-screen .login2 #loginButton.login-submit {
+  min-height: 58px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #1d2d55, #172447) !important;
+  box-shadow: 0 12px 26px rgba(23, 36, 71, .28) !important;
+  font: 700 16px "Plus Jakarta Sans", sans-serif;
+}
+.login-screen .login2 #loginButton.login-submit:hover { background: linear-gradient(135deg, #24376a, #1b2a52) !important; }
+.login2-or { display: flex; align-items: center; gap: 14px; margin: 18px 0; color: #9aa3b5; font: 500 13px "Plus Jakarta Sans", sans-serif; }
+.login2-or::before, .login2-or::after { content: ""; flex: 1; height: 1px; background: #e4e9f2; }
+.login2 .login-passkey {
+  width: 100%;
+  min-height: 56px;
+  border: 1px solid #dfe5f0;
+  border-radius: 999px;
+  background: #f8fafd;
+  color: #16213e;
+  font: 700 15px "Plus Jakarta Sans", sans-serif;
+}
+.login2 .login-passkey:hover { background: #eef2fa; }
+.login2 .login-legal { margin-top: 22px; color: #9aa3b5; text-align: center; }
+
+/* Right side scene */
+.login2-visual { position: relative; overflow: hidden; min-height: 100%; background: #f3c9a4; }
+.login2-house { position: absolute; inset: 0; width: 100%; height: 100%; }
+.login2-house .lh-body { transform-origin: 60% 100%; animation: lhRise 1.1s cubic-bezier(.2, .8, .2, 1) both; }
+.login2-arc { position: absolute; border-radius: 50%; pointer-events: none; }
+.login2-arc-a { left: 12%; top: -20%; width: 120%; height: 95%; border: 2px solid rgba(255, 255, 255, .45); background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, .18), transparent 60%); }
+.login2-arc-b { left: -30%; bottom: -55%; width: 140%; height: 100%; background: linear-gradient(180deg, rgba(255, 255, 255, .92), #fff 60%); }
+.login2-orange { position: absolute; right: -14%; bottom: -18%; width: 52%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #f7a25a, #ee7f2d 70%); opacity: .95; }
+.login2-chip {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border: 1px solid rgba(255, 255, 255, .8);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .78);
+  box-shadow: 0 14px 34px rgba(36, 48, 86, .14);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #16213e;
+  animation: lhChip 6s ease-in-out infinite;
+}
+.login2-chip svg { flex: 0 0 auto; width: 30px; height: 30px; }
+.login2-chip span { display: grid; gap: 2px; }
+.login2-chip strong { font: 600 15px "Plus Jakarta Sans", sans-serif; }
+.login2-chip small { color: #5d6782; font: 500 12px "Plus Jakarta Sans", sans-serif; }
+.chip-facturas { top: 7%; right: 14%; }
+.chip-horas { top: 48%; left: 12%; animation-delay: 1.2s; }
+.chip-proyectos { top: 57%; right: 4%; animation-delay: 2.4s; }
+.login2-copy { position: absolute; left: 8%; right: 30%; bottom: 7%; }
+.login2-copy h2 { margin: 0; color: #16213e; font: 800 clamp(28px, 3.3vw, 42px)/1.12 "Plus Jakarta Sans", sans-serif; letter-spacing: -.02em; }
+.login2-copy i { display: block; width: 120px; height: 4px; margin: 18px 0; border-radius: 4px; background: #ee7f2d; }
+.login2-copy p { margin: 0; max-width: 380px; color: #5d6782; font: 500 16px/1.5 "Plus Jakarta Sans", sans-serif; }
+@keyframes lhRise { from { opacity: 0; transform: translateY(24px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes lhChip { 0%, 100% { translate: 0 0; } 50% { translate: 0 -8px; } }
+@media (prefers-reduced-motion: reduce) { .login2-chip, .login2-house .lh-body { animation: none; } }
+
+/* Tablet: narrower scene */
+@media (max-width: 960px) {
+  .login-screen .login-card.auth-card.login2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .chip-proyectos { display: none; }
+  .login2-copy { right: 8%; }
+}
+/* Phone: scene becomes a banner on top, form below */
+@media (max-width: 700px) {
+  .login-screen.auth-gate[data-mode="login"] { padding: 0 !important; place-items: stretch; }
+  .login-screen[data-mode="login"] .login-card.auth-card.login2 {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    width: 100%;
+    min-height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .login2-visual { grid-row: 1; height: 210px; min-height: 0; }
+  .login2-form { grid-row: 2; position: relative; z-index: 2; margin-top: -28px; padding: 22px 22px 18px; border-radius: 28px 28px 0 0; background: #fff; justify-content: flex-start; }
+  .login2-chip { padding: 9px 12px; gap: 9px; border-radius: 14px; }
+  .login2-chip svg { width: 22px; height: 22px; }
+  .login2-chip strong { font-size: 13px; }
+  .login2-chip small { font-size: 10.5px; }
+  .chip-facturas { top: 14px; right: 14px; }
+  .chip-horas { top: auto; bottom: 46px; left: 14px; }
+  .login2-copy, .login2-arc-b { display: none; }
+  .login2-orange { width: 40%; right: -12%; bottom: -20%; }
+  .login2-brand { grid-template-columns: auto auto; justify-content: center; align-items: center; column-gap: 10px; margin-bottom: 18px; text-align: left; }
+  .login2-brand img { grid-row: span 2; width: 74px; margin: 0; }
+  .login2-brand strong { font-size: 22px; }
+  .login2-brand small { font-size: 10.5px; letter-spacing: .3em; padding-left: 0; }
+  .login2-head h1 { font-size: 24px; }
+  .login2-head p { margin: 4px 0 16px; font-size: 13.5px; }
+  .login2 .login-input { min-height: 50px; }
+  .login2 .login-field { margin-bottom: 10px; }
+  .login2 .login-row { margin: 2px 0 14px; }
+  .login-screen .login2 #loginButton.login-submit { min-height: 52px; }
+  .login2-or { margin: 12px 0; }
+  .login2 .login-passkey { min-height: 50px; }
+  .login2 .login-legal { margin-top: 14px; }
+}
+@media (max-width: 700px) and (max-height: 700px) {
+  .login2-visual { height: 150px; }
+  .chip-horas { display: none; }
+}
+.login2-brand img { mix-blend-mode: multiply; }
+@media (min-width: 961px) { .login2-copy { right: 34%; } .login2-orange { width: 44%; right: -12%; bottom: -20%; } }

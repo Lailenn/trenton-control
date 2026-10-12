@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet" />
     <link rel="icon" href="assets/app-icon.png?v=2" type="image/png" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2" />
-    <link rel="stylesheet" href="styles.css?v=company-gate-4" />
+    <link rel="stylesheet" href="styles.css?v=login2-2" />
   </head>
   <body>
     <div id="authGate" class="auth-gate auth-play login-screen" data-mode="login">
@@ -21,7 +21,8 @@
         <span class="login-blob b3"></span>
         <span class="login-blob b4"></span>
       </div>
-      <section class="auth-card login-card">
+      <section class="auth-card login-card login2">
+      <div class="login2-form">
         <div class="login-top">
           <div class="auth-brand">
             <div class="brand-mark brand-mark-logo"><img src="assets/logo-ruben.png" alt=""><span>RP</span></div>
@@ -32,27 +33,14 @@
           </div>
           <p class="login-status"><i></i> Activo</p>
         </div>
-        <div class="login-hero">
-          <div class="login-art">
-            <figure class="login-mascot">
-              <img src="assets/login-husky-hero.jpg?v=2" alt="Husky trabajando en laptop" width="969" height="788">
-              <div class="login-float login-float-list" aria-hidden="true">
-                <div class="login-float-card">
-                  <span><i></i> Proyectos</span>
-                  <span><i></i> Facturas</span>
-                  <span><i></i> Seguimiento</span>
-                </div>
-              </div>
-              <div class="login-float login-float-cal" aria-hidden="true"><span class="login-float-card"></span></div>
-              <div class="login-float login-float-note" aria-hidden="true">
-                <div class="login-float-card">Grandes proyectos empiezan aquí <b>♥</b></div>
-              </div>
-            </figure>
-          </div>
-          <div class="login-copy">
-            <h1 class="login-hello"><span id="authHelloLine">Buenos días,</span> <em>Lilian</em> <span aria-hidden="true">👋</span></h1>
-            <p class="login-lead">Bienvenida de nuevo</p>
-          </div>
+        <div class="login2-brand">
+          <img src="assets/logo-ruben.png" alt="">
+          <strong>Ruben Perla</strong>
+          <small>Construction</small>
+        </div>
+        <div class="login2-head">
+          <h1>Bienvenido de nuevo</h1>
+          <p>Inicia sesión para continuar con tu trabajo.</p>
         </div>
         <div id="authConfigPanel" class="login-config hidden">
           <h2>Falta conectar la nube</h2>
@@ -63,13 +51,13 @@
             <label class="login-field"><span>Correo</span>
               <span class="login-input">
                 <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3.6 7.1A2.4 2.4 0 0 1 6 4.8h12a2.4 2.4 0 0 1 2.4 2.3v9.8A2.4 2.4 0 0 1 18 19.2H6A2.4 2.4 0 0 1 3.6 16.9V7.1Z" stroke="currentColor" stroke-width="1.75"/><path d="m4.4 6.6 7.6 5.6 7.6-5.6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <input id="loginEmail" type="email" required autocomplete="username" placeholder="tu@correo.com">
+                <input id="loginEmail" type="email" required autocomplete="username" placeholder="Correo electrónico">
               </span>
             </label>
             <label class="login-field"><span>Contraseña</span>
               <span class="login-input">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17 9V7a5 5 0 0 0-10 0v2H5v12h14V9zm-8-2a3 3 0 1 1 6 0v2H9zm3 7.2a1.8 1.8 0 1 1 0 3.6 1.8 1.8 0 0 1 0-3.6z"/></svg>
-                <input id="loginPassword" type="password" required autocomplete="current-password" placeholder="Ingresa tu contraseña">
+                <input id="loginPassword" type="password" required autocomplete="current-password" placeholder="Contraseña">
                 <button type="button" class="login-eye" id="togglePassword" aria-label="Mostrar contraseña">
                   <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>
                   <svg class="eye-closed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/></svg>
@@ -81,6 +69,7 @@
             </div>
             <button class="button button-primary login-submit" id="loginButton" type="submit">Iniciar sesión <span aria-hidden="true">→</span></button>
           </form>
+          <div class="login2-or"><span>o</span></div>
           <button class="login-passkey" id="passkeyLoginButton" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V5.5A2.5 2.5 0 0 1 5.5 3H8"/><path d="M16 3h2.5A2.5 2.5 0 0 1 21 5.5V8"/><path d="M21 16v2.5a2.5 2.5 0 0 1-2.5 2.5H16"/><path d="M8 21H5.5A2.5 2.5 0 0 1 3 18.5V16"/><path d="M9.4 6.7a6 6 0 0 1 5.6.2"/><path d="M7.3 9.4a5.6 5.6 0 0 1 10.3 2.9c0 1.4-.1 2.7-.4 3.9"/><path d="M6.6 13.6c.2-.7.3-1.4.3-2.1"/><path d="M8.3 17.9c.8-1.6 1.2-3.5 1.2-5.7a2.5 2.5 0 0 1 5 0c0 1.9-.2 3.6-.7 5.1"/><path d="M12 12.4c0 2.9-.5 5.2-1.5 7"/><path d="M16 17.6c.3-.8.5-1.7.6-2.6"/></svg>
             Usar huella digital
@@ -116,6 +105,45 @@
           </div>
         </div>
         <p class="login-legal">© 2026 Diperlin</p>
+      </div>
+      <aside class="login2-visual" aria-hidden="true">
+        <svg class="login2-house" viewBox="0 0 800 600" preserveAspectRatio="xMidYMax slice">
+          <defs>
+            <linearGradient id="lhSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fb6d8"/><stop offset=".45" stop-color="#f3c9a4"/><stop offset="1" stop-color="#fbe3cc"/></linearGradient>
+            <linearGradient id="lhRoof" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a5468"/><stop offset="1" stop-color="#262d3b"/></linearGradient>
+            <linearGradient id="lhWall" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8a6d55"/><stop offset="1" stop-color="#b8957a"/></linearGradient>
+            <linearGradient id="lhSide" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e7e9ef"/><stop offset="1" stop-color="#c9cdd8"/></linearGradient>
+            <linearGradient id="lhGlow" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd59a"/><stop offset="1" stop-color="#f29a4a"/></linearGradient>
+          </defs>
+          <rect width="800" height="600" fill="url(#lhSky)"/>
+          <circle cx="250" cy="300" r="90" fill="#ffe2b8" opacity=".55"/>
+          <g class="lh-body">
+            <polygon points="150,600 150,330 330,190 510,330 510,600" fill="url(#lhWall)"/>
+            <polygon points="110,340 330,165 550,340 525,350 330,195 135,350" fill="url(#lhRoof)"/>
+            <rect x="210" y="380" width="70" height="120" rx="4" fill="url(#lhGlow)"/>
+            <rect x="300" y="380" width="70" height="120" rx="4" fill="url(#lhGlow)"/>
+            <rect x="390" y="380" width="70" height="120" rx="4" fill="url(#lhGlow)" opacity=".9"/>
+            <path d="M245 380v120M335 380v120M425 380v120M210 440h250" stroke="#4b3a2d" stroke-width="4"/>
+            <rect x="500" y="300" width="300" height="300" fill="url(#lhSide)"/>
+            <polygon points="470,320 640,170 830,300 830,330 640,200 495,330" fill="url(#lhRoof)"/>
+            <rect x="560" y="360" width="90" height="110" rx="4" fill="url(#lhGlow)" opacity=".85"/>
+            <rect x="680" y="360" width="90" height="110" rx="4" fill="url(#lhGlow)" opacity=".75"/>
+            <path d="M605 360v110M725 360v110M560 415h210" stroke="#6b5442" stroke-width="4"/>
+            <rect x="150" y="560" width="650" height="40" fill="#8d8478" opacity=".55"/>
+          </g>
+        </svg>
+        <span class="login2-arc login2-arc-a"></span>
+        <span class="login2-arc login2-arc-b"></span>
+        <span class="login2-orange"></span>
+        <div class="login2-chip chip-facturas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg><span><strong>Facturas</strong><small>Todo en un solo lugar</small></span></div>
+        <div class="login2-chip chip-horas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span><strong>Horas</strong><small>Controla tu tiempo</small></span></div>
+        <div class="login2-chip chip-proyectos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="11" width="4" height="9" rx="1.5"/><rect x="10" y="5" width="4" height="15" rx="1.5"/><rect x="16" y="9" width="4" height="11" rx="1.5"/></svg><span><strong>Proyectos</strong><small>Organiza y da seguimiento</small></span></div>
+        <div class="login2-copy">
+          <h2>Construyendo<br>grandes proyectos</h2>
+          <i></i>
+          <p>Gestiona tus facturas, horas y proyectos de forma simple y organizada.</p>
+        </div>
+      </aside>
       </section>
     </div>
     <div class="app-shell app-locked" id="appShell" hidden>
