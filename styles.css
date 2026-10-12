@@ -6200,3 +6200,29 @@ body.pdf-viewer-open { overflow: hidden; }
     box-shadow: 0 20px 50px rgba(36, 54, 96, .12);
   }
 }
+
+/* Phone login: same composition as the computer — floating card, centered brand, photo panel under the form */
+@media (max-width: 700px) {
+  .login-screen.auth-gate[data-mode="login"] { padding: 16px 12px !important; place-items: start center !important; }
+  .login-screen[data-mode="login"] .login-card.auth-card.login2 {
+    grid-template-rows: auto auto;
+    min-height: 0;
+    border-radius: 28px;
+    box-shadow: 0 22px 60px rgba(36, 54, 96, .14);
+  }
+  .login-screen[data-mode="login"] .login2-form { grid-row: 1; margin-top: 0; padding: 26px 20px 18px; border-radius: 0; }
+  .login-screen[data-mode="login"] .login2-visual { grid-row: 2; height: 300px; margin: 0 10px 10px; border-radius: 22px; background-position: 60% 35%; }
+  .login2-brand { grid-template-columns: 1fr; justify-items: center; row-gap: 0; margin-bottom: 20px; text-align: center; }
+  .login2-brand img { grid-row: auto; width: 120px; margin-bottom: -4px; }
+  .login2-brand strong { font-size: 24px; }
+  .login2-brand small { font-size: 11px; letter-spacing: .34em; padding-left: .34em; }
+  .login2 .login-legal { margin-top: 12px; }
+  .login2-copy { display: block !important; left: 18px; right: 18px; bottom: 16px; }
+  .login2-copy h2 { font-size: 24px; }
+  .login2-copy i { width: 70px; height: 3px; margin: 10px 0; }
+  .login2-copy p { font-size: 13px; }
+  .login2-chip { padding: 8px 11px; }
+  .chip-facturas { top: 12px; right: 12px; }
+  .chip-horas { display: flex !important; top: 92px; bottom: auto; left: 12px; }
+  .chip-proyectos { display: none; }
+}
