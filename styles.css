@@ -5757,3 +5757,41 @@ body.pdf-viewer-open { overflow: hidden; }
 #boardView .hero-art2 { --u: 4px; width: 400px; max-width: 100%; container-type: normal; justify-self: end; }
 @media (max-width: 1100px) { #boardView .hero-art2 { --u: 3.4px; width: 340px; } }
 @media (max-width: 900px) { #boardView .hero-art2 { --u: 3.3px; width: 330px; justify-self: center; margin-inline: auto; } }
+
+/* Phone performance: fixed bars without live blur, and decorative loops paused, so scrolling stays smooth */
+@media (max-width: 820px) {
+  .topbar,
+  .dock-pills .dock-track {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  .topbar { background: #f5f7fd !important; }
+  .topbar,
+  .mobile-dock.dock-pills,
+  .sidebar {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+  .sidebar.open { transform: translateZ(0) !important; }
+  .hero-actions-enhanced { -webkit-backdrop-filter: none; backdrop-filter: none; }
+  #boardView .dash-blob,
+  #boardView .dash-board-orb,
+  #boardView .dash-page-glow,
+  .hero-welcome::before,
+  .hero-welcome::after,
+  .hero-welcome.welcome-play h1 span,
+  .hero-welcome.welcome-play .hero-tip,
+  .hero-welcome.welcome-play .hero-tip-icon,
+  .hero-status-dot,
+  .nav-item.active,
+  .avatar,
+  .saved-indicator i,
+  .sidebar-sync > i,
+  .ds-card.ds-play .ds-dot,
+  .hero-art2,
+  .hero-art2 * {
+    animation: none !important;
+  }
+  #boardView .dash-blob,
+  #boardView .dash-page-glow { filter: none !important; }
+}
