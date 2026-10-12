@@ -6,10 +6,10 @@
   const MAX_PDF_BYTES = 15 * 1024 * 1024;
   const Core = window.InvoiceCore, PDFs = window.InvoicePDF, Cloud = window.CloudDB;
   const stages = [
-    { id: "created", title: "Factura creada", subtitle: "PDF listo para seguimiento", className: "column-created" },
-    { id: "working", title: "En trabajo", subtitle: "Ruben trabajando", className: "column-working" },
-    { id: "waiting", title: "Esperando cheque", subtitle: "Trabajo entregado", className: "column-waiting" },
-    { id: "paid", title: "Pagado", subtitle: "Invoice cerrada", className: "column-paid" }
+    { id: "created", title: "Factura creada", subtitle: "Recién registradas", className: "column-created" },
+    { id: "working", title: "En trabajo", subtitle: "Trabajos en proceso", className: "column-working" },
+    { id: "waiting", title: "Esperando cheque", subtitle: "Trabajos pendientes de cobro", className: "column-waiting" },
+    { id: "paid", title: "Pagado", subtitle: "Trabajos cobrados", className: "column-paid" }
   ];
   const stageIcons = {
     created: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M7 3h8l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm7 1.5V9h4.5z"/></svg>',
@@ -17,6 +17,9 @@
     waiting: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h12v3l-4.5 5 4.5 5v3H6v-3l4.5-5L6 5z"/></svg>',
     paid: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm.2 5h-1.7v1.2C8.8 8.5 8 9.6 8 11c0 1.8 1.5 2.6 3.4 3 1.2.3 1.7.6 1.7 1.2 0 .6-.6 1-1.7 1s-1.8-.4-2.1-1H7.7c.3 1.6 1.7 2.7 3.4 3V19h1.7v-1.1c1.9-.3 3.1-1.5 3.1-3.2 0-1.8-1.5-2.6-3.4-3-1.2-.3-1.7-.6-1.7-1.1 0-.6.6-1 1.6-1s1.6.4 1.8 1h1.5c-.3-1.5-1.6-2.5-3.3-2.8z"/></svg>'
   };
+  stageIcons.sent = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 11.2 20.5 3.6c.6-.3 1.2.3.9.9L13.8 22c-.3.6-1.2.6-1.4-.1l-1.9-6.5-6.5-1.9c-.7-.2-.8-1.1-.1-1.4zm7.9 3.4 1.2 4.2 5.6-12.8z"/></svg>';
+  // Shared with the hours and job boards so every kanban uses the same stage icons.
+  window.TrentonStageIcons = stageIcons;
 
   const $ = (selector) => document.querySelector(selector);
   const money = (value) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value) || 0);
@@ -106,7 +109,15 @@
   }
   window.growTextareas = growAllTextareas;
 
-  function updateSaved(text) { $("#savedIndicator").innerHTML = `<i></i> ${esc(text)}`; }
+  function updateSaved(text) {
+    $("#savedIndicator").innerHTML = `<i></i> ${esc(text)}`;
+    // Same status in the sidebar (the desktop has no top bar).
+    const sync = $("#sidebarSync");
+    if (!sync) return;
+    $("#sidebarSyncText").textContent = text;
+    sync.title = text;
+    sync.classList.toggle("is-offline", /no disponible/i.test(text));
+  }
 
   function fillAddressHistory() {
     const list = $("#addressHistory");
@@ -140,6 +151,7 @@
     $("#statWorking").textContent = records.filter((record) => record.stage === "working").length;
     $("#statWaiting").textContent = records.filter((record) => record.stage === "waiting").length;
     $("#statPaid").textContent = money(Core.summarize(paid).total);
+    window.DashStats?.render(records);
     const total = $("#navTotal");
     if (total) total.textContent = records.length;
   }
@@ -190,13 +202,18 @@
 
   function cardTemplate(record) {
     const number = String(record.invoiceNumber || "SIN NÚMERO").startsWith("#") ? record.invoiceNumber : `#${record.invoiceNumber || "SIN NÚMERO"}`;
+    const photos = (record.checkPhotos || []).length;
+    const needsCheck = record.stage === "waiting" || record.stage === "paid";
     return `<article class="invoice-card" draggable="true" data-id="${esc(record.id)}" tabindex="0">
-      <div class="card-top"><span class="card-invoice"><i class="card-dot"></i>${esc(number)}</span><button class="card-menu" type="button" data-action="menu" data-id="${esc(record.id)}" aria-label="Editar invoice">•••</button></div>
+      <div class="card-top"><span class="card-invoice"><i class="card-dot"></i>${esc(number)}</span><button class="card-menu" type="button" data-action="menu" data-id="${esc(record.id)}" aria-label="Editar invoice"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="5.5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="18.5" r="1.8" fill="currentColor"/></svg></button></div>
       <p class="card-date">${esc(cardDate(record))}</p>
       <h4 class="card-address"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 1 7 7c0 5.25-7 13-7 13S5 14.25 5 9a7 7 0 0 1 7-7zm0 9.5A2.5 2.5 0 1 0 12 6a2.5 2.5 0 0 0 0 5.5z"/></svg>${esc(record.address)}</h4>
       <div class="card-details"><span class="card-hours"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm1 5h-2v6l4.5 2.7.9-1.5L13 12.2z"/></svg>${Number(record.hours || 0)} hrs</span><span class="card-amount">${money(record.amount)}</span></div>
       ${dueLine(record)}
-      ${record.stage === "waiting" || record.stage === "paid" || (record.checkPhotos || []).length ? `<div class="card-check">${(record.checkPhotos || []).length ? `<span class="check-badge">Cheque ×${record.checkPhotos.length}</span>` : `<span class="check-badge" style="background:#eef1fb;color:#5b6580">Sin foto</span>`}<button class="card-check-btn" type="button" data-action="attach-check" data-id="${esc(record.id)}">Subir cheque</button></div>` : ""}
+      ${needsCheck || photos ? `<div class="card-check">${photos ? `<span class="check-badge">Cheque ×${photos}</span>` : `<span class="check-badge is-empty">Sin foto</span>`}</div>` : ""}
+      <div class="card-foot">${needsCheck && !photos
+        ? `<button class="card-link" type="button" data-action="attach-check" data-id="${esc(record.id)}">Subir cheque</button>`
+        : `<button class="card-link" type="button" data-action="menu" data-id="${esc(record.id)}">Ver detalles <span aria-hidden="true">→</span></button>`}</div>
     </article>`;
   }
 
@@ -210,7 +227,7 @@
       const more = items.length > COLUMN_PREVIEW
         ? `<button class="column-more" type="button" data-action="toggle-column" data-stage="${stage.id}">${expanded ? "Ver menos" : `Ver más (${hiddenCount})`}</button>`
         : "";
-      return `<section class="kanban-column ${stage.className}${expanded ? " is-expanded" : ""}" data-stage="${stage.id}"><header class="column-head"><div class="column-title"><span class="column-icon">${stageIcons[stage.id]}</span><h3>${stage.title}</h3></div><span class="column-count">${items.length}</span></header><div class="column-cards">${items.length ? shown.map(cardTemplate).join("") + more : `<div class="empty-column">Sin invoices en esta fase</div>`}</div><button class="add-card-button" type="button" data-action="add" data-stage="${stage.id}">+ Agregar invoice</button></section>`;
+      return `<section class="kanban-column ${stage.className}${expanded ? " is-expanded" : ""}" data-stage="${stage.id}"><header class="column-head"><div class="column-title"><span class="column-icon">${stageIcons[stage.id]}</span><span class="column-name"><h3>${stage.title}</h3><small class="column-sub">${stage.subtitle}</small></span></div><span class="column-count">${items.length}</span></header><div class="column-cards">${items.length ? shown.map(cardTemplate).join("") + more : `<div class="empty-column">Sin invoices en esta fase</div>`}</div><button class="add-card-button" type="button" data-action="add" data-stage="${stage.id}">+ Agregar invoice</button></section>`;
     }).join("");
     wireBoardEvents();
   }
@@ -326,15 +343,24 @@
     $("#saveButton").textContent = record ? "Guardar cambios" : "Guardar invoice";
     $("#formError").textContent = "";
     $("#fileStatus").textContent = "Formato PDF · hasta 15 MB";
-    $("#currentFile").classList.toggle("hidden", !record?.pdfName);
+    const savedPdf = Boolean(record && (record.pdfBlob || record.pdfPath));
+    $("#currentFile").classList.toggle("hidden", !record?.pdfName || (savedPdf && Boolean(window.PdfPreview)));
     $("#currentFile").textContent = record?.pdfName ? `PDF actual: ${record.pdfName}. Puedes elegir otro para reemplazarlo.` : "";
+    if (savedPdf) {
+      window.PdfPreview?.show($("#invoicePdfSlot"), {
+        name: record.pdfName || Core.fileName(record),
+        status: "Guardado en la nube",
+        load: () => Cloud.ensureInvoicePdf(record),
+        onReplace: () => $("#pdfFile").click()
+      });
+    } else window.PdfPreview?.clear($("#invoicePdfSlot"));
     $("#recordIssuedDate").value = record ? Core.issuedDate(record) : "";
     $("#editGeneratedInvoiceButton").classList.toggle("hidden", !record?.invoiceData);
     if (record) {
       $("#address").value = record.address || "";
       $("#invoiceNumber").value = record.invoiceNumber || "";
       $("#amount").value = record.amount != null && record.amount !== "" ? dollars(record.amount).toFixed(2) : "";
-      $("#hours").value = record.hours ?? "";
+      $("#hours").value = Number(record.hours) ? record.hours : "";
       $("#description").value = record.description || "";
       $("#amountReceived").value = dollars(record.received).toFixed(2);
       syncInvoiceBalance();
@@ -357,6 +383,7 @@
     else document.body.classList.remove("modal-open");
     editingId = null;
     selectedPdf = null;
+    window.PdfPreview?.clear($("#invoicePdfSlot"));
   }
 
   function readForm() {
@@ -473,6 +500,13 @@
     if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) { $("#formError").textContent = "Solo puedes subir archivos PDF."; return; }
     if (file.size > MAX_PDF_BYTES) { $("#formError").textContent = "El PDF supera el límite de 15 MB."; return; }
     selectedPdf = file;
+    $("#currentFile").classList.add("hidden");
+    window.PdfPreview?.show($("#invoicePdfSlot"), {
+      name: file.name,
+      status: "Nuevo · se guarda al tocar Guardar",
+      load: async () => file,
+      onReplace: () => $("#pdfFile").click()
+    });
     readingPdf = true;
     if ($("#saveButton")) $("#saveButton").disabled = true;
     $("#fileStatus").textContent = file.name + " · Leyendo…";
@@ -712,6 +746,8 @@
     const menu = $("#mobileMenu");
     menu?.setAttribute("aria-expanded", String(open));
     menu?.setAttribute("aria-label", open ? "Cerrar menú" : "Abrir menú");
+    $("#sidebarToggle")?.setAttribute("aria-expanded", String(open));
+    $("#sidebarToggle")?.setAttribute("aria-label", open ? "Cerrar menú" : "Abrir menú");
     $("#dockMore")?.classList.toggle("is-active", Boolean(open));
   }
 
@@ -1096,7 +1132,8 @@
         const on = col.dataset.stage === active;
         const title = esc(col.querySelector("h3")?.textContent || "");
         const count = esc(col.querySelector(".column-count")?.textContent || "0");
-        return `<button type="button" role="tab" class="board-tab${on ? " is-active" : ""}" aria-selected="${on}" data-stage="${esc(col.dataset.stage)}">${title}<span>${count}</span></button>`;
+        const tone = (col.className.match(/column-(created|working|waiting|paid)/) || [])[1] || "created";
+        return `<button type="button" role="tab" class="board-tab tone-${tone}${on ? " is-active" : ""}" aria-selected="${on}" data-stage="${esc(col.dataset.stage)}">${title}<span>${count}</span></button>`;
       }).join("");
     };
     tabs.addEventListener("click", event => {
@@ -1175,6 +1212,11 @@
     navClick(item.dataset.nav);
   }));
   $("#mobileMenu").addEventListener("click", () => setSidebarOpen(!$("#sidebar").classList.contains("open")));
+  $("#sidebarToggle")?.addEventListener("click", () => setSidebarOpen(!$("#sidebar").classList.contains("open")));
+  // The collapsed desktop rail only shows icons: name each button for the hover tooltip.
+  document.querySelectorAll("#sidebar .nav-item, #sidebar .sidebar-logout").forEach(item => {
+    if (!item.title) item.title = (item.querySelector(".nav-title")?.textContent || item.textContent).trim();
+  });
   $("#sidebarClose")?.addEventListener("click", () => setSidebarOpen(false));
   $("#sidebarScrim")?.addEventListener("click", () => setSidebarOpen(false));
   document.addEventListener("keydown", (event) => { if (event.key === "Escape") setSidebarOpen(false); });

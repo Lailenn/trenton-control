@@ -454,10 +454,10 @@
   }
 
   const hoursStages = [
-    { id: "created", title: "Reporte creado", className: "column-created" },
-    { id: "working", title: "En trabajo", className: "column-working" },
-    { id: "waiting", title: "Esperando cheque", className: "column-waiting" },
-    { id: "paid", title: "Pagado", className: "column-paid" }
+    { id: "created", title: "Reporte creado", subtitle: "Recién registrados", className: "column-created" },
+    { id: "working", title: "En trabajo", subtitle: "Trabajos en proceso", className: "column-working" },
+    { id: "waiting", title: "Esperando cheque", subtitle: "Pendientes de cobro", className: "column-waiting" },
+    { id: "paid", title: "Pagado", subtitle: "Trabajos cobrados", className: "column-paid" }
   ];
   const HOURS_COLUMN_PREVIEW = 5;
   const expandedHoursColumns = new Set();
@@ -585,6 +585,9 @@
     return { received, due, total };
   }
 
+  const CARD_MENU_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="5.5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="18.5" r="1.8" fill="currentColor"/></svg>';
+  const PIN_ICON = '<svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 1 7 7c0 5.25-7 13-7 13S5 14.25 5 9a7 7 0 0 1 7-7zm0 9.5A2.5 2.5 0 1 0 12 6a2.5 2.5 0 0 0 0 5.5z"/></svg>';
+  const CLOCK_ICON = '<svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm1 5h-2v6l4.5 2.7.9-1.5L13 12.2z"/></svg>';
   function hoursCard(record) {
     const hours = hoursTotalHours(record);
     const pay = hoursAmount(record);
@@ -595,17 +598,23 @@
     const dueHtml = received > 0 || due > 0
       ? (due > 0.004 ? `<p class="card-due">Se debe ${money(due)}</p>` : `<p class="card-due is-clear">Saldo cubierto</p>`)
       : "";
-    const checks = record.stage === "waiting" || record.stage === "paid" || (record.checkPhotos || []).length
-      ? `<div class="card-check">${(record.checkPhotos || []).length ? `<span class="check-badge">Cheque ×${record.checkPhotos.length}</span>` : `<span class="check-badge" style="background:#eef1fb;color:#5b6580">Sin foto</span>`}<button class="card-check-btn" type="button" data-hours-home="attach-check" data-id="${esc(record.id)}">Subir cheque</button></div>`
+    const photos = (record.checkPhotos || []).length;
+    const needsCheck = record.stage === "waiting" || record.stage === "paid";
+    const checks = needsCheck || photos
+      ? `<div class="card-check">${photos ? `<span class="check-badge">Cheque ×${photos}</span>` : `<span class="check-badge is-empty">Sin foto</span>`}</div>`
       : "";
+    const foot = needsCheck && !photos
+      ? `<button class="card-link" type="button" data-hours-home="attach-check" data-id="${esc(record.id)}">Subir cheque</button>`
+      : `<button class="card-link" type="button" data-hours-home="menu" data-id="${esc(record.id)}">Ver detalles <span aria-hidden="true">→</span></button>`;
     return `<article class="invoice-card" draggable="true" data-hours-id="${esc(record.id)}" tabindex="0">
-      <div class="card-top"><span class="card-invoice"><i class="card-dot"></i>HORAS</span><button class="card-menu" type="button" data-hours-home="menu" data-id="${esc(record.id)}" aria-label="Editar horas">•••</button></div>
+      <div class="card-top"><span class="card-invoice"><i class="card-dot"></i>HORAS</span><button class="card-menu" type="button" data-hours-home="menu" data-id="${esc(record.id)}" aria-label="Editar horas">${CARD_MENU_ICON}</button></div>
       <p class="card-date">${esc(dateText(date))}</p>
-      <h4 class="card-address">${esc(pretty.address || record.jobAddress || "Sin dirección")}</h4>
-      <div class="card-details"><span class="card-hours">${isOriginalPdfHours(record) && !hours ? "PDF" : `${esc(formatHours(hours))} hrs`}</span><span class="card-amount">${money(pay)}</span></div>
+      <h4 class="card-address">${PIN_ICON}${esc(pretty.address || record.jobAddress || "Sin dirección")}</h4>
+      <div class="card-details"><span class="card-hours">${CLOCK_ICON}${isOriginalPdfHours(record) && !hours ? "PDF" : `${esc(formatHours(hours))} hrs`}</span><span class="card-amount">${money(pay)}</span></div>
       ${dueHtml}
       ${record.note ? `<p class="card-date">${esc(record.note)}</p>` : ""}
       ${checks}
+      <div class="card-foot">${foot}</div>
     </article>`;
   }
 
@@ -621,7 +630,7 @@
       const more = items.length > HOURS_COLUMN_PREVIEW
         ? `<button class="column-more" type="button" data-hours-home="toggle-column" data-stage="${stage.id}">${expanded ? "Ver menos" : `Ver más (${hiddenCount})`}</button>`
         : "";
-      return `<section class="kanban-column ${stage.className}${expanded ? " is-expanded" : ""}" data-stage="${stage.id}"><header class="column-head"><div class="column-title"><h3>${stage.title}</h3></div><span class="column-count">${items.length}</span></header><div class="column-cards">${items.length ? shown.map(hoursCard).join("") + more : `<div class="empty-column">Sin reportes en esta fase</div>`}</div><button class="add-card-button" type="button" data-hours-home="add" data-stage="${stage.id}">+ Agregar horas</button></section>`;
+      return `<section class="kanban-column ${stage.className}${expanded ? " is-expanded" : ""}" data-stage="${stage.id}"><header class="column-head"><div class="column-title"><span class="column-icon">${window.TrentonStageIcons?.[stage.id] || ""}</span><span class="column-name"><h3>${stage.title}</h3><small class="column-sub">${stage.subtitle}</small></span></div><span class="column-count">${items.length}</span></header><div class="column-cards">${items.length ? shown.map(hoursCard).join("") + more : `<div class="empty-column">Sin reportes en esta fase</div>`}</div><button class="add-card-button" type="button" data-hours-home="add" data-stage="${stage.id}">+ Agregar horas</button></section>`;
     }).join("");
     wireHoursHomeBoard();
     renderHoursCheckDesk();
@@ -703,6 +712,17 @@
   function setHoursPdfStatus(file, existingName) {
     const status = $("#hoursBoardFileStatus");
     const current = $("#hoursCurrentFile");
+    const slot = $("#hoursPdfSlot");
+    const saved = !file && editingHoursId ? reports.find(item => item.id === editingHoursId) : null;
+    const replace = () => $("#hoursBoardPdfFile")?.click();
+    if (root.PdfPreview && (file || saved?.pdfBlob || saved?.pdfPath)) {
+      root.PdfPreview.show(slot, file
+        ? { name: file.name, status: "Nuevo · se guarda al tocar Guardar", load: async () => file, onReplace: replace }
+        : { name: saved.pdfName || existingName || "Reporte de horas.pdf", status: "Guardado en la nube", load: () => root.CloudDB.ensureHoursPdf(saved), onReplace: replace });
+      current?.classList.add("hidden");
+      return;
+    }
+    root.PdfPreview?.clear(slot);
     if (file) {
       if (status) status.textContent = `PDF listo: ${file.name}`;
       if (current) {
@@ -809,6 +829,7 @@
     editingHoursId = null;
     creatingHours = false;
     pendingHoursPdf = null;
+    root.PdfPreview?.clear($("#hoursPdfSlot"));
     const picker = $("#hoursBoardPdfFile");
     if (picker) picker.value = "";
   }

@@ -475,9 +475,9 @@
 
   const toClient = () => root.CompanyApp?.toClient?.() || "a Trenton";
   const jobStages = [
-    { id: "created", title: "Reporte creado", className: "column-created" },
-    { id: "sent", get title() { return `Enviado ${toClient()}`; }, className: "column-working" },
-    { id: "paid", title: "Pagado", className: "column-paid" }
+    { id: "created", title: "Reporte creado", subtitle: "Recién registrados", className: "column-created" },
+    { id: "sent", get title() { return `Enviado ${toClient()}`; }, subtitle: "Esperando el pago", className: "column-working" },
+    { id: "paid", title: "Pagado", subtitle: "Trabajos cobrados", className: "column-paid" }
   ];
   const JOB_COLUMN_PREVIEW = 5;
   const expandedJobColumns = new Set();
@@ -563,6 +563,9 @@
     if ($("#jobBalanceLive")) $("#jobBalanceLive").textContent = `Total ${money(total)} · recibido ${money(received)} · se debe ${money(due)}`;
     return { received, due, total };
   }
+  const CARD_MENU_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="5.5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="18.5" r="1.8" fill="currentColor"/></svg>';
+  const PIN_ICON = '<svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 1 7 7c0 5.25-7 13-7 13S5 14.25 5 9a7 7 0 0 1 7-7zm0 9.5A2.5 2.5 0 1 0 12 6a2.5 2.5 0 0 0 0 5.5z"/></svg>';
+  const CLOCK_ICON = '<svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm1 5h-2v6l4.5 2.7.9-1.5L13 12.2z"/></svg>';
   function jobCard(record) {
     const hours = jobTotalHours(record);
     const pay = jobAmount(record);
@@ -571,17 +574,23 @@
     const dueHtml = received > 0 || due > 0
       ? (due > 0.004 ? `<p class="card-due">Se debe ${money(due)}</p>` : `<p class="card-due is-clear">Saldo cubierto</p>`)
       : "";
-    const checks = record.stage === "sent" || record.stage === "paid" || (record.checkPhotos || []).length
-      ? `<div class="card-check">${(record.checkPhotos || []).length ? `<span class="check-badge">Cheque ×${record.checkPhotos.length}</span>` : `<span class="check-badge" style="background:#eef1fb;color:#5b6580">Sin foto</span>`}<button class="card-check-btn" type="button" data-job-home="attach-check" data-id="${esc(record.id)}">Subir cheque</button></div>`
+    const photos = (record.checkPhotos || []).length;
+    const needsCheck = record.stage === "sent" || record.stage === "paid";
+    const checks = needsCheck || photos
+      ? `<div class="card-check">${photos ? `<span class="check-badge">Cheque ×${photos}</span>` : `<span class="check-badge is-empty">Sin foto</span>`}</div>`
       : "";
+    const foot = needsCheck && !photos
+      ? `<button class="card-link" type="button" data-job-home="attach-check" data-id="${esc(record.id)}">Subir cheque</button>`
+      : `<button class="card-link" type="button" data-job-home="menu" data-id="${esc(record.id)}">Ver detalles <span aria-hidden="true">→</span></button>`;
     return `<article class="invoice-card" draggable="true" data-job-id="${esc(record.id)}" tabindex="0">
-      <div class="card-top"><span class="card-invoice"><i class="card-dot"></i>TRENTON</span><button class="card-menu" type="button" data-job-home="menu" data-id="${esc(record.id)}" aria-label="Editar reporte">•••</button></div>
+      <div class="card-top"><span class="card-invoice"><i class="card-dot"></i>TRENTON</span><button class="card-menu" type="button" data-job-home="menu" data-id="${esc(record.id)}" aria-label="Editar reporte">${CARD_MENU_ICON}</button></div>
       <p class="card-date">${esc(jobDateText(record))}</p>
-      <h4 class="card-address">${esc(record.jobAddress || "Sin dirección")}</h4>
-      <div class="card-details"><span class="card-hours">${isOriginalPdfJob(record) ? "PDF" : `${esc(formatHours(hours))} hrs`}</span><span class="card-amount">${money(pay)}</span></div>
+      <h4 class="card-address">${PIN_ICON}${esc(record.jobAddress || "Sin dirección")}</h4>
+      <div class="card-details"><span class="card-hours">${CLOCK_ICON}${isOriginalPdfJob(record) ? "PDF" : `${esc(formatHours(hours))} hrs`}</span><span class="card-amount">${money(pay)}</span></div>
       ${dueHtml}
       ${record.note ? `<p class="card-date">${esc(record.note)}</p>` : ""}
       ${checks}
+      <div class="card-foot">${foot}</div>
     </article>`;
   }
   function renderJobBoard() {
@@ -596,7 +605,7 @@
       const more = items.length > JOB_COLUMN_PREVIEW
         ? `<button class="column-more" type="button" data-job-home="toggle-column" data-stage="${stage.id}">${expanded ? "Ver menos" : `Ver más (${hiddenCount})`}</button>`
         : "";
-      return `<section class="kanban-column ${stage.className}${expanded ? " is-expanded" : ""}" data-stage="${stage.id}"><header class="column-head"><div class="column-title"><h3>${stage.title}</h3></div><span class="column-count">${items.length}</span></header><div class="column-cards">${items.length ? shown.map(jobCard).join("") + more : `<div class="empty-column">Sin reportes en esta fase</div>`}</div><button class="add-card-button" type="button" data-job-home="add" data-stage="${stage.id}">+ Agregar reporte</button></section>`;
+      return `<section class="kanban-column ${stage.className}${expanded ? " is-expanded" : ""}" data-stage="${stage.id}"><header class="column-head"><div class="column-title"><span class="column-icon">${window.TrentonStageIcons?.[stage.id] || ""}</span><span class="column-name"><h3>${stage.title}</h3><small class="column-sub">${stage.subtitle}</small></span></div><span class="column-count">${items.length}</span></header><div class="column-cards">${items.length ? shown.map(jobCard).join("") + more : `<div class="empty-column">Sin reportes en esta fase</div>`}</div><button class="add-card-button" type="button" data-job-home="add" data-stage="${stage.id}">+ Agregar reporte</button></section>`;
     }).join("");
     wireJobHomeBoard();
     renderJobCheckDesk();
@@ -665,6 +674,18 @@
   function setJobPdfStatus(file, existingName) {
     const status = $("#jobBoardFileStatus");
     const current = $("#jobCurrentFile");
+    const slot = $("#jobPdfSlot");
+    const saved = !file && editingJobId ? reports.find(item => item.id === editingJobId) : null;
+    const replace = () => $("#jobBoardPdfFile")?.click();
+    if (root.PdfPreview && (file || saved)) {
+      root.PdfPreview.show(slot, file
+        ? { name: file.name, status: "Nuevo · se guarda al tocar Guardar", load: async () => file, onReplace: replace }
+        // Built from a copy so previewing never changes the saved report.
+        : { name: saved.pdfName || existingName || fileName(saved), status: "Guardado en la nube", load: () => rebuildPdf({ ...saved }), onReplace: replace });
+      current?.classList.add("hidden");
+      return;
+    }
+    root.PdfPreview?.clear(slot);
     if (file) {
       if (status) status.textContent = `PDF listo: ${file.name}`;
       if (current) {
@@ -749,6 +770,7 @@
     editingJobId = null;
     creatingJob = false;
     pendingJobPdf = null;
+    root.PdfPreview?.clear($("#jobPdfSlot"));
     const picker = $("#jobBoardPdfFile");
     if (picker) picker.value = "";
   }
