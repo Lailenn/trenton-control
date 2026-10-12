@@ -6530,3 +6530,26 @@ a { color: var(--blue); }
   html body.sidebar-lock .topbar { display: none !important; }
   .main-content { padding-top: max(14px, env(safe-area-inset-top, 0px)) !important; }
 }
+
+/* Home: wider content so the cards breathe on large screens */
+@media (min-width: 821px) {
+  #boardView.dash-home { max-width: 1380px; }
+}
+/* Soft gradient wash only behind the invoice illustration */
+#boardView .dash-hero-art { position: relative; }
+#boardView .dash-hero-art::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -12% -8% -12% -14%;
+  border-radius: 42% 48% 46% 40%;
+  background:
+    radial-gradient(circle at 70% 25%, rgba(238, 127, 45, .22), transparent 48%),
+    radial-gradient(circle at 30% 75%, rgba(53, 99, 233, .26), transparent 55%),
+    radial-gradient(circle at 55% 50%, rgba(139, 124, 246, .18), transparent 62%);
+  filter: blur(18px);
+  animation: heroWash 10s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes heroWash { from { transform: rotate(0deg) scale(1); } to { transform: rotate(8deg) scale(1.06); } }
+@media (prefers-reduced-motion: reduce) { #boardView .dash-hero-art::before { animation: none; } }
