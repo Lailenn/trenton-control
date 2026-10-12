@@ -6459,3 +6459,66 @@ body { background: var(--canvas); color: var(--ink); }
 /* Links and focus rings use the single blue */
 a { color: var(--blue); }
 :focus-visible { outline-color: var(--blue); }
+
+/* Animated home backdrop: slow camera drift, warm sun glow, light rays and floating dust (transform/opacity only) */
+.main-shell:has(#boardView:not(.hidden)) .app-backdrop { background: #1b2a4e; overflow: hidden; }
+.app-backdrop > i { position: absolute; display: block; pointer-events: none; }
+.app-backdrop .bd-photo {
+  inset: -6%;
+  background: url("assets/hero-construction.jpg?v=1") center 40% / cover no-repeat;
+  animation: bdDrift 40s ease-in-out infinite alternate;
+  will-change: transform;
+}
+@keyframes bdDrift {
+  0% { transform: scale(1.02) translate(0, 0); }
+  50% { transform: scale(1.08) translate(-2%, 1%); }
+  100% { transform: scale(1.05) translate(2%, -1%); }
+}
+.app-backdrop .bd-sun {
+  left: -10%;
+  top: 30%;
+  width: 55vmax;
+  height: 55vmax;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 196, 120, .55), rgba(255, 160, 80, .18) 40%, transparent 68%);
+  mix-blend-mode: screen;
+  animation: bdSun 12s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+@keyframes bdSun { from { transform: translate(0, 0) scale(.95); opacity: .55; } to { transform: translate(6%, -4%) scale(1.08); opacity: .95; } }
+.app-backdrop .bd-rays {
+  left: -20%;
+  top: -10%;
+  width: 90vmax;
+  height: 90vmax;
+  background: repeating-conic-gradient(from 200deg at 22% 62%, rgba(255, 214, 160, .14) 0deg 4deg, transparent 4deg 14deg);
+  -webkit-mask-image: radial-gradient(circle at 22% 62%, #000 0%, transparent 55%);
+  mask-image: radial-gradient(circle at 22% 62%, #000 0%, transparent 55%);
+  mix-blend-mode: screen;
+  transform-origin: 22% 62%;
+  animation: bdRays 60s linear infinite;
+  opacity: .8;
+}
+@keyframes bdRays { to { transform: rotate(18deg); } }
+.app-backdrop .bd-dust {
+  inset: 0;
+  background-image:
+    radial-gradient(circle, rgba(255, 230, 190, .9) 0 1.5px, transparent 2.5px),
+    radial-gradient(circle, rgba(255, 255, 255, .7) 0 1px, transparent 2px),
+    radial-gradient(circle, rgba(255, 210, 150, .8) 0 2px, transparent 3px);
+  background-size: 180px 200px, 260px 240px, 340px 320px;
+  background-position: 0 0, 60px 90px, 140px 30px;
+  animation: bdDust 30s linear infinite;
+  opacity: .55;
+  will-change: transform;
+}
+@keyframes bdDust { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-180px, -400px, 0); } }
+.main-shell:has(#boardView:not(.hidden)) .app-backdrop::after { z-index: 1; }
+.app-backdrop .bd-dust { z-index: 2; height: calc(100% + 400px); }
+@media (max-width: 820px) {
+  .app-backdrop .bd-rays { display: none; }
+  .app-backdrop .bd-dust { opacity: .4; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-backdrop > i { animation: none !important; }
+}
