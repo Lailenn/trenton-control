@@ -6115,3 +6115,11 @@ body.pdf-viewer-open { overflow: hidden; }
 }
 .login2-brand img { mix-blend-mode: multiply; }
 @media (min-width: 961px) { .login2-copy { right: 34%; } .login2-orange { width: 44%; right: -12%; bottom: -20%; } }
+
+/* Login scene uses the real photo (it already includes the light arcs and the orange circle) */
+.login2-visual { background: #f3c9a4 url("assets/login-house.jpg?v=1") 70% center / cover no-repeat; }
+.login2-house, .login2-arc, .login2-orange { display: none !important; }
+.login2-visual { animation: lhPhoto 1.2s ease both; }
+@keyframes lhPhoto { from { background-size: 112% auto; opacity: .6; } to { opacity: 1; } }
+@media (max-width: 700px) { .login2-visual { background-position: 62% 40%; } }
+@media (prefers-reduced-motion: reduce) { .login2-visual { animation: none; } }
