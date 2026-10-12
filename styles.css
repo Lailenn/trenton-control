@@ -6236,3 +6236,140 @@ body.pdf-viewer-open { overflow: hidden; }
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
 }
+
+/* Company chooser: drop the phone-login form offset (-28px) that pushed the header above the card */
+@media (max-width: 700px) {
+  .login-screen[data-mode="company"] .login2-form {
+    margin-top: 0 !important;
+    padding: 0 !important;
+    border-radius: 0;
+    background: transparent;
+  }
+}
+@media (max-width: 600px) {
+  .login-screen.auth-gate[data-mode="company"] { padding-inline: 22px !important; }
+}
+
+/* ===== Phone login v3: photo header with a curved white sheet, orange swooshes, centered brand, animated ===== */
+@media (max-width: 700px) {
+  .login-screen.auth-gate[data-mode="login"] { padding: 14px 12px !important; place-items: start center !important; background: #eef2f8; }
+  .login-screen[data-mode="login"] .login-card.auth-card.login2 {
+    position: relative;
+    display: flex !important;
+    flex-direction: column;
+    width: min(440px, 100%);
+    min-height: 0;
+    overflow: hidden;
+    border-radius: 30px;
+    background: #fff;
+    box-shadow: 0 24px 60px rgba(36, 54, 96, .16);
+  }
+  /* photo header */
+  .login-screen[data-mode="login"] .login2-visual {
+    order: 0;
+    height: 250px;
+    margin: 0;
+    border-radius: 0;
+    background: none !important;
+    animation: none;
+  }
+  .login-screen[data-mode="login"] .login2-visual::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: url("assets/login-house.jpg?v=1") 62% 38% / cover no-repeat;
+    transform-origin: 60% 40%;
+    animation: lpKen 18s ease-in-out infinite alternate;
+  }
+  @keyframes lpKen { from { transform: scale(1.04); } to { transform: scale(1.16) translate(-2%, 1%); } }
+  .login-screen[data-mode="login"] .login2-chip,
+  .login-screen[data-mode="login"] .login2-copy { display: none !important; }
+  /* white curved sheet over the photo */
+  .login-screen[data-mode="login"] .login2-form {
+    order: 1;
+    position: relative;
+    z-index: 2;
+    margin-top: -86px !important;
+    padding: 34px 22px 20px !important;
+    border-radius: 0;
+    background: transparent;
+  }
+  .login-screen[data-mode="login"] .login2-form::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    left: -30%;
+    right: -30%;
+    top: 0;
+    bottom: 0;
+    border-radius: 50% 50% 0 0 / 70px 70px 0 0;
+    background: linear-gradient(180deg, rgba(255,255,255,.96), #fff 40px);
+    box-shadow: 0 -10px 30px rgba(36, 54, 96, .08);
+    animation: lpSheet .9s cubic-bezier(.2, .8, .2, 1) both;
+  }
+  @keyframes lpSheet { from { transform: translateY(40px); opacity: .4; } to { transform: none; opacity: 1; } }
+  /* orange swooshes */
+  .login-screen[data-mode="login"] .login-card.login2::before,
+  .login-screen[data-mode="login"] .login-card.login2::after {
+    content: "";
+    position: absolute;
+    z-index: 3;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .login-screen[data-mode="login"] .login-card.login2::before {
+    left: -70px;
+    top: 150px;
+    width: 120px;
+    height: 220px;
+    border-right: 10px solid rgba(240, 145, 60, .85);
+    border-top: 2px solid transparent;
+    transform: rotate(18deg);
+    animation: lpSwoosh 7s ease-in-out infinite alternate;
+  }
+  .login-screen[data-mode="login"] .login-card.login2::after {
+    right: -60px;
+    bottom: -70px;
+    width: 190px;
+    height: 150px;
+    background: radial-gradient(circle at 35% 35%, #f8a85c, #ee7f2d 70%);
+    opacity: .9;
+    animation: lpBlob 8s ease-in-out infinite alternate;
+  }
+  @keyframes lpSwoosh { from { transform: rotate(18deg) translateY(0); } to { transform: rotate(24deg) translateY(10px); } }
+  @keyframes lpBlob { from { transform: translate(0, 0) scale(1); } to { transform: translate(-10px, -8px) scale(1.06); } }
+  /* centered brand and heading */
+  .login-screen[data-mode="login"] .login2-brand {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    row-gap: 0;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+  .login-screen[data-mode="login"] .login2-brand img { grid-row: auto; width: 128px; margin-bottom: -2px; }
+  .login-screen[data-mode="login"] .login2-brand strong { font-size: 26px; }
+  .login-screen[data-mode="login"] .login2-brand small { font-size: 11px; letter-spacing: .36em; padding-left: .36em; }
+  .login-screen[data-mode="login"] .login2-head { text-align: center; }
+  .login-screen[data-mode="login"] .login2-head h1 { font-size: 25px; }
+  .login-screen[data-mode="login"] .login2-head p { margin: 6px 0 18px; font-size: 13.5px; }
+  .login-screen[data-mode="login"] .login2 .login-remember input { accent-color: #172447; }
+  .login-screen[data-mode="login"] .login2 .login-legal { position: relative; z-index: 4; margin-top: 16px; }
+}
+@media (max-width: 700px) and (prefers-reduced-motion: reduce) {
+  .login-screen[data-mode="login"] .login2-visual::before,
+  .login-screen[data-mode="login"] .login2-form::before,
+  .login-screen[data-mode="login"] .login-card.login2::before,
+  .login-screen[data-mode="login"] .login-card.login2::after { animation: none; }
+}
+@media (max-width: 700px) {
+  .login-screen[data-mode="login"] .login-card.login2::before {
+    z-index: 1;
+    left: -60px;
+    top: 120px;
+    width: 140px;
+    height: 200px;
+    border: 0;
+    background: linear-gradient(160deg, rgba(248, 168, 92, .95), rgba(238, 127, 45, .8));
+  }
+  .login-screen[data-mode="login"] .login2-form::before { border-radius: 50% 50% 0 0 / 90px 90px 0 0; }
+}
