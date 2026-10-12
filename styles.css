@@ -6123,3 +6123,65 @@ body.pdf-viewer-open { overflow: hidden; }
 @keyframes lhPhoto { from { background-size: 112% auto; opacity: .6; } to { opacity: 1; } }
 @media (max-width: 700px) { .login2-visual { background-position: 62% 40%; } }
 @media (prefers-reduced-motion: reduce) { .login2-visual { animation: none; } }
+
+/* Company chooser: never clip the header (no vertical centering inside the card) */
+.login-screen[data-mode="company"] .login-card.auth-card.login2 { overflow: visible; }
+.login-screen[data-mode="company"] .login2-form { display: block; }
+.login-screen.auth-gate[data-mode="company"] { place-items: start center; }
+@media (min-height: 760px) { .login-screen.auth-gate[data-mode="company"] { place-items: center; } }
+
+/* Inputs: no blue autofill box, no square focus box on the eye button */
+.login2 .login-input input:-webkit-autofill,
+.login2 .login-input input:-webkit-autofill:hover,
+.login2 .login-input input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #16213e;
+  -webkit-box-shadow: 0 0 0 40px #f8fafd inset;
+  caret-color: #16213e;
+  transition: background-color 9999s ease;
+}
+.login2 .login-input:focus-within input:-webkit-autofill { -webkit-box-shadow: 0 0 0 40px #fff inset; }
+.login2 .login-eye { border: 0; border-radius: 10px; background: transparent; outline: none; }
+.login2 .login-eye:focus-visible { box-shadow: 0 0 0 3px rgba(59, 110, 234, .25); }
+.login2 .login-remember input { border-radius: 6px; }
+
+/* More motion on the login */
+.login2-visual::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(circle at 30% 40%, rgba(255, 214, 160, .35), transparent 45%);
+  animation: lhSun 9s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes lhSun { from { transform: translate(0, 0); opacity: .6; } to { transform: translate(12%, -6%); opacity: 1; } }
+.login2-chip { opacity: 0; animation: lhChipIn .7s cubic-bezier(.2, 1.4, .4, 1) forwards, lhChip 6s ease-in-out 1s infinite; }
+.chip-facturas { animation-delay: .5s, 1.2s; }
+.chip-horas { animation-delay: .75s, 2.2s; }
+.chip-proyectos { animation-delay: 1s, 3.2s; }
+@keyframes lhChipIn { from { opacity: 0; transform: translateY(18px) scale(.9); } to { opacity: 1; transform: none; } }
+.login2-copy h2, .login2-copy i, .login2-copy p { animation: lhUp .8s cubic-bezier(.2, .8, .2, 1) both; }
+.login2-copy i { animation-delay: .25s; transform-origin: left; }
+.login2-copy p { animation-delay: .4s; }
+@keyframes lhUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+.login-screen[data-mode="login"] .login2-form > * { animation: lhUp .6s cubic-bezier(.2, .8, .2, 1) both; }
+.login-screen[data-mode="login"] .login2-form > :nth-child(2) { animation-delay: .06s; }
+.login-screen[data-mode="login"] .login2-form > :nth-child(3) { animation-delay: .12s; }
+.login-screen[data-mode="login"] .login2-form > :nth-child(5) { animation-delay: .18s; }
+.login2-brand img { animation: lhBob 4s ease-in-out infinite; }
+@keyframes lhBob { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-4px) rotate(-1.5deg); } }
+.login-screen .login2 #loginButton.login-submit { position: relative; overflow: hidden; }
+.login-screen .login2 #loginButton.login-submit::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -40%;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .22), transparent);
+  transform: skewX(-20deg);
+  animation: lhShine 3.6s ease-in-out 1.4s infinite;
+}
+@keyframes lhShine { 0% { left: -40%; } 45%, 100% { left: 130%; } }
+@media (prefers-reduced-motion: reduce) {
+  .login2-visual, .login2-visual::after, .login2-chip, .login2-copy *, .login2-form > *, .login2-brand img, .login-screen .login2 #loginButton.login-submit::after { animation: none !important; opacity: 1 !important; }
+}
