@@ -6553,3 +6553,14 @@ a { color: var(--blue); }
 }
 @keyframes heroWash { from { transform: rotate(0deg) scale(1); } to { transform: rotate(8deg) scale(1.06); } }
 @media (prefers-reduced-motion: reduce) { #boardView .dash-hero-art::before { animation: none; } }
+
+/* Home stays inside the space beside the rail at any width; handwritten note sits lower so it is not clipped */
+@media (min-width: 821px) {
+  .app-shell .main-shell > .main-content { width: auto !important; max-width: none; margin: 0 24px 0 0 !important; box-sizing: border-box; }
+  #boardView.dash-home { width: 100%; max-width: 1380px; margin-inline: auto; box-sizing: border-box; }
+}
+.ha-note-top { top: 2% !important; }
+.ha-arrow-top { top: 8% !important; }
+.ha-note-top { top: 0 !important; right: -3% !important; font-size: calc(4.4 * var(--u)) !important; }
+.ha-arrow-top { top: 5% !important; left: 58% !important; }
+.ha-check { top: 22% !important; left: 68% !important; }
