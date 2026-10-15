@@ -7222,3 +7222,41 @@ html body #authGate.login-screen.login3.auth-gate.hidden,
 html body #authGate.login-screen.login3.auth-gate[hidden],
 html body #authGate.login-screen.login3.auth-gate[data-mode].hidden,
 html body #authGate.login-screen.login3.auth-gate[data-mode][hidden] { display: none !important; }
+
+/* ===== Performance pass ===== */
+/* Everywhere: drop effects that force a full repaint every frame (animated filters/colors, full-screen blending) */
+.app-backdrop .bd-sun { mix-blend-mode: normal; opacity: .55; }
+.hero-welcome.welcome-play h1 span { animation: none !important; filter: none !important; }
+#boardView .welcome-greeting { animation: none !important; }
+/* Big decorative layers get their own GPU layer so moving them does not repaint the page */
+.app-backdrop .bd-photo,
+.app-backdrop .bd-sun,
+.app-backdrop .bd-dust,
+#boardView .dash-hero-art::before { will-change: transform; backface-visibility: hidden; }
+
+/* Phones and tablets: a still, pre-softened background and no endless decoration loops.
+   The hero illustration keeps its light transform-only motion (paused when off screen). */
+@media (max-width: 820px) {
+  .app-backdrop .bd-photo { animation: none !important; filter: none !important; transform: scale(1.02); will-change: auto; }
+  .app-backdrop .bd-sun,
+  .app-backdrop .bd-rays,
+  .app-backdrop .bd-dust { display: none !important; }
+  #boardView .dash-hero-art::before { animation: none !important; filter: blur(14px); will-change: auto; }
+  #boardView .dash-kicker svg,
+  #boardView .dash-kicker i,
+  #boardView .dash-archive-icon,
+  #boardView .dash-archive-icon * { animation: none !important; }
+  .login3 .l3-bg { animation: none !important; }
+  .login3 .l3-intro li i,
+  .login3 .l3-corner-logo img,
+  .login3 .l3-wave { animation: none !important; }
+  .login3 .l3-card,
+  .login3 .l3-corner-logo { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+  html body .login-screen.login3[data-mode="login"] .login-card.auth-card.l3-card { background: rgba(255, 255, 255, .94) !important; }
+  .login3 .l3-corner-logo { background: rgba(255, 255, 255, .92); }
+}
+/* Computer too: the blurred glow orbs behind the boards are hidden by the photo backdrop anyway */
+#boardView .dash-board-orb,
+#boardView .dash-page-glow { display: none !important; }
+/* Pulsing ring on the chart dots animated box-shadow (repaint each frame): keep a static ring */
+.ds-card.ds-play .ds-dot { animation: dsPop .45s 1.15s cubic-bezier(.3, 1.6, .5, 1) both !important; }
