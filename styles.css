@@ -7285,3 +7285,28 @@ html.boot-session body::after {
   animation: bootSpin .8s linear infinite;
 }
 @keyframes bootSpin { to { transform: rotate(360deg); } }
+
+/* Phone login: compact so the whole screen fits without scrolling (logo and title share the top row) */
+@media (max-width: 600px) {
+  html body .login-screen.login3[data-mode="login"].auth-gate {
+    gap: 12px !important;
+    padding: 14px 20px max(12px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+  .login3[data-mode="login"] .l3-corner-logo { position: static !important; align-self: flex-start; padding: 6px 10px; border-radius: 12px; animation: none; }
+  .login3[data-mode="login"] .l3-corner-logo img { width: 60px; }
+  .login3[data-mode="login"] .l3-corner-logo strong { font-size: 11px; }
+  .login3[data-mode="login"] .l3-intro h2 { font-size: 22px; line-height: 1.1; }
+  html body .login-screen.login3[data-mode="login"] .login-card.auth-card.l3-card { padding: 18px 18px 14px !important; border-radius: 22px; }
+  .login3[data-mode="login"] .l3-head p.l3-hello { margin: 0 0 8px !important; padding: 3px 11px; font-size: 12px; }
+  .login3[data-mode="login"] .l3-head h1 { margin: 0 0 2px !important; font-size: 21px !important; }
+  .login3[data-mode="login"] .l3-head .l3-wish { margin: 0 0 16px !important; font-size: 13px; }
+  .login3[data-mode="login"] .login-field { margin-bottom: 10px !important; }
+  .login3[data-mode="login"] .login-input { min-height: 46px; }
+  .login3[data-mode="login"] .login-row { margin: 2px 0 12px !important; }
+  html body .login-screen.login3[data-mode="login"] #loginButton.login-submit { min-height: 48px; font-size: 16px; }
+  .login3[data-mode="login"] .l3-or { margin: 10px 0 !important; }
+  .login3[data-mode="login"] .login-passkey { min-height: 44px; }
+  .login3[data-mode="login"] .l3-secure { margin-top: 12px !important; gap: 10px; }
+  .login3[data-mode="login"] .l3-secure i { width: 32px; height: 32px; }
+  .login3[data-mode="login"] .l3-secure svg { width: 17px; height: 17px; }
+}
