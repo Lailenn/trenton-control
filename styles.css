@@ -7175,3 +7175,15 @@ html body .login-screen.login3[data-mode="login"] .login-card.auth-card.l3-card 
 .login3[data-mode="login"] .l3-head p.l3-hello { margin: 0 0 12px !important; }
 .login3[data-mode="login"] .l3-head h1 { margin: 0 0 6px !important; }
 .login3[data-mode="login"] .l3-head .l3-wish { margin: 0 0 32px !important; }
+
+/* The app is designed light: stop phone browsers (Chrome/Samsung dark mode) from auto-darkening it */
+:root { color-scheme: light only; }
+html, body { color-scheme: light only; }
+
+/* Phone login: the card never shrinks, so "Acceso seguro" always stays inside it; page scrolls if needed */
+@media (max-width: 600px) {
+  html body .login-screen.login3[data-mode="login"].auth-gate { height: auto !important; min-height: 100dvh; overflow-y: auto; }
+  html body .login-screen.login3[data-mode="login"] .login-card.auth-card.l3-card,
+  .login3[data-mode="login"] .l3-intro { flex-shrink: 0; }
+  html body .login-screen.login3[data-mode="login"] .login-card.auth-card.l3-card { overflow: visible !important; height: auto !important; }
+}
