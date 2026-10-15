@@ -569,6 +569,8 @@
     return Number.isFinite(fallback) ? hoursDollars(fallback) : 0;
   }
   function hoursDueAmount(record) {
+    // Same rule as invoices: "paid" with no payment recorded (older data) means paid in full.
+    if (record.stage === "paid" && !(Number(record.received) > 0)) return 0;
     return hoursDollars(hoursAmount(record) - Number(record.received || 0));
   }
   function matchesHoursSearch(record) {
@@ -596,17 +598,17 @@
     const pretty = prettyHoursAddress(record.jobAddress || "");
     const date = record.reportDate || pretty.date;
     const dueHtml = received > 0 || due > 0
-      ? (due > 0.004 ? `<p class="card-due">Se debe ${money(due)}</p>` : `<p class="card-due is-clear">Saldo cubierto</p>`)
+      ? (due > 0.004 ? `<p class="card-due">${record.stage === "paid" ? "Pago incompleto · se debe" : "Se debe"} ${money(due)}</p>` : `<p class="card-due is-clear">Saldo cubierto</p>`)
       : "";
     const photos = (record.checkPhotos || []).length;
     const needsCheck = record.stage === "waiting" || record.stage === "paid";
     const checks = needsCheck || photos
-      ? `<div class="card-check">${photos ? `<span class="check-badge">Cheque ×${photos}</span>` : `<span class="check-badge is-empty">Sin foto</span>`}</div>`
+      ? `<div class="card-check">${photos ? `<button type="button" class="check-badge check-view" data-check-kind="hours" data-id="${esc(record.id)}" title="Ver cheques">Cheque ×${photos}</button>` : `<span class="check-badge is-empty">Sin foto</span>`}</div>`
       : "";
     const foot = needsCheck && !photos
       ? `<button class="card-link" type="button" data-hours-home="attach-check" data-id="${esc(record.id)}">Subir cheque</button>`
       : `<button class="card-link" type="button" data-hours-home="menu" data-id="${esc(record.id)}">Ver detalles <span aria-hidden="true">→</span></button>`;
-    return `<article class="invoice-card" draggable="true" data-hours-id="${esc(record.id)}" tabindex="0">
+    return `<article class="invoice-card${record.stage === "paid" && due > 0.004 ? " is-partial" : ""}" draggable="true" data-hours-id="${esc(record.id)}" tabindex="0">
       <div class="card-top"><span class="card-invoice"><i class="card-dot"></i>HORAS</span><button class="card-menu" type="button" data-hours-home="menu" data-id="${esc(record.id)}" aria-label="Editar horas">${CARD_MENU_ICON}</button></div>
       <p class="card-date">${esc(dateText(date))}</p>
       <h4 class="card-address">${PIN_ICON}${esc(pretty.address || record.jobAddress || "Sin dirección")}</h4>
@@ -668,6 +670,15 @@
   async function moveHoursToStage(id, stage) {
     const record = reports.find(item => item.id === id);
     if (!record || !stage || record.stage === stage) return;
+    if (stage === "paid" && hoursDueAmount(record) > 0.004) {
+      const total = hoursDollars(hoursAmount(record));
+      if (!confirm(`Este reporte todavía debe ${money(hoursDueAmount(record))}. ¿Ya pagaron todo?
+
+Aceptar: se marca el saldo cubierto y pasa a Pagado.
+Cancelar: no se mueve.`)) return;
+      record.received = total;
+      record.due = 0;
+    }
     if (stage === "paid" && !(record.checkPhotos || []).length) {
       if (!confirm("¿Ya adjuntaste la foto del cheque? Puedes marcar pagado ahora y subirla después.")) return;
     }
@@ -813,7 +824,7 @@
     if ($("#hoursEditTotal")) $("#hoursEditTotal").value = hoursDollars(hoursAmount(record)).toFixed(2);
     setHoursField(record);
     $("#hoursEditStage").value = record.stage || "created";
-    $("#hoursEditReceived").value = hoursDollars(record.received).toFixed(2);
+    $("#hoursEditReceived").value = hoursDollars(hoursAmount(record) - hoursDueAmount(record)).toFixed(2);
     $("#hoursEditOpenForm")?.classList.add("hidden");
     if ($("#saveHoursBoardButton")) $("#saveHoursBoardButton").textContent = "Guardar cambios";
     setHoursPdfStatus(null, record.pdfName || "");

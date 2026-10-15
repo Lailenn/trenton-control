@@ -330,9 +330,21 @@
     });
   }
 
+  // Login greeting: time of day + the name saved on this device from the last session (if any).
+  const LOGIN_WISHES = [
+    "Éxitos en tus tareas de hoy.",
+    "Que hoy todo salga a tiempo y bien hecho.",
+    "Un día más para dejar todo en orden.",
+    "Paso a paso, todo queda listo."
+  ];
   function paintLoginHello() {
     const line = $("#authHelloLine");
-    if (line) line.textContent = helloLine();
+    if (line) line.textContent = helloLine().replace(",", "");
+    const snapName = String(root.CloudDB?.readProfileSnap?.()?.displayName || "").trim().split(/\s+/)[0];
+    const name = $("#authHelloName");
+    if (name) name.textContent = snapName ? `¡Bienvenida, ${snapName}!` : "¡Bienvenida!";
+    const wish = $("#authWish");
+    if (wish) wish.textContent = LOGIN_WISHES[new Date().getDay() % LOGIN_WISHES.length];
   }
 
   function setQuote(element, text) {

@@ -154,6 +154,16 @@
     new IntersectionObserver(([entry]) => art.classList.toggle("is-offscreen", !entry.isIntersecting)).observe(art);
   }
 
+  // ---- 5. Board columns show their scrollbar only while being scrolled (hover is in CSS) ----
+  const scrollTimers = new WeakMap();
+  document.addEventListener("scroll", event => {
+    const list = event.target;
+    if (!(list instanceof Element) || !list.classList.contains("column-cards")) return;
+    list.classList.add("is-scrolling");
+    clearTimeout(scrollTimers.get(list));
+    scrollTimers.set(list, setTimeout(() => list.classList.remove("is-scrolling"), 900));
+  }, { capture: true, passive: true });
+
   function start() {
     BOARDS.forEach(watchBoard);
     COUNTERS.forEach(watchCounter);

@@ -11,21 +11,25 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet" />
     <link rel="icon" href="assets/app-icon.png?v=2" type="image/png" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2" />
-    <link rel="stylesheet" href="styles.css?v=no-xscroll-3" />
+    <link rel="stylesheet" href="styles.css?v=login6-20" />
   </head>
   <body>
-    <div id="authGate" class="auth-gate auth-play login-screen" data-mode="login">
-      <div class="auth-fx" aria-hidden="true">
-        <span class="login-blob b1"></span>
-        <span class="login-blob b2"></span>
-        <span class="login-blob b3"></span>
-        <span class="login-blob b4"></span>
-      </div>
-      <section class="auth-card login-card login2">
-      <div class="login2-form">
+    <div id="authGate" class="auth-gate auth-play login-screen login3" data-mode="login">
+      <div class="l3-bg" aria-hidden="true"></div>
+      <div class="l3-corner-logo" aria-hidden="true"><img src="assets/logo-ruben-clear.png?v=1" alt=""><strong>Ruben Perla</strong></div>
+      <aside class="l3-intro" aria-hidden="true">
+        <h2>Control de facturas<br><span>y trabajos</span></h2>
+        <p>Facturas, horas y pagos en un solo lugar.</p>
+        <ul>
+          <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></i><span>Organiza<br>tus facturas</span></li>
+          <li><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></i><span>Da seguimiento<br>a los trabajos</span></li>
+          <li><i><svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="12" width="4" height="8" rx="1.2"/><rect x="10" y="6" width="4" height="14" rx="1.2"/><rect x="16" y="9" width="4" height="11" rx="1.2"/></svg></i><span>Controla<br>tus pagos</span></li>
+        </ul>
+      </aside>
+      <section class="auth-card login-card l3-card">
         <div class="login-top">
           <div class="auth-brand">
-            <div class="brand-mark brand-mark-logo"><img src="assets/logo-ruben.png" alt=""><span>RP</span></div>
+            <div class="brand-mark brand-mark-logo"><img src="assets/logo-ruben-clear.png?v=1" alt=""><span>RP</span></div>
             <div>
               <strong>Ruben Perla</strong>
               <small class="auth-role">Administrador del espacio</small>
@@ -33,14 +37,14 @@
           </div>
           <p class="login-status"><i></i> Activo</p>
         </div>
-        <div class="login2-brand">
-          <img src="assets/logo-ruben.png" alt="">
+        <div class="l3-brand">
+          <img src="assets/logo-ruben-clear.png?v=1" alt="">
           <strong>Ruben Perla</strong>
-          <small>Construction</small>
         </div>
-        <div class="login2-head">
-          <h1>Bienvenido de nuevo</h1>
-          <p>Inicia sesión para continuar con tu trabajo.</p>
+        <div class="l3-head">
+          <p class="l3-hello"><span id="authHelloLine">Buenos días</span><span class="l3-wave" aria-hidden="true">👋</span></p>
+          <h1 id="authHelloName">¡Bienvenida!</h1>
+          <p class="l3-wish" id="authWish">Éxitos en tus tareas de hoy.</p>
         </div>
         <div id="authConfigPanel" class="login-config hidden">
           <h2>Falta conectar la nube</h2>
@@ -69,7 +73,7 @@
             </div>
             <button class="button button-primary login-submit" id="loginButton" type="submit">Iniciar sesión <span aria-hidden="true">→</span></button>
           </form>
-          <div class="login2-or"><span>o</span></div>
+          <div class="l3-or"><span>o</span></div>
           <button class="login-passkey" id="passkeyLoginButton" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V5.5A2.5 2.5 0 0 1 5.5 3H8"/><path d="M16 3h2.5A2.5 2.5 0 0 1 21 5.5V8"/><path d="M21 16v2.5a2.5 2.5 0 0 1-2.5 2.5H16"/><path d="M8 21H5.5A2.5 2.5 0 0 1 3 18.5V16"/><path d="M9.4 6.7a6 6 0 0 1 5.6.2"/><path d="M7.3 9.4a5.6 5.6 0 0 1 10.3 2.9c0 1.4-.1 2.7-.4 3.9"/><path d="M6.6 13.6c.2-.7.3-1.4.3-2.1"/><path d="M8.3 17.9c.8-1.6 1.2-3.5 1.2-5.7a2.5 2.5 0 0 1 5 0c0 1.9-.2 3.6-.7 5.1"/><path d="M12 12.4c0 2.9-.5 5.2-1.5 7"/><path d="M16 17.6c.3-.8.5-1.7.6-2.6"/></svg>
             Usar huella digital
@@ -83,7 +87,7 @@
           <p class="company-lead">Cada empresa tiene su propia información. Sus facturas, horas y documentos se mantienen separados.</p>
           <div class="company-choice-grid">
             <button type="button" class="company-choice company-choice-trenton" data-company-choice="trenton">
-              <span class="company-logo"><img src="assets/arrento-carpentry.png" alt="Trento Carpentry"></span>
+              <span class="company-logo"><img src="assets/arrento-carpentry-clear.png?v=1" alt="Trento Carpentry"></span>
               <span class="company-info">
                 <strong>Trenton Builders</strong>
                 <em class="company-tag">Tu espacio principal</em>
@@ -95,7 +99,7 @@
             <button type="button" class="company-choice company-choice-otras" data-company-choice="otras">
               <span class="company-logo company-logo-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 21V5.2L13 3v18zm2-2h1.6v-1.8H7zm0-3.4h1.6v-1.8H7zm0-3.4h1.6v-1.8H7zm0-3.4h1.6V7H7zm3.2 10.2h1.6v-1.8h-1.6zm0-3.4h1.6v-1.8h-1.6zm0-3.4h1.6v-1.8h-1.6zm0-3.4h1.6V7h-1.6zM14 21V9.5l5 1.3V21zm1.6-2h1.8v-1.8h-1.8zm0-3.4h1.8v-1.8h-1.8zM3 21h18v1.4H3z"/></svg></span>
               <span class="company-info">
-                <strong>Otra empresa</strong>
+                <strong>Clientes y otras empresas</strong>
                 <em class="company-tag">Un espacio independiente</em>
                 <span class="company-desc">Para trabajos de otros clientes y empresas. Invoices, horas y PDFs, todo aparte.</span>
               </span>
@@ -105,45 +109,7 @@
           </div>
         </div>
         <p class="login-legal">© 2026 Diperlin</p>
-      </div>
-      <aside class="login2-visual" aria-hidden="true">
-        <svg class="login2-house" viewBox="0 0 800 600" preserveAspectRatio="xMidYMax slice">
-          <defs>
-            <linearGradient id="lhSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fb6d8"/><stop offset=".45" stop-color="#f3c9a4"/><stop offset="1" stop-color="#fbe3cc"/></linearGradient>
-            <linearGradient id="lhRoof" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a5468"/><stop offset="1" stop-color="#262d3b"/></linearGradient>
-            <linearGradient id="lhWall" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8a6d55"/><stop offset="1" stop-color="#b8957a"/></linearGradient>
-            <linearGradient id="lhSide" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e7e9ef"/><stop offset="1" stop-color="#c9cdd8"/></linearGradient>
-            <linearGradient id="lhGlow" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd59a"/><stop offset="1" stop-color="#f29a4a"/></linearGradient>
-          </defs>
-          <rect width="800" height="600" fill="url(#lhSky)"/>
-          <circle cx="250" cy="300" r="90" fill="#ffe2b8" opacity=".55"/>
-          <g class="lh-body">
-            <polygon points="150,600 150,330 330,190 510,330 510,600" fill="url(#lhWall)"/>
-            <polygon points="110,340 330,165 550,340 525,350 330,195 135,350" fill="url(#lhRoof)"/>
-            <rect x="210" y="380" width="70" height="120" rx="4" fill="url(#lhGlow)"/>
-            <rect x="300" y="380" width="70" height="120" rx="4" fill="url(#lhGlow)"/>
-            <rect x="390" y="380" width="70" height="120" rx="4" fill="url(#lhGlow)" opacity=".9"/>
-            <path d="M245 380v120M335 380v120M425 380v120M210 440h250" stroke="#4b3a2d" stroke-width="4"/>
-            <rect x="500" y="300" width="300" height="300" fill="url(#lhSide)"/>
-            <polygon points="470,320 640,170 830,300 830,330 640,200 495,330" fill="url(#lhRoof)"/>
-            <rect x="560" y="360" width="90" height="110" rx="4" fill="url(#lhGlow)" opacity=".85"/>
-            <rect x="680" y="360" width="90" height="110" rx="4" fill="url(#lhGlow)" opacity=".75"/>
-            <path d="M605 360v110M725 360v110M560 415h210" stroke="#6b5442" stroke-width="4"/>
-            <rect x="150" y="560" width="650" height="40" fill="#8d8478" opacity=".55"/>
-          </g>
-        </svg>
-        <span class="login2-arc login2-arc-a"></span>
-        <span class="login2-arc login2-arc-b"></span>
-        <span class="login2-orange"></span>
-        <div class="login2-chip chip-facturas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg><span><strong>Facturas</strong><small>Todo en un solo lugar</small></span></div>
-        <div class="login2-chip chip-horas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span><strong>Horas</strong><small>Controla tu tiempo</small></span></div>
-        <div class="login2-chip chip-proyectos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="11" width="4" height="9" rx="1.5"/><rect x="10" y="5" width="4" height="15" rx="1.5"/><rect x="16" y="9" width="4" height="11" rx="1.5"/></svg><span><strong>Proyectos</strong><small>Organiza y da seguimiento</small></span></div>
-        <div class="login2-copy">
-          <h2>Construyendo<br>grandes proyectos</h2>
-          <i></i>
-          <p>Gestiona tus facturas, horas y proyectos de forma simple y organizada.</p>
-        </div>
-      </aside>
+        <p class="l3-secure"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3 5 6v5.5c0 4.4 3 7.8 7 9.5 4-1.7 7-5.1 7-9.5V6z"/><path d="M12 10.5v3.5" stroke-linecap="round"/><circle cx="12" cy="9" r="1" fill="currentColor"/></svg></i><span><strong>Acceso seguro</strong><small>Tus datos están protegidos.</small></span></p>
       </section>
     </div>
     <div class="app-shell app-locked" id="appShell" hidden>
@@ -301,7 +267,7 @@
                 <span class="ha-sheet ha-sheet-1"></span>
                 <span class="ha-sheet ha-sheet-2"></span>
                 <div class="ha-doc">
-                  <div class="ha-doc-head"><strong>Invoice</strong><img src="assets/logo-ruben.png" alt=""></div>
+                  <div class="ha-doc-head"><strong>Invoice</strong><img src="assets/logo-ruben-clear.png?v=1" alt=""></div>
                   <i class="ha-line w70"></i>
                   <i class="ha-line w95"></i>
                   <i class="ha-line ha-line-blue w50"></i>
@@ -1092,24 +1058,25 @@
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
     <script src="vendor/pdf-lib.min.js" defer></script>
     <script src="vendor/jszip.min.js" defer></script>
-    <script src="invoice-core.js?v=qty-total-1" defer></script>
+    <script src="invoice-core.js?v=collected-1" defer></script>
     <script src="invoice-pdf.js?v=pdf-read-2" defer></script>
     <script src="cloud-db.js?v=job-board-3" defer></script>
     <script src="whatsapp-invoice.js?v=parse-fix-1" defer></script>
     <script src="invoice-archive.js?v=pc-menu-1" defer></script>
     <script src="hours-pdf.js?v=hours-import-1" defer></script>
     <script src="hours-whatsapp.js?v=parse-fix-1" defer></script>
-    <script src="hours-app.js?v=pdf-preview-1" defer></script>
+    <script src="hours-app.js?v=collected-1" defer></script>
     <script src="hours-archive.js?v=hours-field-2" defer></script>
     <script src="job-pdf.js?v=parse-fix-1" defer></script>
-    <script src="job-app.js?v=pdf-preview-1" defer></script>
+    <script src="job-app.js?v=collected-1" defer></script>
     <script src="job-archive.js?v=hours-field-2" defer></script>
     <script src="translator.js?v=grow-1" defer></script>
-    <script src="auth-app.js?v=ui-polish-9" defer></script>
+    <script src="auth-app.js?v=login-hello-1" defer></script>
     <script src="pdf-preview.js?v=2" defer></script>
+    <script src="check-viewer.js?v=1" defer></script>
     <script src="balance-ui.js?v=1" defer></script>
-    <script src="dash-stats.js?v=1" defer></script>
-    <script src="app.js?v=pdf-preview-1" defer></script>
-    <script src="ux-motion.js?v=3" defer></script>
+    <script src="dash-stats.js?v=2" defer></script>
+    <script src="app.js?v=collected-1" defer></script>
+    <script src="ux-motion.js?v=4" defer></script>
   </body>
 </html>

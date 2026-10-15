@@ -46,9 +46,20 @@
         (!q || fold([r.address, r.invoiceNumber, r.pdfName, r.description].join(" ")).includes(q));
     });
   }
+  // Cents actually collected on a "paid" record. One with no payment recorded (older or imported
+  // data) counts as paid in full; a recorded partial payment counts only what was received.
+  function collected(r) {
+    const total = cents(r.amount), received = cents(r.received);
+    return received > 0 ? Math.min(received, total) : total;
+  }
+  // What is still owed on a record, in dollars, under the same rule.
+  function owed(r) {
+    const total = cents(r.amount);
+    return (r.stage === "paid" ? total - collected(r) : Math.max(0, total - cents(r.received))) / 100;
+  }
   function summarize(records) {
     let total = 0, paid = 0;
-    for (const r of records) { total += cents(r.amount); if (r.stage === "paid") paid += cents(r.amount); }
+    for (const r of records) { total += cents(r.amount); if (r.stage === "paid") paid += collected(r); }
     return {count: records.length, total: total / 100, paid: paid / 100, pending: (total - paid) / 100};
   }
   function fileName(r) {
@@ -115,5 +126,5 @@
     if (!fields.issuedDate) warnings.push("Completa la fecha de emisión para incluirla en el año correcto.");
     return {fields, warnings};
   }
-  return {amount, cents, isoDate, issuedDate, addressNorm, numberNorm, logicalKey, select, summarize, fileName, extract};
+  return {amount, cents, isoDate, issuedDate, addressNorm, numberNorm, logicalKey, select, summarize, collected, owed, fileName, extract};
 });

@@ -6578,3 +6578,600 @@ html, body { overflow-x: hidden; }
   #boardView .dash-board .board > .kanban-column { min-width: 0 !important; width: auto !important; max-width: none !important; flex: none !important; }
   #boardView .dash-board .board-scroll { overflow-x: visible; }
 }
+
+/* ===== Phone login v4: photo in a curved frame with orange swooshes (keeps the house photo) ===== */
+@media (max-width: 700px) {
+  .login-screen[data-mode="login"] .login-card.auth-card.login2 { background: #fff; isolation: isolate; }
+  /* top-left orange band */
+  .login-screen[data-mode="login"] .login-card.login2::before {
+    z-index: 0;
+    left: -38%;
+    top: -18%;
+    width: 85%;
+    height: 340px;
+    border: 0;
+    border-radius: 50%;
+    background: linear-gradient(160deg, #f7a04f, #ee7f2d 60%, #e56b1c);
+    transform: rotate(-12deg);
+    animation: lp4Float 9s ease-in-out infinite alternate;
+  }
+  /* bottom-left orange band */
+  .login-screen[data-mode="login"] .login-card.login2::after {
+    z-index: 0;
+    left: -42%;
+    right: auto;
+    bottom: -9%;
+    width: 70%;
+    height: 300px;
+    border-radius: 50%;
+    background: linear-gradient(20deg, #e56b1c, #f59a48);
+    opacity: 1;
+    animation: lp4Float 11s ease-in-out infinite alternate-reverse;
+  }
+  @keyframes lp4Float { from { transform: rotate(-12deg) translateY(0); } to { transform: rotate(-6deg) translateY(10px); } }
+  /* photo with a big curved bottom-left edge */
+  .login-screen[data-mode="login"] .login2-visual {
+    position: relative;
+    z-index: 1;
+    height: 270px;
+    margin: 0 0 0 22% !important;
+    overflow: visible;
+    border-radius: 0 0 0 100% / 0 0 0 78% !important;
+    background: transparent !important;
+  }
+  .login-screen[data-mode="login"] .login2-visual::before {
+    border-radius: inherit;
+    background-position: 58% 40% !important;
+    box-shadow: inset 0 -30px 40px rgba(0, 0, 0, .08);
+  }
+  /* orange swoosh running from under the photo down the right edge */
+  .login-screen[data-mode="login"] .login2-visual::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: auto -40% -150px 30%;
+    height: 300px;
+    border-radius: 50%;
+    background: linear-gradient(200deg, #f7a04f, #ee7f2d);
+    transform: rotate(-18deg);
+    animation: lp4Swoosh 10s ease-in-out infinite alternate;
+  }
+  @keyframes lp4Swoosh { from { transform: rotate(-18deg) translateX(0); } to { transform: rotate(-12deg) translateX(-8px); } }
+  /* form sits on plain white: no curved sheet any more */
+  .login-screen[data-mode="login"] .login2-form { z-index: 2; margin-top: -10px !important; padding: 18px 26px 22px !important; }
+  .login-screen[data-mode="login"] .login2-form::before { display: none !important; }
+  /* logo without its grey box */
+  .login-screen[data-mode="login"] .login2-brand img {
+    mix-blend-mode: multiply;
+    background: transparent;
+    filter: contrast(1.05);
+  }
+  .login-screen[data-mode="login"] .login2-brand { position: relative; isolation: auto; background: transparent; }
+  .login-screen[data-mode="login"] .login2-head h1 { font-size: 30px; }
+  .login-screen[data-mode="login"] .login2 .login-input { background: #f3f5fa; }
+  .login-screen[data-mode="login"] .login2 .login-passkey { width: 80%; margin-inline: auto; display: flex; }
+}
+@media (max-width: 700px) and (prefers-reduced-motion: reduce) {
+  .login-screen[data-mode="login"] .login2-visual::after { animation: none; }
+}
+@media (max-width: 700px) {
+  .login-screen[data-mode="login"] .login2-visual { border-radius: 0 !important; height: 280px; }
+  .login-screen[data-mode="login"] .login2-visual::before {
+    -webkit-clip-path: ellipse(125% 100% at 100% 0%);
+    clip-path: ellipse(125% 100% at 100% 0%);
+  }
+  .login-screen[data-mode="login"] .login2-visual::after {
+    inset: auto;
+    right: -92px;
+    top: 170px;
+    width: 130px;
+    height: 300px;
+    transform: rotate(-14deg);
+  }
+  .login-screen[data-mode="login"] .login-card.login2::before { left: -40%; top: -14%; width: 70%; height: 300px; }
+  .login-screen[data-mode="login"] .login-card.login2::after { left: -34%; bottom: -12%; width: 50%; height: 230px; }
+}
+@media (max-width: 700px) {
+  .login-screen[data-mode="login"] .login-card.login2::before { left: -32%; top: -12%; width: 78%; height: 390px; }
+  .login-screen[data-mode="login"] .login2-visual { margin-left: 18% !important; }
+}
+/* Logo now has a transparent background: no blending tricks needed */
+.login2-brand img,
+.login-screen[data-mode="login"] .login2-brand img,
+.login-screen .auth-brand .brand-mark.brand-mark-logo img { mix-blend-mode: normal !important; filter: none !important; background: transparent !important; }
+/* Phone login: show only the top of the house photo, without the white arcs baked into its lower part */
+@media (max-width: 700px) {
+  .login-screen[data-mode="login"] .login2-visual::before {
+    background-size: 190% auto !important;
+    background-position: 62% 8% !important;
+    box-shadow: none;
+  }
+}
+@media (max-width: 700px) {
+  .login-screen[data-mode="login"] .login2-visual::before { background-size: 225% auto !important; background-position: 56% 0% !important; }
+}
+/* Phone login: no logo / "Ruben Perla CONSTRUCTION" block — the photo already introduces the screen */
+@media (max-width: 700px) {
+  .login-screen[data-mode="login"] .login2-brand { display: none !important; }
+  .login-screen[data-mode="login"] .login2-form { padding-top: 26px !important; }
+}
+@media (max-width: 700px) { .login-screen[data-mode="login"] .login2-form { padding-top: 40px !important; } }
+
+/* Phone login header: the supplied header image (photo + orange swooshes already in it) */
+@media (max-width: 700px) {
+  .login-screen[data-mode="login"] .login-card.login2::before { display: none !important; }
+  .login-screen[data-mode="login"] .login2-visual {
+    height: auto !important;
+    aspect-ratio: 678 / 418;
+    margin: 0 !important;
+    overflow: hidden !important;
+  }
+  .login-screen[data-mode="login"] .login2-visual::before {
+    background: url("assets/login-header.jpg?v=1") center / cover no-repeat !important;
+    -webkit-clip-path: none !important;
+    clip-path: none !important;
+    animation: lp5Breathe 14s ease-in-out infinite alternate;
+    transform-origin: 70% 40%;
+  }
+  @keyframes lp5Breathe { from { transform: scale(1); } to { transform: scale(1.05); } }
+  .login-screen[data-mode="login"] .login2-visual::after { display: none !important; }
+  .login-screen[data-mode="login"] .login2-form { margin-top: 0 !important; padding-top: 18px !important; }
+}
+@media (max-width: 700px) and (prefers-reduced-motion: reduce) {
+  .login-screen[data-mode="login"] .login2-visual::before { animation: none; }
+}
+
+/* Login page background: soft warm-to-cool gradient that echoes the sunset header */
+.login-screen.auth-gate {
+  background:
+    radial-gradient(circle at 12% 8%, rgba(247, 160, 79, .35), transparent 45%),
+    radial-gradient(circle at 92% 92%, rgba(53, 99, 233, .22), transparent 50%),
+    linear-gradient(160deg, #fff4ea 0%, #f3f2fb 45%, #e8eefc 100%) !important;
+  background-attachment: fixed;
+}
+@media (max-width: 700px) {
+  .login-screen.auth-gate[data-mode="login"] {
+    background:
+      radial-gradient(circle at 10% 0%, rgba(247, 160, 79, .45), transparent 50%),
+      radial-gradient(circle at 100% 100%, rgba(53, 99, 233, .28), transparent 55%),
+      linear-gradient(170deg, #ffeedd 0%, #f4f0f8 50%, #e4ebfc 100%) !important;
+  }
+}
+
+/* Kanban cards: tighter rhythm, address max two lines, balance right under the amount */
+#boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .invoice-card { padding: 14px 14px 12px; }
+#boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .card-date { margin: 2px 0 6px !important; }
+#boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .card-address {
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  line-height: 1.35 !important;
+}
+#boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .card-address svg { flex: none; vertical-align: -2px; margin-right: 5px; }
+#boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .card-details { margin-top: 8px !important; }
+#boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .card-amount { font-weight: 800; }
+#boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .card-due { margin-top: 6px !important; }
+#boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .card-check { margin-top: 6px !important; }
+#boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .card-foot { margin-top: 6px !important; }
+#boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .column-cards { gap: 10px; }
+
+/* Column scrollbars: hidden until the column is hovered or being scrolled; each column keeps its own scroll */
+#boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .column-cards { scrollbar-color: transparent transparent; transition: scrollbar-color .3s ease; }
+#boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .column-cards::-webkit-scrollbar-thumb { background: transparent; }
+#boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .kanban-column:hover .column-cards,
+#boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .column-cards.is-scrolling {
+  scrollbar-color: color-mix(in srgb, var(--k) 35%, transparent) transparent;
+}
+#boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .kanban-column:hover .column-cards::-webkit-scrollbar-thumb,
+#boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .column-cards.is-scrolling::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--k) 35%, transparent);
+}
+
+/* Partially paid card in a "paid" column: clearly flagged */
+#boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .invoice-card.is-partial { box-shadow: inset 3px 0 0 #e53935, 0 8px 20px rgba(80, 100, 140, .08); }
+
+/* Cards: height follows content, uniform minimum, a little less air */
+#boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .invoice-card { min-height: 132px; padding: 12px 14px 10px; }
+#boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .card-check:has(+ .card-foot) { margin-bottom: -26px; }
+#boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .card-foot { margin-top: 4px !important; pointer-events: none; }
+#boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .card-foot > * { pointer-events: auto; }
+
+/* Cheque badge is a button */
+#boardView .check-badge.check-view { border: 0; cursor: pointer; transition: filter .2s ease, transform .2s ease; }
+#boardView .check-badge.check-view:hover { filter: brightness(.96); transform: translateY(-1px); }
+
+/* Cheque panel */
+.check-viewer { position: fixed; inset: 0; z-index: 300; display: grid; place-items: center; padding: 16px; background: rgba(15, 22, 42, .5); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.check-viewer[hidden] { display: none; }
+.check-viewer-card { width: min(420px, 100%); max-height: min(640px, 90dvh); overflow: auto; padding: 18px; border-radius: 22px; background: #fff; box-shadow: 0 24px 60px rgba(15, 22, 42, .3); color: #1e2a44; }
+.check-viewer-card header { display: flex; justify-content: space-between; gap: 12px; }
+.check-viewer-card h2 { margin: 0; font: 800 18px "Plus Jakarta Sans", sans-serif; }
+.check-viewer-card header p { margin: 2px 0 0; color: #6b7590; font: 500 12.5px/1.35 "Plus Jakarta Sans", sans-serif; }
+.check-viewer-close { width: 34px; height: 34px; flex: none; border: 0; border-radius: 10px; background: #f1f4fa; color: #3a4560; font-size: 20px; cursor: pointer; }
+.check-viewer-status { margin: 14px 0; padding: 12px; border-radius: 14px; background: #f6f8fc; }
+.cv-state { display: inline-block; margin-bottom: 10px; padding: 4px 10px; border-radius: 999px; font: 700 12px "Plus Jakarta Sans", sans-serif; }
+.cv-state.is-paid { background: #e3f7ed; color: #11885a; }
+.cv-state.is-partial { background: #fff1dc; color: #b8650a; }
+.cv-state.is-pending { background: #fde8e8; color: #c62828; }
+.check-viewer-status dl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0; }
+.check-viewer-status dt { color: #7d879c; font: 600 11px "Plus Jakarta Sans", sans-serif; }
+.check-viewer-status dd { margin: 2px 0 0; font: 800 14px "Plus Jakarta Sans", sans-serif; }
+.check-viewer-status .is-due dd { color: #c62828; }
+.check-viewer-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.check-viewer-list li { display: flex; align-items: center; gap: 12px; padding: 8px; border: 1px solid #e6ebf4; border-radius: 14px; }
+.cv-thumb { display: grid; place-items: center; width: 78px; height: 56px; flex: none; overflow: hidden; padding: 0; border: 0; border-radius: 10px; background: #eef2f8; color: #8c96aa; font: 600 10px "Plus Jakarta Sans", sans-serif; cursor: zoom-in; }
+.cv-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.cv-info { display: grid; gap: 2px; min-width: 0; }
+.cv-info strong { font: 700 14px "Plus Jakarta Sans", sans-serif; }
+.cv-info small { color: #6b7590; font: 500 12px "Plus Jakarta Sans", sans-serif; }
+.cv-note { color: #3a4560 !important; }
+.cv-saved { color: #11885a; font: 600 11.5px "Plus Jakarta Sans", sans-serif; }
+.cv-empty { justify-content: center; color: #7d879c; font: 500 13px "Plus Jakarta Sans", sans-serif; }
+
+/* Home backdrop: a touch more blur so the photo stays in the background */
+.app-backdrop .bd-photo { filter: blur(3px); }
+/* Remove the blue glow blobs at the hero's left edge and the page glow behind it */
+#boardView .dash-blob-a,
+#boardView .dash-blob-b,
+#boardView .dash-page-glow.glow-left { display: none !important; }
+/* Also drop the glow/blob that poked out above the hero's right corner, and keep decorations inside the card */
+#boardView .dash-blob-c,
+#boardView .dash-page-glow.glow-right { display: none !important; }
+#boardView .dash-hero { overflow: hidden !important; }
+/* Medium windows (tablet landscape / small laptop): the 4-stage board goes 2 × 2 so cards stay readable */
+@media (min-width: 821px) and (max-width: 1080px) {
+  #boardView .dash-board .board:not(.board-3) { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+
+/* ===== Login v3: full photo background, intro on the left, frosted card on the right ===== */
+html body .login-screen.login3.auth-gate {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 440px);
+  align-items: center;
+  gap: clamp(24px, 6vw, 96px);
+  padding: 32px clamp(24px, 7vw, 120px) !important;
+  background: #2a2420 !important;
+  overflow-x: hidden;
+}
+.login3 .auth-fx { display: none; }
+.login3 .l3-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: url("assets/hero-construction.jpg?v=1") 30% 50% / cover no-repeat;
+  animation: l3Ken 30s ease-in-out infinite alternate;
+}
+.login3 .l3-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255, 244, 232, .78) 0%, rgba(255, 238, 220, .45) 32%, rgba(0, 0, 0, .05) 60%, rgba(0, 0, 0, .12) 100%);
+}
+@keyframes l3Ken { from { transform: scale(1.02); } to { transform: scale(1.1) translate(-1.5%, -1%); } }
+
+.login3 .l3-intro { position: relative; z-index: 1; max-width: 460px; color: #1b2a4e; animation: l3Up .8s .1s cubic-bezier(.2, .8, .2, 1) both; }
+.login3 .l3-intro h2 { margin: 0; font: 800 clamp(32px, 3.6vw, 48px)/1.08 "Plus Jakarta Sans", sans-serif; letter-spacing: -.03em; }
+.login3 .l3-intro h2 span { color: #d9631c; }
+.login3 .l3-intro p { margin: 14px 0 26px; color: #3a3f4c; font: 500 17px/1.45 "Plus Jakarta Sans", sans-serif; }
+.login3 .l3-intro ul { display: grid; gap: 16px; margin: 0; padding: 0; list-style: none; }
+.login3 .l3-intro li { display: flex; align-items: center; gap: 16px; color: #1b2a4e; font: 600 16px/1.3 "Plus Jakarta Sans", sans-serif; animation: l3Up .7s cubic-bezier(.2, .8, .2, 1) both; }
+.login3 .l3-intro li:nth-child(1) { animation-delay: .25s; }
+.login3 .l3-intro li:nth-child(2) { animation-delay: .38s; }
+.login3 .l3-intro li:nth-child(3) { animation-delay: .51s; }
+.login3 .l3-intro li i {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  flex: none;
+  border-radius: 50%;
+  background: rgba(255, 236, 214, .85);
+  color: #3a2d22;
+  box-shadow: 0 8px 18px rgba(120, 70, 30, .15);
+}
+.login3 .l3-intro li svg { width: 26px; height: 26px; }
+
+/* Card */
+html body .login-screen.login3 .login-card.auth-card.l3-card {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 30px 32px 22px;
+  border: 1px solid rgba(255, 255, 255, .7);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, .82);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  backdrop-filter: blur(14px) saturate(1.1);
+  box-shadow: 0 30px 70px rgba(40, 24, 12, .25);
+  overflow: visible;
+}
+.login3 .l3-brand { display: grid; justify-items: center; margin-bottom: 14px; text-align: center; }
+.login3 .l3-brand img { width: 150px; height: auto; margin-bottom: -4px; animation: lhBob 4s ease-in-out infinite; }
+.login3 .l3-brand strong { color: #1b2a4e; font: 800 30px/1.1 "Plus Jakarta Sans", sans-serif; letter-spacing: -.03em; }
+.login3 .l3-head { text-align: center; }
+.login3 .l3-head h1 { margin: 0; color: #1b2a4e; font: 800 26px/1.2 "Plus Jakarta Sans", sans-serif; }
+.login3 .l3-head p { margin: 4px 0 20px; color: #4a5164; font: 500 14.5px "Plus Jakarta Sans", sans-serif; }
+.login3 .login-field { margin-bottom: 12px; }
+.login3 .login-field > span:first-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.login3 .login-input { min-height: 54px; border: 1px solid #e3e0dc; border-radius: 12px; background: rgba(255, 255, 255, .95); }
+.login3 .login-input:focus-within { border-color: #ee7f2d; box-shadow: 0 0 0 4px rgba(238, 127, 45, .16); }
+.login3 .login-input input { font: 500 15px "Plus Jakarta Sans", sans-serif; }
+.login3 .login-input input:-webkit-autofill { -webkit-text-fill-color: #1b2a4e; -webkit-box-shadow: 0 0 0 40px #fff inset; transition: background-color 9999s; }
+.login3 .login-eye { border: 0; background: transparent; outline: none; }
+.login3 .login-row { display: flex; align-items: center; justify-content: space-between; margin: 4px 0 18px; }
+.login3 .login-remember { display: inline-flex; align-items: center; gap: 10px; color: #1b2a4e; font: 600 14px "Plus Jakarta Sans", sans-serif; }
+.login3 .login-remember input { width: 19px; height: 19px; accent-color: #e5701f; }
+html body .login-screen.login3 #loginButton.login-submit {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #ee7f2d, #d9631c) !important;
+  box-shadow: 0 12px 26px rgba(217, 99, 28, .32) !important;
+  color: #fff;
+  font: 700 17px "Plus Jakarta Sans", sans-serif;
+}
+html body .login-screen.login3 #loginButton.login-submit:hover { background: linear-gradient(135deg, #f08a3c, #c95815) !important; }
+html body .login-screen.login3 #loginButton.login-submit::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -40%;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .28), transparent);
+  transform: skewX(-20deg);
+  animation: lhShine 3.6s ease-in-out 1.4s infinite;
+}
+.login3 .l3-or { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: #9a948c; font: 500 13px "Plus Jakarta Sans", sans-serif; }
+.login3 .l3-or::before, .login3 .l3-or::after { content: ""; flex: 1; height: 1px; background: #e6e1db; }
+.login3 .login-passkey { width: 100%; min-height: 50px; border: 1px solid #e3e0dc; border-radius: 14px; background: rgba(255, 255, 255, .9); color: #1b2a4e; font: 700 14.5px "Plus Jakarta Sans", sans-serif; }
+.login3 .login-passkey:hover { background: #fff7f0; border-color: #f2c59f; }
+.login3 .l3-secure { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 18px 0 0; }
+.login3 .l3-secure i { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: #fff; color: #1b2a4e; box-shadow: 0 6px 14px rgba(40, 24, 12, .12); }
+.login3 .l3-secure svg { width: 20px; height: 20px; }
+.login3 .l3-secure span { display: grid; }
+.login3 .l3-secure strong { color: #1b2a4e; font: 600 13px "Plus Jakarta Sans", sans-serif; }
+.login3 .l3-secure small { color: #6b6f78; font: 500 12px "Plus Jakarta Sans", sans-serif; }
+.login3 .login-legal { margin: 10px 0 0; color: #8a8580; text-align: center; }
+.login3[data-mode="login"] .login-legal { display: none; }
+@keyframes l3Up { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+.login3.auth-play .l3-card > * { animation: l3Up .6s cubic-bezier(.2, .8, .2, 1) both; }
+.login3.auth-play .l3-card > :nth-child(3) { animation-delay: .06s; }
+.login3.auth-play .l3-card > :nth-child(4) { animation-delay: .12s; }
+.login3.auth-play .l3-card > :nth-child(6) { animation-delay: .18s; }
+
+/* Company chooser keeps its own single-card look over the same photo */
+.login3[data-mode="company"] { grid-template-columns: minmax(0, 440px) !important; justify-content: center; }
+.login3[data-mode="company"] .l3-intro,
+.login3[data-mode="company"] .l3-brand,
+.login3[data-mode="company"] .l3-head,
+.login3[data-mode="company"] .l3-secure { display: none !important; }
+.login3[data-mode="company"] .l3-bg::after { background: rgba(255, 244, 232, .55); }
+.login3[data-mode="company"] .company-kicker { color: #d9631c !important; }
+.login3 .company-choice.is-selected { border-color: #ee7f2d; background: linear-gradient(135deg, #fffaf5, #fff1e4); box-shadow: 0 12px 28px rgba(217, 99, 28, .14); }
+.login3 .company-choice .company-mark { background: #e5701f; box-shadow: 0 6px 14px rgba(217, 99, 28, .35); }
+.login3 .company-choice .company-go { color: #d9631c; }
+.login3 .company-choice .company-tag { background: #fff1e4; color: #b8540f; }
+
+/* Tablet: no intro column */
+@media (max-width: 960px) {
+  html body .login-screen.login3.auth-gate { grid-template-columns: minmax(0, 440px); justify-content: center; }
+  .login3 .l3-intro { display: none; }
+}
+
+/* Phone: photo on top, card slides up over it */
+@media (max-width: 600px) {
+  html body .login-screen.login3.auth-gate {
+    display: block !important;
+    padding: 0 !important;
+    background: #f7f5f2 !important;
+  }
+  .login3 .l3-bg {
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 330px;
+    background-position: 62% 40%;
+  }
+  .login3 .l3-bg::after { background: linear-gradient(180deg, rgba(0, 0, 0, 0) 55%, rgba(247, 245, 242, .9) 100%); }
+  html body .login-screen.login3 .login-card.auth-card.l3-card {
+    margin: 240px 0 0;
+    min-height: calc(100dvh - 240px);
+    padding: 22px 22px max(20px, env(safe-area-inset-bottom, 0px));
+    border: 0;
+    border-radius: 28px 28px 0 0;
+    background: rgba(255, 255, 255, .96);
+    box-shadow: 0 -12px 30px rgba(40, 24, 12, .12);
+    animation: l3Sheet .8s cubic-bezier(.2, .8, .2, 1) both;
+  }
+  @keyframes l3Sheet { from { transform: translateY(40px); opacity: .6; } to { transform: none; opacity: 1; } }
+  .login3 .l3-brand img { width: 120px; }
+  .login3 .l3-brand strong { font-size: 26px; }
+  .login3 .l3-head h1 { font-size: 23px; }
+  .login3 .l3-head p { margin-bottom: 16px; font-size: 13.5px; }
+  .login3 .login-input { min-height: 50px; }
+  html body .login-screen.login3 #loginButton.login-submit { min-height: 52px; }
+  .login3 .l3-or { margin: 12px 0; }
+  .login3 .l3-secure { margin-top: 14px; }
+  .login3[data-mode="company"] .l3-bg { height: 100%; position: fixed; }
+  html body .login-screen.login3[data-mode="company"] .login-card.auth-card.l3-card { margin: 16px 14px; min-height: 0; border-radius: 26px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .login3 .l3-bg, .login3 .l3-intro, .login3 .l3-intro li, .login3 .l3-card > *, .login3 .l3-brand img,
+  html body .login-screen.login3 #loginButton.login-submit::after { animation: none !important; }
+}
+@media (max-width: 600px) { html body .login-screen.login3[data-mode="company"] .login-card.auth-card.l3-card { width: auto !important; margin: 16px 14px !important; } }
+/* The login must disappear once signed in: my display rules above must never beat .hidden / [hidden] */
+html body .login-screen.login3.auth-gate.hidden,
+html body .login-screen.login3.auth-gate[hidden] { display: none !important; }
+/* Ruben Perla logo moves out of the card to the top-right corner of the screen */
+.login3 .l3-brand img { display: none; }
+.login3 .l3-corner-logo {
+  position: fixed;
+  top: 22px;
+  right: 26px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, .7);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .8);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 26px rgba(40, 24, 12, .18);
+  animation: l3Up .7s .2s cubic-bezier(.2, .8, .2, 1) both;
+}
+.login3 .l3-corner-logo img { display: block; width: 120px; height: auto; }
+.login3[data-mode="company"] .l3-corner-logo { display: none; }
+@media (max-width: 600px) {
+  .login3 .l3-corner-logo { position: absolute; top: 14px; right: 14px; padding: 6px 10px; border-radius: 14px; }
+  .login3 .l3-corner-logo img { width: 84px; }
+}
+/* Corner logo on the left */
+.login3 .l3-corner-logo { right: auto; left: 26px; }
+@media (max-width: 600px) { .login3 .l3-corner-logo { right: auto; left: 14px; } }
+/* Name goes under the corner logo, not in the card */
+.login3[data-mode="login"] .l3-brand { display: none; }
+.login3 .l3-corner-logo { gap: 2px; }
+.login3 .l3-corner-logo strong { color: #1b2a4e; font: 800 17px/1.1 "Plus Jakarta Sans", sans-serif; letter-spacing: -.02em; }
+.login3 .l3-card .l3-head { margin-top: 4px; }
+@media (max-width: 600px) { .login3 .l3-corner-logo strong { font-size: 13px; } }
+/* Company chooser: logos without their white boxes */
+.login3 .company-choice-trenton .company-logo { background: transparent !important; box-shadow: none !important; padding: 0; }
+.login3 .company-choice .company-logo img { width: 100%; height: 100%; object-fit: contain; }
+.login3 .login-top .brand-mark.brand-mark-logo { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+/* Company chooser: no construction photo, soft warm gradient instead */
+.login3[data-mode="company"] .l3-bg { background: none !important; animation: none !important; }
+.login3[data-mode="company"] .l3-bg::after { background:
+  radial-gradient(circle at 12% 10%, rgba(247, 160, 79, .28), transparent 45%),
+  radial-gradient(circle at 90% 90%, rgba(53, 99, 233, .18), transparent 50%),
+  linear-gradient(160deg, #fff6ee 0%, #f5f3fa 50%, #eef2fb 100%) !important; }
+html body .login-screen.login3[data-mode="company"].auth-gate { background: #f6f4f8 !important; }
+/* Company chooser: plain flat background, no gradient */
+.login3[data-mode="company"] .l3-bg::after { background: #f4f6fb !important; }
+/* Login greeting with motion */
+.login3 .l3-hello { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 4px; padding: 5px 14px; border-radius: 999px; background: rgba(238, 127, 45, .12); color: #c2561a; font: 700 13.5px "Plus Jakarta Sans", sans-serif; animation: l3Pop .6s .15s cubic-bezier(.3, 1.5, .5, 1) both; }
+.login3 .l3-wave { display: inline-block; transform-origin: 70% 75%; animation: l3Wave 2.2s 1s ease-in-out infinite; }
+.login3 .l3-head h1 {
+  background: linear-gradient(90deg, #1b2a4e 0%, #1b2a4e 40%, #e5701f 50%, #1b2a4e 60%, #1b2a4e 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: l3Up .6s .25s cubic-bezier(.2, .8, .2, 1) both, l3Shine 5s 1.2s ease-in-out infinite;
+}
+.login3 .l3-head .l3-wish { margin: 4px 0 20px; animation: l3Up .6s .4s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes l3Pop { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: none; } }
+@keyframes l3Wave { 0%, 60%, 100% { transform: rotate(0); } 10%, 30% { transform: rotate(16deg); } 20%, 40% { transform: rotate(-8deg); } }
+@keyframes l3Shine { 0%, 100% { background-position: 100% 0; } 50% { background-position: 0 0; } }
+/* Intro text and icons also move */
+.login3 .l3-intro li i { animation: l3Float 4s ease-in-out infinite; }
+.login3 .l3-intro li:nth-child(2) i { animation-delay: .6s; }
+.login3 .l3-intro li:nth-child(3) i { animation-delay: 1.2s; }
+@keyframes l3Float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+.login3 .l3-corner-logo img { animation: lhBob 4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .login3 .l3-hello, .login3 .l3-wave, .login3 .l3-head h1, .login3 .l3-head .l3-wish, .login3 .l3-intro li i, .login3 .l3-corner-logo img { animation: none !important; }
+}
+.login3 .l3-head p.l3-hello { margin: 0 0 6px; color: #c2561a; font-size: 13.5px; font-weight: 700; }
+/* Greeting aligned left; title in plain navy (no sweeping orange shine) */
+.login3 .l3-head { text-align: left; }
+.login3 .l3-head h1 {
+  background: none !important;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: #1b2a4e !important;
+  animation: l3Up .6s .25s cubic-bezier(.2, .8, .2, 1) both !important;
+}
+
+/* Phone login = same look as the computer: full photo, logo top-left, short title, floating frosted card */
+@media (max-width: 600px) {
+  html body .login-screen.login3[data-mode="login"].auth-gate {
+    display: flex !important;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 100dvh;
+    padding: 96px 14px max(18px, env(safe-area-inset-bottom, 0px)) !important;
+    background: #2a2420 !important;
+  }
+  .login3[data-mode="login"] .l3-bg { position: fixed; inset: 0; height: auto; background-position: 62% 50%; }
+  .login3[data-mode="login"] .l3-bg::after { background: linear-gradient(180deg, rgba(255, 244, 232, .55) 0%, rgba(255, 238, 220, .25) 35%, rgba(0, 0, 0, .1) 100%); }
+  .login3[data-mode="login"] .l3-corner-logo { position: absolute; top: 14px; left: 14px; }
+  .login3[data-mode="login"] .l3-intro { display: block; max-width: none; padding: 0 4px; }
+  .login3[data-mode="login"] .l3-intro h2 { font-size: 27px; }
+  .login3[data-mode="login"] .l3-intro p,
+  .login3[data-mode="login"] .l3-intro ul { display: none; }
+  html body .login-screen.login3[data-mode="login"] .login-card.auth-card.l3-card {
+    width: auto !important;
+    min-height: 0;
+    margin: 0 !important;
+    padding: 20px 18px 16px;
+    border: 1px solid rgba(255, 255, 255, .7);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, .84);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 24px 50px rgba(40, 24, 12, .28);
+  }
+  .login3[data-mode="login"] .l3-head h1 { font-size: 23px; }
+  .login3[data-mode="login"] .l3-head .l3-wish { margin-bottom: 14px; }
+  .login3[data-mode="login"] .l3-secure { margin-top: 12px; }
+}
+@media (max-width: 600px) { html body .login-screen.login3[data-mode="login"] .login-card.auth-card.l3-card { align-self: stretch; max-width: none !important; width: 100% !important; box-sizing: border-box; } html body .login-screen.login3[data-mode="login"].auth-gate { align-items: stretch; } }
+@media (max-width: 600px) { html body .login-screen.login3[data-mode="login"].auth-gate { padding-left: 26px !important; padding-right: 26px !important; } }
+/* Phone login: a bit more breathing room between the parts */
+@media (max-width: 600px) {
+  html body .login-screen.login3[data-mode="login"].auth-gate { gap: 20px; }
+  html body .login-screen.login3[data-mode="login"] .login-card.auth-card.l3-card { padding: 24px 20px 20px; }
+  .login3[data-mode="login"] .l3-head p.l3-hello { margin-bottom: 10px; }
+  .login3[data-mode="login"] .l3-head h1 { margin-bottom: 2px; }
+  .login3[data-mode="login"] .l3-head .l3-wish { margin-bottom: 20px; }
+  .login3[data-mode="login"] .login-field { margin-bottom: 14px; }
+  .login3[data-mode="login"] .login-row { margin: 6px 0 20px; }
+  .login3[data-mode="login"] .l3-or { margin: 18px 0; }
+  .login3[data-mode="login"] .l3-secure { margin-top: 20px; }
+}
+/* Phone login: clearly more space (the first pass was too subtle) */
+@media (max-width: 600px) {
+  html body .login-screen.login3[data-mode="login"].auth-gate { gap: 26px !important; padding-top: 110px !important; }
+  html body .login-screen.login3[data-mode="login"] .login-card.auth-card.l3-card { padding: 30px 24px 26px !important; }
+  .login3[data-mode="login"] .l3-head p.l3-hello { margin-bottom: 14px !important; }
+  .login3[data-mode="login"] .l3-head h1 { margin-bottom: 6px !important; }
+  .login3[data-mode="login"] .l3-head .l3-wish { margin-bottom: 28px !important; }
+  .login3[data-mode="login"] .login-field { margin-bottom: 18px !important; }
+  .login3[data-mode="login"] .login-row { margin: 10px 0 26px !important; }
+  .login3[data-mode="login"] .l3-or { margin: 24px 0 !important; }
+  .login3[data-mode="login"] .l3-secure { margin-top: 28px !important; }
+}
+/* Login card: one even spacing rhythm on every screen size (phones that report a tablet width included) */
+.login3[data-mode="login"] .l3-head p.l3-hello { margin: 0 0 12px !important; }
+.login3[data-mode="login"] .l3-head h1 { margin: 0 0 6px !important; }
+.login3[data-mode="login"] .l3-head .l3-wish { margin: 0 0 26px !important; }
+.login3[data-mode="login"] .login-field { margin-bottom: 16px !important; }
+.login3[data-mode="login"] .login-row { margin: 4px 0 22px !important; }
+.login3[data-mode="login"] .l3-or { margin: 20px 0 !important; }
+.login3[data-mode="login"] .l3-secure { margin-top: 24px !important; }
+html body .login-screen.login3[data-mode="login"] .login-card.auth-card.l3-card { padding: 32px 30px 26px !important; }
+@media (max-width: 600px) {
+  html body .login-screen.login3[data-mode="login"] .login-card.auth-card.l3-card { padding: 28px 22px 24px !important; }
+}
+/* Greeting block: 6px more between each line, down to the email field */
+.login3[data-mode="login"] .l3-head p.l3-hello { margin: 0 0 18px !important; }
+.login3[data-mode="login"] .l3-head h1 { margin: 0 0 12px !important; }
+.login3[data-mode="login"] .l3-head .l3-wish { margin: 0 0 32px !important; }
+/* Only the gap between the wish line and the email field grows; the greeting lines keep their spacing */
+.login3[data-mode="login"] .l3-head p.l3-hello { margin: 0 0 12px !important; }
+.login3[data-mode="login"] .l3-head h1 { margin: 0 0 6px !important; }
+.login3[data-mode="login"] .l3-head .l3-wish { margin: 0 0 32px !important; }

@@ -540,6 +540,8 @@
     return Number.isFinite(fallback) ? jobDollars(fallback) : 0;
   }
   function jobDueAmount(record) {
+    // Same rule as invoices: "paid" with no payment recorded (older data) means paid in full.
+    if (jobStageId(record) === "paid" && !(Number(record.received) > 0)) return 0;
     return jobDollars(jobAmount(record) - Number(record.received || 0));
   }
   function jobStageId(record) {
@@ -572,17 +574,17 @@
     const due = jobDueAmount(record);
     const received = Number(record.received || 0);
     const dueHtml = received > 0 || due > 0
-      ? (due > 0.004 ? `<p class="card-due">Se debe ${money(due)}</p>` : `<p class="card-due is-clear">Saldo cubierto</p>`)
+      ? (due > 0.004 ? `<p class="card-due">${record.stage === "paid" ? "Pago incompleto · se debe" : "Se debe"} ${money(due)}</p>` : `<p class="card-due is-clear">Saldo cubierto</p>`)
       : "";
     const photos = (record.checkPhotos || []).length;
     const needsCheck = record.stage === "sent" || record.stage === "paid";
     const checks = needsCheck || photos
-      ? `<div class="card-check">${photos ? `<span class="check-badge">Cheque ×${photos}</span>` : `<span class="check-badge is-empty">Sin foto</span>`}</div>`
+      ? `<div class="card-check">${photos ? `<button type="button" class="check-badge check-view" data-check-kind="job" data-id="${esc(record.id)}" title="Ver cheques">Cheque ×${photos}</button>` : `<span class="check-badge is-empty">Sin foto</span>`}</div>`
       : "";
     const foot = needsCheck && !photos
       ? `<button class="card-link" type="button" data-job-home="attach-check" data-id="${esc(record.id)}">Subir cheque</button>`
       : `<button class="card-link" type="button" data-job-home="menu" data-id="${esc(record.id)}">Ver detalles <span aria-hidden="true">→</span></button>`;
-    return `<article class="invoice-card" draggable="true" data-job-id="${esc(record.id)}" tabindex="0">
+    return `<article class="invoice-card${record.stage === "paid" && due > 0.004 ? " is-partial" : ""}" draggable="true" data-job-id="${esc(record.id)}" tabindex="0">
       <div class="card-top"><span class="card-invoice"><i class="card-dot"></i>TRENTON</span><button class="card-menu" type="button" data-job-home="menu" data-id="${esc(record.id)}" aria-label="Editar reporte">${CARD_MENU_ICON}</button></div>
       <p class="card-date">${esc(jobDateText(record))}</p>
       <h4 class="card-address">${PIN_ICON}${esc(record.jobAddress || "Sin dirección")}</h4>
@@ -641,6 +643,15 @@
   async function moveJobToStage(id, stage) {
     const record = reports.find(item => item.id === id);
     if (!record || !stage || record.stage === stage) return;
+    if (stage === "paid" && jobDueAmount(record) > 0.004) {
+      const total = jobDollars(jobAmount(record));
+      if (!confirm(`Este reporte todavía debe ${money(jobDueAmount(record))}. ¿Ya pagaron todo?
+
+Aceptar: se marca el saldo cubierto y pasa a Pagado.
+Cancelar: no se mueve.`)) return;
+      record.received = total;
+      record.due = 0;
+    }
     if (stage === "paid" && !(record.checkPhotos || []).length) {
       if (!confirm("¿Ya adjuntaste la foto del cheque? Puedes marcar pagado ahora y subirla después.")) return;
     }
@@ -755,7 +766,7 @@
     if ($("#jobEditDate")) $("#jobEditDate").value = record.startDate || (record.entries || []).map(entry => entry.date).filter(Boolean).sort()[0] || "";
     if ($("#jobEditTotal")) $("#jobEditTotal").value = jobDollars(jobAmount(record)).toFixed(2);
     $("#jobEditStage").value = jobStageId(record);
-    $("#jobEditReceived").value = jobDollars(record.received).toFixed(2);
+    $("#jobEditReceived").value = jobDollars(jobAmount(record) - jobDueAmount(record)).toFixed(2);
     $("#jobEditOpenForm")?.classList.add("hidden");
     if ($("#saveJobBoardButton")) $("#saveJobBoardButton").textContent = "Guardar cambios";
     setJobPdfStatus(null, record.pdfName || "");

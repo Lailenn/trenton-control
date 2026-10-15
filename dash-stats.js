@@ -7,6 +7,8 @@ window.DashStats = (function () {
   const isoDate = value => /^\d{4}-\d{2}-\d{2}/.test(String(value || "")) ? String(value).slice(0, 10) : "";
   const monthKey = date => date.slice(0, 7);
   const amountOf = record => Number(record.amount) || 0;
+  // Paid money = what was actually collected (a partial payment counts only its received part).
+  const collectedOf = record => window.InvoiceCore?.collected ? window.InvoiceCore.collected(record) / 100 : amountOf(record);
   const dateOf = record => isoDate(record.issuedDate) || isoDate(record.invoiceData?.issuedDate) || isoDate(record.updatedAt);
   const daysAgo = value => (Date.now() - new Date(value).getTime()) / 86400000;
   const compactMoney = value => "$" + Math.round(value).toLocaleString("en-US");
@@ -101,7 +103,7 @@ window.DashStats = (function () {
     paintChart($("#chartTotal"), series(list, () => true, () => 1), "line");
     paintChart($("#chartWorking"), series(list, working, () => 1), "bars");
     paintChart($("#chartWaiting"), series(list, waiting, amountOf), "line");
-    paintChart($("#chartPaid"), series(list, paid, amountOf), "bars-line");
+    paintChart($("#chartPaid"), series(list, paid, collectedOf), "bars-line");
 
     const newThisMonth = list.filter(record => monthKey(dateOf(record)) === thisMonth).length;
     paintTrend($("#trendTotal"), newThisMonth ? `+${newThisMonth}` : "", `${newThisMonth} con fecha de este mes`);
@@ -109,7 +111,7 @@ window.DashStats = (function () {
     const movedWorking = recent(working), movedWaiting = recent(waiting);
     paintTrend($("#trendWorking"), movedWorking ? `+${movedWorking}` : "", `${movedWorking} en los últimos 7 días`);
     paintTrend($("#trendWaiting"), movedWaiting ? `+${movedWaiting}` : "", `${movedWaiting} en los últimos 7 días`);
-    const paidThisMonth = list.filter(record => paid(record) && record.paidAt && monthKey(isoDate(record.paidAt)) === thisMonth).reduce((sum, record) => sum + amountOf(record), 0);
+    const paidThisMonth = list.filter(record => paid(record) && record.paidAt && monthKey(isoDate(record.paidAt)) === thisMonth).reduce((sum, record) => sum + collectedOf(record), 0);
     paintTrend($("#trendPaid"), paidThisMonth ? `+${compactMoney(paidThisMonth)}` : "", "Cobrado este mes");
   }
 

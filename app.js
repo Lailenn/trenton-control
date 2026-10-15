@@ -150,7 +150,8 @@
     $("#statTotal").textContent = records.length;
     $("#statWorking").textContent = records.filter((record) => record.stage === "working").length;
     $("#statWaiting").textContent = records.filter((record) => record.stage === "waiting").length;
-    $("#statPaid").textContent = money(Core.summarize(paid).total);
+    // Only money actually collected: a paid invoice that still owes something counts what was received.
+    $("#statPaid").textContent = money(paid.reduce((sum, record) => sum + Core.collected(record), 0) / 100);
     window.DashStats?.render(records);
     const total = $("#navTotal");
     if (total) total.textContent = records.length;
@@ -173,14 +174,14 @@
     return Number.isFinite(fallback) ? dollars(fallback) : 0;
   }
   function invoiceDue(record) {
-    return dollars((Number(record?.amount) || 0) - (Number(record?.received) || 0));
+    return record ? dollars(Core.owed(record)) : 0;
   }
   function dueLine(record) {
     const due = invoiceDue(record);
     const received = Number(record?.received || 0);
     if (received <= 0 && due <= 0) return "";
     return due > 0.004
-      ? `<p class="card-due">Se debe ${money(due)}</p>`
+      ? `<p class="card-due">${record?.stage === "paid" ? "Pago incompleto · se debe" : "Se debe"} ${money(due)}</p>`
       : `<p class="card-due is-clear">Saldo cubierto</p>`;
   }
   function syncInvoiceBalance() {
@@ -204,13 +205,13 @@
     const number = String(record.invoiceNumber || "SIN NÚMERO").startsWith("#") ? record.invoiceNumber : `#${record.invoiceNumber || "SIN NÚMERO"}`;
     const photos = (record.checkPhotos || []).length;
     const needsCheck = record.stage === "waiting" || record.stage === "paid";
-    return `<article class="invoice-card" draggable="true" data-id="${esc(record.id)}" tabindex="0">
+    return `<article class="invoice-card${record.stage === "paid" && invoiceDue(record) > 0.004 ? " is-partial" : ""}" draggable="true" data-id="${esc(record.id)}" tabindex="0">
       <div class="card-top"><span class="card-invoice"><i class="card-dot"></i>${esc(number)}</span><button class="card-menu" type="button" data-action="menu" data-id="${esc(record.id)}" aria-label="Editar invoice"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="5.5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="18.5" r="1.8" fill="currentColor"/></svg></button></div>
       <p class="card-date">${esc(cardDate(record))}</p>
       <h4 class="card-address"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 1 7 7c0 5.25-7 13-7 13S5 14.25 5 9a7 7 0 0 1 7-7zm0 9.5A2.5 2.5 0 1 0 12 6a2.5 2.5 0 0 0 0 5.5z"/></svg>${esc(record.address)}</h4>
       <div class="card-details"><span class="card-hours"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm1 5h-2v6l4.5 2.7.9-1.5L13 12.2z"/></svg>${Number(record.hours || 0)} hrs</span><span class="card-amount">${money(record.amount)}</span></div>
       ${dueLine(record)}
-      ${needsCheck || photos ? `<div class="card-check">${photos ? `<span class="check-badge">Cheque ×${photos}</span>` : `<span class="check-badge is-empty">Sin foto</span>`}</div>` : ""}
+      ${needsCheck || photos ? `<div class="card-check">${photos ? `<button type="button" class="check-badge check-view" data-check-kind="invoice" data-id="${esc(record.id)}" title="Ver cheques">Cheque ×${photos}</button>` : `<span class="check-badge is-empty">Sin foto</span>`}</div>` : ""}
       <div class="card-foot">${needsCheck && !photos
         ? `<button class="card-link" type="button" data-action="attach-check" data-id="${esc(record.id)}">Subir cheque</button>`
         : `<button class="card-link" type="button" data-action="menu" data-id="${esc(record.id)}">Ver detalles <span aria-hidden="true">→</span></button>`}</div>
@@ -362,7 +363,7 @@
       $("#amount").value = record.amount != null && record.amount !== "" ? dollars(record.amount).toFixed(2) : "";
       $("#hours").value = Number(record.hours) ? record.hours : "";
       $("#description").value = record.description || "";
-      $("#amountReceived").value = dollars(record.received).toFixed(2);
+      $("#amountReceived").value = (record.stage === "paid" ? Core.collected(record) / 100 : dollars(record.received)).toFixed(2);
       syncInvoiceBalance();
     } else {
       $("#amountReceived").value = "";
@@ -400,6 +401,10 @@
     if (selectedPdf && selectedPdf.type !== "application/pdf" && !selectedPdf.name.toLowerCase().endsWith(".pdf")) { $("#formError").textContent = "Solo puedes subir archivos PDF."; return; }
     const previous = editingId ? records.find((record) => record.id === editingId) : null;
     if (!selectedPdf && !previous?.pdfBlob && !previous?.pdfPath && !previous?.invoiceData) { $("#formError").textContent = "Adjunta el PDF. Para crear una factura desde cero, usa Crear invoice."; return; }
+    if (data.stage === "paid" && data.due > 0.004) {
+      $("#formError").textContent = `Está en Pagado pero todavía se debe ${money(data.due)}. Toca “Pagó todo” o cambia la fase.`;
+      return;
+    }
     if (data.stage === "paid" && !(previous?.checkPhotos || []).length) {
       if (!confirm("¿Ya adjuntaste la foto del cheque? Puedes guardar pagada ahora y subirla después.")) return;
     }
@@ -440,6 +445,12 @@
       if (!confirm("¿Ya adjuntaste la foto del cheque? Puedes marcarla pagada ahora y subir la evidencia después.")) return;
     }
     const record = {...previous};
+    // "Pagado" means fully paid: a balance still owed has to be settled (or the move cancelled).
+    if (stage === "paid" && invoiceDue(record) > 0.004) {
+      if (!confirm(`La invoice ${record.invoiceNumber || ""} todavía debe ${money(invoiceDue(record))}. ¿Ya pagaron todo?\n\nAceptar: se marca el saldo cubierto y pasa a Pagado.\nCancelar: no se mueve.`)) return;
+      record.received = dollars(record.amount);
+      record.due = 0;
+    }
     record.stage = stage;
     record.updatedAt = new Date().toISOString();
     record.paidAt = stage === "paid" ? (record.paidAt || new Date().toISOString()) : null;
@@ -1149,7 +1160,7 @@
   }
   ["board", "hoursHomeBoard", "jobHomeBoard"].forEach(bindBoardTabs);
 
-  window.TrentonControl = { toast: showToast, records: () => records, hoursArchive, jobArchive, download, showView, navClick };
+  window.TrentonControl = { toast: showToast, records: () => records, render, hoursArchive, jobArchive, download, showView, navClick };
   document.querySelectorAll("[data-archive]").forEach(button => button.addEventListener("click", () => navClick(button.dataset.archive === "all" ? "archive" : button.dataset.archive)));
   $("#editGeneratedInvoiceButton").addEventListener("click", editGeneratedInvoice);
   $("#newInvoiceButton").addEventListener("click", () => { if (builderRecordId) resetInvoiceBuilder(); navClick("invoice"); });
