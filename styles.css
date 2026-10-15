@@ -7200,3 +7200,25 @@ html body .login-screen.auth-gate:not(.hidden):not([hidden]) {
 }
 body:has(#authGate:not(.hidden):not([hidden])) #appShell { display: none !important; }
 body:has(#authGate:not(.hidden):not([hidden])) { overflow: hidden; }
+
+/* Phone: content starts at the top and scrolls (centering pushed the title under the logo and out of reach) */
+@media (max-width: 600px) {
+  html body .login-screen.login3[data-mode="login"].auth-gate { justify-content: flex-start !important; align-items: stretch !important; }
+  /* Company chooser: card centered vertically when it fits, scrolls from the top when it doesn't */
+  html body .login-screen.login3[data-mode="company"].auth-gate {
+    display: flex !important;
+    flex-direction: column;
+    justify-content: flex-start !important;
+    align-items: stretch !important;
+    padding: 16px 14px !important;
+  }
+  html body .login-screen.login3[data-mode="company"] .login-card.auth-card.l3-card { margin: auto 0 !important; flex-shrink: 0; }
+}
+/* Larger phones/tablets in company mode: same safe centering */
+html body .login-screen.login3[data-mode="company"].auth-gate .login-card.auth-card.l3-card { margin-block: auto; }
+
+/* Signed in = login hidden, on every screen size. Must out-rank every login display rule above. */
+html body #authGate.login-screen.login3.auth-gate.hidden,
+html body #authGate.login-screen.login3.auth-gate[hidden],
+html body #authGate.login-screen.login3.auth-gate[data-mode].hidden,
+html body #authGate.login-screen.login3.auth-gate[data-mode][hidden] { display: none !important; }
