@@ -7187,3 +7187,16 @@ html, body { color-scheme: light only; }
   .login3[data-mode="login"] .l3-intro { flex-shrink: 0; }
   html body .login-screen.login3[data-mode="login"] .login-card.auth-card.l3-card { overflow: visible !important; height: auto !important; }
 }
+
+/* Login / company screen always covers the whole screen; the app behind it is not shown or scrollable */
+html body .login-screen.auth-gate:not(.hidden):not([hidden]) {
+  position: fixed !important;
+  top: 0 !important; right: 0 !important; bottom: 0 !important; left: 0 !important;
+  height: 100% !important;
+  height: 100dvh !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  z-index: 1000 !important;
+}
+body:has(#authGate:not(.hidden):not([hidden])) #appShell { display: none !important; }
+body:has(#authGate:not(.hidden):not([hidden])) { overflow: hidden; }
