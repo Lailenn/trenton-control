@@ -7260,3 +7260,28 @@ html body #authGate.login-screen.login3.auth-gate[data-mode][hidden] { display: 
 #boardView .dash-page-glow { display: none !important; }
 /* Pulsing ring on the chart dots animated box-shadow (repaint each frame): keep a static ring */
 .ds-card.ds-play .ds-dot { animation: dsPop .45s 1.15s cubic-bezier(.3, 1.6, .5, 1) both !important; }
+
+/* Loading screen while a saved session is being confirmed (instead of flashing the login) */
+html.boot-session #authGate { display: none !important; }
+html.boot-session body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: #f4f6fb url("assets/logo-ruben-clear.png?v=1") center 44% / 150px auto no-repeat;
+}
+html.boot-session body::after {
+  content: "";
+  position: fixed;
+  z-index: 2001;
+  left: 50%;
+  top: calc(44% + 70px);
+  width: 28px;
+  height: 28px;
+  margin-left: -14px;
+  border: 3px solid rgba(53, 99, 233, .18);
+  border-top-color: #3563e9;
+  border-radius: 50%;
+  animation: bootSpin .8s linear infinite;
+}
+@keyframes bootSpin { to { transform: rotate(360deg); } }

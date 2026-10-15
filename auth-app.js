@@ -709,6 +709,7 @@
         root.CompanyApp?.clearSession?.();
         showApp(false);
         setGate(root.TrentonConfig.ready() ? "login" : "config");
+        root.TrentonEndBoot?.();
         onLogout?.();
         return;
       }
@@ -724,9 +725,13 @@
       booting = true;
       try {
         showApp(false);
-        if (!root.CompanyApp?.hasSessionPick?.()) setGate("company");
+        if (!root.CompanyApp?.hasSessionPick?.()) {
+          setGate("company");
+          root.TrentonEndBoot?.(); // the company chooser is a real step: show it
+        }
         await root.CompanyApp?.choose?.();
         showApp(true);
+        root.TrentonEndBoot?.();
         await onReady?.(user);
       } finally {
         booting = false;
@@ -827,6 +832,7 @@
     bindLogoutButtons();
     bindProfile();
     restoreLocalProfile();
+    if (!root.TrentonConfig.ready()) root.TrentonEndBoot?.();
     watchAuth(onReady, onLogout);
   }
 
