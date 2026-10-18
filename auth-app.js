@@ -604,12 +604,25 @@
     try {
       await assertPasskeyUser();
       const passkeys = await listPasskeys();
+      // A stored passkey id that is no longer in the list was deleted: this device is not registered anymore.
+      const mine = readThisDevice();
+      const ids = passkeys.map(item => item.id).filter(Boolean);
+      if (mine && !passkeys.length) markThisDevice("");
+      else if (mine && ids.length && /^[0-9a-f-]{16,}$/i.test(mine) && !ids.includes(mine)) markThisDevice("");
+      const registeredHere = Boolean(readThisDevice());
+      buttons.forEach(button => {
+        button.textContent = registeredHere ? "Registrar otro aparato" : "Registrar este aparato";
+        button.classList.toggle("button-primary", !registeredHere);
+        button.classList.toggle("button-ghost", registeredHere);
+      });
       if (!passkeys.length) {
         status.textContent = "Todavía no hay ningún aparato registrado. Pulsa “Registrar este aparato” y confírmalo con tu huella, Face ID o Windows Hello.";
         return;
       }
-      const names = passkeys.map(item => item.friendly_name || item.friendlyName || "aparato").join(", ");
-      status.textContent = `Ya hay ${passkeys.length === 1 ? "1 aparato" : passkeys.length + " aparatos"}: ${names}. Puedes registrar también el celular o la PC.`;
+      const count = passkeys.length === 1 ? "1 aparato registrado" : `${passkeys.length} aparatos registrados`;
+      status.textContent = registeredHere
+        ? `✓ Este aparato ya está registrado: puedes entrar con tu huella. ${count}: ${groupNames(passkeys)}.`
+        : `${count}: ${groupNames(passkeys)}. Este aparato todavía no: pulsa “Registrar este aparato” para entrar con tu huella aquí también.`;
     } catch (error) {
       status.textContent = passkeyMessage(error);
     }
@@ -623,6 +636,28 @@
     }
     const { error } = await auth.signInWithPasskey();
     if (error) throw error;
+    // Signing in with the fingerprint proves this device has a passkey.
+    markThisDevice(readThisDevice() || "signed-in");
+  }
+
+  // Remembers on this device that it has its own passkey (id when known), so the panel can say so.
+  const DEVICE_KEY = "trenton.passkey.this-device";
+  function readThisDevice() { try { return localStorage.getItem(DEVICE_KEY) || ""; } catch (_) { return ""; } }
+  function markThisDevice(value) { try { if (value) localStorage.setItem(DEVICE_KEY, value); else localStorage.removeItem(DEVICE_KEY); } catch (_) {} }
+  const passkeyName = item => String(item?.friendly_name || item?.friendlyName || "Aparato").trim();
+  // "Celular Android de Lilian", then "… 2", "… 3" when that name is already taken.
+  function uniqueLabel(names) {
+    const base = deviceLabel(), taken = new Set(names);
+    if (!taken.has(base)) return base;
+    let n = 2;
+    while (taken.has(`${base} ${n}`)) n++;
+    return `${base} ${n}`;
+  }
+  // Same name twice reads as "Celular Android de Lilian (2)".
+  function groupNames(passkeys) {
+    const counts = new Map();
+    passkeys.forEach(item => counts.set(passkeyName(item), (counts.get(passkeyName(item)) || 0) + 1));
+    return [...counts].map(([name, count]) => count > 1 ? `${name} (${count})` : name).join(", ");
   }
 
   async function registerThisDevice() {
@@ -632,14 +667,18 @@
       throw new Error("Recarga la página con Ctrl+F5. Falta la librería nueva de Supabase.");
     }
     await assertPasskeyUser();
-    const { data, error } = await auth.registerPasskey({ friendlyName: deviceLabel() });
+    let names = [];
+    try { names = (await listPasskeys()).map(passkeyName); } catch (_ignore) { /* the name is only a label */ }
+    const label = uniqueLabel(names);
+    const { data, error } = await auth.registerPasskey({ friendlyName: label });
     if (error) throw error;
     const id = data?.id;
     if (id && auth.passkey?.update) {
       try {
-        await auth.passkey.update({ passkeyId: id, friendlyName: deviceLabel() });
+        await auth.passkey.update({ passkeyId: id, friendlyName: label });
       } catch (_ignore) { /* el nombre amistoso es opcional */ }
     }
+    markThisDevice(id || "registered");
     return data;
   }
 

@@ -7626,3 +7626,123 @@ html.boot-session .boot-screen {
   #boardView .dash-hero-copy .hero-copy { max-width: 680px; }
 }
 @media (max-width: 950px) { .hero-br { display: none; } }
+
+/* Panel de control: use the full width beside the sidebar (computer) */
+@media (min-width: 821px) {
+  #boardView.dash-home { max-width: none !important; }
+  .app-shell .main-shell > .main-content { margin-right: 16px !important; }
+}
+
+/* ===== Inicio: archivo de invoices / horas, comprobantes y dispositivos (dash-files.js) ===== */
+#boardView.has-dash-files > .dash-archive { display: none !important; }
+#boardView .df-desk-slot > .check-callout.is-open { display: grid !important; margin: 0 0 14px; padding: 14px 16px; border: 1px dashed #f3c49c; border-radius: 14px; background: #fffaf5; box-shadow: none; }
+#boardView .df-desk-slot > .check-callout.is-open .dash-archive-icon { display: none; }
+#boardView .df-desk-slot > .check-callout.is-open h2 { font-size: 15px; }
+.dash-files { position: relative; z-index: 1; display: grid; gap: 18px; margin-top: 18px; font-family: "Plus Jakarta Sans", sans-serif; }
+.df-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.df-card { min-width: 0; padding: 20px 20px 18px; border-radius: 22px; background: #fff; box-shadow: 0 14px 34px rgba(36, 48, 86, .07); }
+.df-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 16px; margin-bottom: 16px; }
+.df-head h2, .df-devices h2 { margin: 2px 0 4px; color: #1b2440; font: 800 19px/1.25 "Plus Jakarta Sans", sans-serif; letter-spacing: -.01em; }
+.df-head p, .df-devices p { margin: 0; color: #8a93a6; font: 500 13.5px/1.45 "Plus Jakarta Sans", sans-serif; }
+.df-badge { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 16px; }
+.df-badge svg { width: 32px; height: 32px; }
+.df-badge.is-orange { background: #fdebe1; color: #e2603a; }
+.df-badge.is-green { background: #e5f5ea; color: #2f8f55; }
+.df-badge.is-blue { background: #eaeefe; color: #4c5fe0; }
+.df-upload { display: inline-flex; align-items: center; gap: 9px; min-height: 48px; padding: 0 22px; border: 1.5px solid #f3a774; border-radius: 12px; background: #fff3ea; color: #e2602a; font: 700 14.5px "Plus Jakarta Sans", sans-serif; white-space: nowrap; cursor: pointer; transition: background .15s, transform .15s; }
+.df-upload:hover { background: #ffe8d8; transform: translateY(-1px); }
+.df-upload svg { width: 19px; height: 19px; }
+
+.df-filters { display: grid; grid-template-columns: minmax(120px, .7fr) minmax(150px, 1fr) minmax(170px, 1.2fr); gap: 10px; margin-bottom: 14px; }
+.df-select, .df-search { position: relative; display: flex; align-items: center; min-height: 46px; padding: 0 14px; border: 1px solid #e6e9f0; border-radius: 10px; background: #fff; color: #2d3550; font: 500 14px "Plus Jakarta Sans", sans-serif; }
+.df-select span { margin-right: 6px; color: #2d3550; }
+.df-select select { flex: 1; min-width: 0; height: 44px; padding: 0 22px 0 0; border: 0; background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232d3550' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right center / 16px; color: inherit; font: inherit; appearance: none; -webkit-appearance: none; box-shadow: none; outline: 0; cursor: pointer; }
+.df-search svg { width: 17px; height: 17px; flex: none; color: #8a93a6; }
+.df-search input { flex: 1; min-width: 0; height: 44px; margin-left: 8px; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; box-shadow: none; outline: 0; }
+.df-select:focus-within, .df-search:focus-within { border-color: #a9b6f5; box-shadow: 0 0 0 3px rgba(79, 95, 224, .12); }
+
+.df-table-wrap { overflow-x: auto; border: 1px solid #edf0f5; border-radius: 12px; }
+.df-table { width: 100%; border-collapse: collapse; color: #2d3550; font: 500 14px "Plus Jakarta Sans", sans-serif; }
+.df-table th { padding: 13px 14px; background: #f6f7fb; color: #1b2440; font-weight: 600; font-size: 13.5px; text-align: left; white-space: nowrap; }
+.df-table td { padding: 11px 14px; border-top: 1px solid #edf0f5; vertical-align: middle; white-space: nowrap; }
+.df-table th + th, .df-table td + td { border-left: 1px solid #f0f2f7; }
+.df-table tbody tr:hover { background: #fafbfe; }
+.df-table tr.is-latest { background: #fff6ee; }
+.df-table tr.is-latest:hover { background: #fff1e5; }
+.df-table .df-wrap { white-space: normal; min-width: 140px; }
+.df-table .df-wrap small { display: block; margin-top: 2px; color: #8a93a6; font-size: 12px; }
+.df-strong { font-weight: 700; color: #1b2440; }
+.df-client-cell { color: #1b2440; }
+.df-money { font-weight: 700; color: #1b2440; }
+.df-money-soft { color: #1b2440; }
+.df-c { text-align: center; }
+.df-icon { display: inline-grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 9px; background: transparent; color: #4a5470; cursor: pointer; }
+.df-icon svg { width: 20px; height: 20px; }
+.df-icon:hover { background: #f0f2f8; }
+.df-pdf { color: #e2603a; }
+.df-pdf svg { width: 24px; height: 24px; }
+.df-pdf:hover { background: #fdebe1; }
+.df-nopdf { color: #b7bdcb; }
+.df-box { width: 42px; height: 40px; border: 1px solid #e6e9f0; background: #fff; }
+.df-box.is-danger { color: #e53935; }
+.df-box.is-danger:hover { background: #fde8e8; }
+.df-actions { text-align: right; }
+.df-actions .df-box + .df-box { margin-left: 10px; }
+.df-empty td { padding: 26px 14px; color: #8a93a6; text-align: center; white-space: normal; }
+.df-more { display: inline-flex; margin-top: 12px; padding: 8px 14px; border: 0; border-radius: 10px; background: #eef1ff; color: #3d4fd6; font: 700 13px "Plus Jakarta Sans", sans-serif; cursor: pointer; }
+
+.df-tabbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
+.df-tabbar .df-filters { flex: 0 1 870px; margin: 0; }
+.df-tabs { display: flex; gap: 10px; flex-wrap: wrap; }
+.df-tab { min-height: 46px; padding: 0 22px; border: 1px solid #e6e9f0; border-radius: 10px; background: #f7f8fb; color: #2d3550; font: 600 14.5px "Plus Jakarta Sans", sans-serif; cursor: pointer; white-space: nowrap; }
+.df-tab:hover { background: #eef0f6; }
+.df-tab.is-active { position: relative; border: 1.5px solid #f3a774; background: #fff3ea; color: #e2602a; }
+.df-tab.is-active::after { content: ""; position: absolute; left: 22px; right: 22px; bottom: 6px; height: 2px; border-radius: 2px; background: #f08a4b; }
+.df-state { display: inline-flex; align-items: center; gap: 7px; padding: 6px 13px; border-radius: 999px; font-weight: 600; font-size: 13.5px; }
+.df-state::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.df-state.is-paid { background: #e3f6e8; color: #23874a; }
+.df-state.is-waiting { background: #fff1d6; color: #b46a00; }
+.df-state.is-other { background: #eef0f6; color: #4a5470; }
+.df-proof { display: inline-flex; align-items: center; gap: 14px; padding: 0; border: 0; background: none; color: #1b2440; font: 500 14px "Plus Jakarta Sans", sans-serif; text-align: left; cursor: pointer; }
+.df-proof.is-none { color: #8a93a6; cursor: default; }
+.df-proof em { padding: 2px 7px; border-radius: 999px; background: #eef1ff; color: #3d4fd6; font-style: normal; font-size: 12px; font-weight: 700; }
+.df-thumb { display: grid; place-items: center; width: 66px; height: 42px; flex: none; border: 1px solid #e6e9f0; border-radius: 6px; background: #eef0f4 center / cover no-repeat; color: #b7bdcb; }
+.df-proof:hover .df-proof-name { text-decoration: underline; }
+
+.df-devices { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 18px; }
+.df-devices[hidden] { display: none; }
+.df-manage { display: inline-flex; align-items: center; gap: 10px; min-height: 54px; padding: 0 26px; border: 1.5px solid #b8c3f3; border-radius: 12px; background: #fff; color: #3d4fd6; font: 700 15px "Plus Jakarta Sans", sans-serif; cursor: pointer; }
+.df-manage:hover { background: #f3f5ff; }
+.df-manage svg { width: 22px; height: 22px; }
+
+.df-menu { position: absolute; z-index: 90; display: grid; min-width: 168px; padding: 6px; border: 1px solid #e6e9f0; border-radius: 12px; background: #fff; box-shadow: 0 16px 36px rgba(27, 36, 64, .16); }
+.df-menu button { padding: 9px 12px; border: 0; border-radius: 8px; background: none; color: #2d3550; font: 600 13.5px "Plus Jakarta Sans", sans-serif; text-align: left; cursor: pointer; }
+.df-menu button:hover { background: #f3f5fa; }
+.df-menu button.is-danger { color: #e53935; }
+
+@media (max-width: 1280px) {
+  .df-grid { grid-template-columns: 1fr; }
+  .df-tabbar { flex-direction: column; align-items: stretch; }
+  .df-tabbar .df-filters { flex: none; }
+}
+@media (max-width: 640px) {
+  .dash-files { gap: 14px; }
+  .df-card { padding: 16px 14px; border-radius: 18px; }
+  .df-head { grid-template-columns: auto minmax(0, 1fr); gap: 12px; }
+  .df-head .df-upload { grid-column: 1 / -1; justify-content: center; }
+  .df-badge { width: 48px; height: 48px; border-radius: 13px; }
+  .df-badge svg { width: 26px; height: 26px; }
+  .df-head h2, .df-devices h2 { font-size: 17px; }
+  .df-filters { grid-template-columns: 1fr 1fr; }
+  .df-filters .df-search { grid-column: 1 / -1; }
+  .df-tabs { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; }
+  .df-tab { padding: 0 16px; font-size: 13.5px; }
+  .df-devices { grid-template-columns: auto minmax(0, 1fr); }
+  .df-devices .df-manage { grid-column: 1 / -1; justify-content: center; }
+}
+@media (max-width: 640px) { .df-table th:nth-child(2), .df-table td.df-client-cell { display: none; } .df-table th, .df-table td { padding: 10px; } }
+/* Cheque tabs stay on one line; the filters drop below when there is no room */
+.df-tabbar { flex-wrap: wrap; }
+.df-tabs { flex-wrap: nowrap; }
+.df-tabbar .df-filters { flex: 1 1 560px; }
+@media (max-width: 1600px) { .df-grid { grid-template-columns: 1fr; } }

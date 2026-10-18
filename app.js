@@ -238,7 +238,7 @@
     wireBoardEvents();
   }
 
-  function render() { updateWelcome(); updateStats(); renderBoard(); renderCheckDesk(); archive?.render(); hoursArchive?.render(); jobArchive?.render(); window.HoursApp?.render(); window.JobApp?.render(); }
+  function render() { updateWelcome(); updateStats(); renderBoard(); renderCheckDesk(); archive?.render(); hoursArchive?.render(); jobArchive?.render(); window.HoursApp?.render(); window.JobApp?.render(); window.DashFiles?.render(); }
 
   function replayViewAnimation(view) {
     const node = $(`#${view}View`);
@@ -1360,7 +1360,19 @@
   }
   ["board", "hoursHomeBoard", "jobHomeBoard"].forEach(bindBoardTabs);
 
-  window.TrentonControl = { toast: showToast, records: () => records, render, hoursArchive, jobArchive, download, showView, navClick };
+  window.TrentonControl = { toast: showToast, records: () => records, render, archive, hoursArchive, jobArchive, download, showView, navClick,
+    edit: record => openModal(record.stage, record),
+    openCheckPicker,
+    async removeInvoiceCheck(recordId, photoId) {
+      const record = records.find(item => item.id === recordId);
+      const photo = record?.checkPhotos?.find(item => item.id === photoId);
+      if (!photo || !confirm("¿Quitar esta foto del cheque?")) return;
+      await Cloud.removeCheckPhoto(photo);
+      record.checkPhotos = record.checkPhotos.filter(item => item.id !== photo.id);
+      replaceInMemory(record);
+      render();
+    }
+  };
   document.querySelectorAll("[data-archive]").forEach(button => button.addEventListener("click", () => navClick(button.dataset.archive === "all" ? "archive" : button.dataset.archive)));
   $("#editGeneratedInvoiceButton").addEventListener("click", editGeneratedInvoice);
   $("#newInvoiceButton").addEventListener("click", () => { if (builderRecordId) resetInvoiceBuilder(); navClick("invoice"); });

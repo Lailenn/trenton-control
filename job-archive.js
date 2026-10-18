@@ -143,5 +143,5 @@ window.JobArchive = function (app) {
     }
   });
 
-  return {open, render, view};
+  return {open, render, view, download: downloadRecord, remove: deleteRecord};
 };

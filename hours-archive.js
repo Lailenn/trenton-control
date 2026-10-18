@@ -404,5 +404,5 @@ window.HoursArchive = function (app) {
     updateHoursReview();
   });
 
-  return {open, render, view, importFiles: startHoursImport};
+  return {open, render, view, importFiles: startHoursImport, download: downloadRecord, remove: deleteRecord};
 };

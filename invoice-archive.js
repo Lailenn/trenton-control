@@ -284,5 +284,5 @@ window.InvoiceArchive = function (app) {
   $("#importBatchStage").addEventListener("change", e => { if (!busy) { rows.forEach(r => r.stage = e.target.value); renderReview(); } });
   $("#confirmImportButton").addEventListener("click", confirmImport);
   $("#backupInvoicesButton").addEventListener("click", backup);
-  return {open, render, view};
+  return {open, render, view, download: downloadRecord, remove: deleteRecord};
 };
