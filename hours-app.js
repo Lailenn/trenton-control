@@ -238,8 +238,6 @@
     $("#hoursSummaryRows").innerHTML = summary.map(row => `<tr><td>${esc(row.employee)}</td><td>${esc(formatHours(row.hours))} HRS</td><td>${row.rate == null ? "VARIES" : esc(money(row.rate) + "/HR")}</td><td>${esc(money(row.pay))}</td></tr>`).join("");
     const totalHours = summary.reduce((sum, row) => sum + row.hours, 0), totalPay = summary.reduce((sum, row) => sum + row.pay, 0);
     $("#hoursSummaryTotal").innerHTML = `<tr><td>TOTAL</td><td>${esc(formatHours(totalHours))} HRS</td><td></td><td>${esc(money(totalPay))}</td></tr>`;
-    const range = HoursPDF.rangeLabel?.(entries.map(row => row.date).concat($("#hoursReportDate").value)) || "";
-    if ($("#hoursGrandTitle")) $("#hoursGrandTitle").textContent = range ? `GRAND TOTAL — ${range}` : "GRAND TOTAL";
     $("#hoursPreviewDescription").textContent = $("#hoursDescription").value.trim();
   }
 

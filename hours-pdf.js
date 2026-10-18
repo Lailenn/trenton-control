@@ -236,9 +236,9 @@
       const employeeTotal = rows.reduce((sum, row) => sum + row.hours, 0);
       pagedTable(columns, ["DATE", "EMPLOYEE", "TIME IN", "TIME OUT", "LUNCH", "TOTAL HOURS"], tableRows, ["TOTAL", "", "", "", "", hoursLabel(employeeTotal)]);
     }
-    // "GRAND TOTAL — dates" above the pay summary, like the other hours format.
+    // "GRAND TOTAL" above the pay summary (the date is already in the report header).
     if (cursor + 24 + 120 > pageH - 42) header();
-    text(`GRAND TOTAL - ${rangeLabel((data.entries || []).map(row => row.date).concat(data.reportDate))}`, left, cursor, 13, bold, ink);
+    text("GRAND TOTAL", left, cursor, 13, bold, ink);
     cursor += 24;
     const summaryRows = summary.map(row => [row.employee, hoursLabel(row.totalHours), row.rate == null ? "VARIES" : `${money(row.rate)}/HR`, money(row.pay)]);
     pagedTable([180, 130, 140, Math.max(70, width - 180 - 130 - 140)], ["EMPLOYEE", "TOTAL HOURS", "HOURLY RATE", "TOTAL PAY"], summaryRows, ["TOTAL", hoursLabel(totalHours), "", money(totalPay)], true, 57);
