@@ -44,7 +44,10 @@
   const DEFAULT_FROM_ADDRESS = "11804 Birchview Ct. Clinton MD 20735";
   const DEFAULT_APPROVAL = "ESTIMATED AND APPROVED BY DIEGO";
   const defaultApproval = () => (window.CompanyApp?.isOtras?.() ? "" : DEFAULT_APPROVAL);
-  const INVOICE_DRAFT_FIELDS = ["builderInvoiceNumber", "builderIssuedDate", "builderApproval", "builderFromName", "builderBillName", "builderFromPhone", "builderBillAddress", "builderWorkAddress", "builderFromEmail", "builderFromAddress", "builderDescription", "builderQty", "builderPrice", "builderDeposit", "builderNote"];
+  const INVOICE_DRAFT_FIELDS = ["builderInvoiceNumber", "builderIssuedDate", "builderApproval", "builderFromName", "builderBillName", "builderFromPhone", "builderBillAddress", "builderWorkAddress", "builderFromEmail", "builderFromAddress", "builderDescription", "builderQty", "builderPrice", "builderShowLines", "builderDeposit", "builderNote"];
+  // Checkboxes travel through the draft as "1" / "".
+  const fieldValue = el => (el?.type === "checkbox" ? (el.checked ? "1" : "") : (el?.value || ""));
+  const setFieldValue = (el, value) => { if (!el) return; if (el.type === "checkbox") el.checked = value === "1" || value === true; else el.value = value; };
   let invoiceDraftTimer = 0;
   let applyingInvoiceDraft = false;
 
@@ -563,6 +566,7 @@
       description: split.text,
       qty: Number($("#builderQty").value) > 0 ? Number($("#builderQty").value) : 1,
       price,
+      showLines: Boolean($("#builderShowLines")?.checked),
       deposit: Math.min(Math.max(Number($("#builderDeposit").value) || 0, 0), 100),
       note: $("#builderNote").value.trim(),
       sourceMessage: $("#whatsappText").value.trim(),
@@ -590,6 +594,7 @@
       builderDescription: "",
       builderQty: "1",
       builderPrice: "",
+      builderShowLines: "",
       builderDeposit: "50",
       builderNote: "",
       whatsappText: ""
@@ -598,7 +603,7 @@
 
   function collectInvoiceDraft() {
     const fields = {};
-    INVOICE_DRAFT_FIELDS.forEach((id) => { fields[id] = $("#" + id)?.value || ""; });
+    INVOICE_DRAFT_FIELDS.forEach((id) => { fields[id] = fieldValue($("#" + id)); });
     const customLogo = typeof logoDataUrl === "string" && logoDataUrl.startsWith("data:image/") && logoDataUrl.length < 350000;
     return {
       savedAt: Date.now(),
@@ -676,7 +681,7 @@
     if (!draft?.fields) return false;
     applyingInvoiceDraft = true;
     INVOICE_DRAFT_FIELDS.forEach((id) => {
-      if (draft.fields[id] != null && $("#" + id)) $("#" + id).value = draft.fields[id];
+      if (draft.fields[id] != null && $("#" + id)) setFieldValue($("#" + id), draft.fields[id]);
     });
     if ($("#whatsappText") && draft.whatsappText != null) $("#whatsappText").value = draft.whatsappText;
     if (draft.recordId) builderRecordId = draft.recordId;
@@ -730,6 +735,9 @@
       "#previewNote": note
     };
     Object.entries(values).forEach(([selector, value]) => { const element = $(selector); if (element) element.textContent = value; });
+    // Optional QTY / Price / Amount columns (only when the box is checked and there is a price).
+    const showLines = data.showLines && data.price > 0;
+    ["#previewQty", "#previewPrice", "#previewAmount"].forEach(selector => { const cell = $(selector); if (cell) cell.hidden = !showLines; });
     // Empty fields show their example (in grey) on the preview, so the sheet never looks broken.
     const examplePrice = Number((String($("#builderPrice")?.placeholder || "").match(/\d[\d.]*/) || ["0"])[0]) || 9200;
     // Live summary next to the deposit: total, what is asked up front and what is left.
@@ -918,6 +926,7 @@
     $("#builderDescription").value = "";
     $("#builderQty").value = "1";
     $("#builderPrice").value = "";
+    $("#builderShowLines").checked = false;
     $("#builderDeposit").value = "50";
     $("#builderNote").value = "";
     $("#builderLogo").value = "";
@@ -1122,6 +1131,7 @@
     const data = record.invoiceData;
     const map = {invoiceNumber: "InvoiceNumber", issuedDate: "IssuedDate", approval: "Approval", fromName: "FromName", billName: "BillName", fromPhone: "FromPhone", billAddress: "BillAddress", workAddress: "WorkAddress", fromEmail: "FromEmail", fromAddress: "FromAddress", description: "Description", qty: "Qty", price: "Price", deposit: "Deposit", note: "Note"};
     Object.entries(map).forEach(([key, id]) => { if (data[key] != null) $("#builder" + id).value = data[key]; });
+    $("#builderShowLines").checked = Boolean(data.showLines);
     $("#builderWorkAddress").value = record.address;
     $("#whatsappText").value = data.sourceMessage || "";
     logoDataUrl = /^data:image\/(png|jpeg|webp);base64,/i.test(data.logoDataUrl || "") ? data.logoDataUrl : DEFAULT_LOGO_URL;
@@ -1336,6 +1346,7 @@
   $("#fillInvoiceFromTextButton").addEventListener("click", fillInvoiceFromText);
   $("#whatsappText").addEventListener("paste", () => setTimeout(fillInvoiceFromText, 0));
   INVOICE_DRAFT_FIELDS.forEach((id) => $("#" + id).addEventListener("input", () => { updateInvoicePreview(); persistInvoiceDraft(); }));
+  $("#builderShowLines").addEventListener("change", () => { updateInvoicePreview(); persistInvoiceDraft(); });
   // Typing in a field marked as missing clears its warning.
   INVOICE_DRAFT_FIELDS.forEach((id) => $("#" + id).addEventListener("input", () => $("#" + id).closest(".field")?.classList.remove("is-invalid")));
   $("#whatsappText").addEventListener("input", () => { $("#whatsappResult").classList.add("hidden"); persistInvoiceDraft(); });

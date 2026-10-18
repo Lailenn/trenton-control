@@ -157,6 +157,7 @@
       if (!Number.isFinite(capacity) || capacity < 1) capacity = 6;
       const chunk = description.slice(index, index + capacity);
       if (!chunk.length) break;
+      const firstPage = index === 0;
       index += chunk.length;
       const body = Math.max(226, chunk.length * 20 + 36);
       tableBottom = top + 48 + body;
@@ -169,6 +170,15 @@
         draw(label, x, top + 15, 14, bold, ink);
       });
       linesAt(chunk, left + 5, top + 66, 16, regular, 20, ink);
+      // Optional line detail: quantity, unit price and amount, centered in their columns.
+      if (data.showLines && firstPage && Number(data.price) > 0) {
+        const qty = Number(data.qty) > 0 ? Number(data.qty) : 1;
+        [String(qty), money(Number(data.price)), money(total)].forEach((text, i) => {
+          const col = i + 1, room = columns[col + 1] - columns[col] - 8;
+          const size = Math.min(15, room / Math.max(measure(regular, text, 1), 0.01));
+          draw(text, (columns[col] + columns[col + 1] - measure(regular, text, size)) / 2, top + 66, size, regular, ink);
+        });
+      }
       if (index === description.length) {
         page.drawRectangle({x: columns[3] * s, y: (height - tableBottom - 27) * s, width: (right - columns[3]) * s, height: 27 * s, color: peach});
         line(columns[3], tableBottom, columns[3], tableBottom + 27, 1, lineColor);

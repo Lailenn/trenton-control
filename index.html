@@ -29,7 +29,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet" />
     <link rel="icon" href="assets/app-icon.png?v=2" type="image/png" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2" />
-    <link rel="stylesheet" href="styles.css?v=builder-4" />
+    <link rel="stylesheet" href="styles.css?v=builder-6" />
   </head>
   <body>
     <div id="authGate" class="auth-gate auth-play login-screen login3" data-mode="login">
@@ -762,6 +762,7 @@
                   <label class="field full"><span>Descripción <em>*</em></span><textarea id="builderDescription" class="js-grow" rows="5" placeholder="Ej. Preparation and installation of stucco"></textarea></label>
                   <label class="field"><span>Cantidad</span><input id="builderQty" type="number" min="0" step="0.01" value="1" inputmode="decimal" /></label>
                   <label class="field"><span>Precio (USD) <em>*</em></span><div class="money-input"><b>$</b><input id="builderPrice" type="number" min="0" step="0.01" value="" placeholder="Ej. 9200.00" inputmode="decimal" /></div></label>
+<label class="field full check-field"><input id="builderShowLines" type="checkbox" /><span>Mostrar cantidad y precio en la tabla <small>(opcional)</small></span><small class="field-hint">Llena las columnas QTY, Price y Amount de la factura. Si no lo marcas, solo sale el total abajo.</small></label>
 
                   <div class="field-group full"><p class="field-group-title">5 · Pago</p></div>
                   <label class="field"><span>Anticipo requerido (%)</span><input id="builderDeposit" type="number" min="0" max="100" step="1" value="50" inputmode="numeric" /></label>
@@ -1084,7 +1085,7 @@
     <script src="vendor/pdf-lib.min.js" defer></script>
     <script src="vendor/jszip.min.js" defer></script>
     <script src="invoice-core.js?v=builder-1" defer></script>
-    <script src="invoice-pdf.js?v=builder-1" defer></script>
+    <script src="invoice-pdf.js?v=builder-6" defer></script>
     <script src="cloud-db.js?v=job-board-3" defer></script>
     <script src="whatsapp-invoice.js?v=parse-fix-1" defer></script>
     <script src="invoice-archive.js?v=pc-menu-1" defer></script>
@@ -1101,7 +1102,7 @@
     <script src="check-viewer.js?v=1" defer></script>
     <script src="balance-ui.js?v=1" defer></script>
     <script src="dash-stats.js?v=2" defer></script>
-    <script src="app.js?v=builder-5" defer></script>
+    <script src="app.js?v=builder-6" defer></script>
     <script src="ux-motion.js?v=4" defer></script>
   </body>
 </html>

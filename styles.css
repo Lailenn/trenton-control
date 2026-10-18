@@ -7333,3 +7333,10 @@ html.boot-session body::after {
 .builder-totals strong { color: #1b2a4e; font: 800 15px "Plus Jakarta Sans", sans-serif; }
 .builder-totals small { color: #6b7590; font: 500 12px "Plus Jakarta Sans", sans-serif; }
 @media (max-width: 570px) { .invoice-fields .field-group.full { grid-column: auto; } }
+/* Optional line detail in the preview table */
+#invoicePaper .invoice-table tbody td:not(:first-child) { text-align: center; vertical-align: top; }
+/* Checkbox field row */
+.invoice-fields .check-field { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 10px; }
+.invoice-fields .check-field input[type="checkbox"] { width: 20px; height: 20px; margin: 0; accent-color: #3563e9; }
+.invoice-fields .check-field > span small { color: #8c96aa; font-weight: 500; }
+.invoice-fields .check-field .field-hint { grid-column: 1 / -1; }
