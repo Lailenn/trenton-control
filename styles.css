@@ -7263,28 +7263,6 @@ html body #authGate.login-screen.login3.auth-gate[data-mode][hidden] { display: 
 
 /* Loading screen while a saved session is being confirmed (instead of flashing the login) */
 html.boot-session #authGate { display: none !important; }
-html.boot-session body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  background: #f4f6fb url("assets/logo-ruben-clear.png?v=1") center 44% / 150px auto no-repeat;
-}
-html.boot-session body::after {
-  content: "";
-  position: fixed;
-  z-index: 2001;
-  left: 50%;
-  top: calc(44% + 70px);
-  width: 28px;
-  height: 28px;
-  margin-left: -14px;
-  border: 3px solid rgba(53, 99, 233, .18);
-  border-top-color: #3563e9;
-  border-radius: 50%;
-  animation: bootSpin .8s linear infinite;
-}
-@keyframes bootSpin { to { transform: rotate(360deg); } }
 
 /* Phone login: compact so the whole screen fits without scrolling (logo and title share the top row) */
 @media (max-width: 600px) {
@@ -7461,3 +7439,28 @@ html.boot-session body::after {
 .whatsapp-import textarea::placeholder { color: #aab3c5; font-size: .88em; font-style: italic; line-height: 1.55; }
 .whatsapp-import > label { color: #5b6580; font-size: 13.5px; line-height: 1.5; }
 .whatsapp-import textarea { min-height: 150px; }
+
+/* Loading screen while a saved session is confirmed */
+.boot-screen { display: none; }
+html.boot-session .boot-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 45%, #ffffff 0%, #f8f7f6 60%, #f3f1ef 100%);
+  animation: bootIn .35s ease both;
+}
+.boot-houses { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 60%; opacity: .9; }
+.boot-copy { position: relative; z-index: 1; text-align: center; padding: 0 20px; }
+.boot-copy h2 { margin: 0; color: #1b1f27; font: 800 clamp(26px, 4vw, 40px)/1.15 "Plus Jakarta Sans", sans-serif; letter-spacing: .01em; }
+.boot-copy p { margin: 10px 0 30px; color: #5b6070; font: 500 clamp(14px, 1.6vw, 17px)/1.4 "Plus Jakarta Sans", sans-serif; letter-spacing: .04em; }
+.boot-dots { display: flex; justify-content: center; gap: 14px; }
+.boot-dots i { width: 14px; height: 14px; border-radius: 50%; background: #ee7f2d; box-shadow: 0 0 14px rgba(238, 127, 45, .45); animation: bootDot 1.2s ease-in-out infinite; }
+.boot-dots i:nth-child(2) { animation-delay: .18s; }
+.boot-dots i:nth-child(3) { animation-delay: .36s; }
+@keyframes bootDot { 0%, 80%, 100% { opacity: .35; transform: scale(.8); } 40% { opacity: 1; transform: scale(1.1); } }
+@keyframes bootIn { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .boot-dots i { animation: none; opacity: .8; } }
+@media (max-width: 600px) { .boot-houses { width: 180%; left: -40%; } }

@@ -29,9 +29,30 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet" />
     <link rel="icon" href="assets/app-icon.png?v=2" type="image/png" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2" />
-    <link rel="stylesheet" href="styles.css?v=parse-2" />
+    <link rel="stylesheet" href="styles.css?v=boot-3" />
   </head>
   <body>
+    <div class="boot-screen" id="bootScreen" aria-live="polite" aria-busy="true">
+      <svg class="boot-houses" viewBox="0 0 1600 560" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
+        <g fill="none" stroke-linejoin="round" stroke-linecap="round">
+          <path d="M-20 140 L100 60 L215 150 L285 110 L560 330" stroke="#e7e5e3" stroke-width="14"/>
+          <path d="M-60 270 L100 150 L640 560" stroke="#fbe3d0" stroke-width="44"/>
+          <path d="M955 430 L1150 290 L1275 385" stroke="#e7e5e3" stroke-width="12"/>
+          <path d="M1330 330 L1560 165 L1640 220" stroke="#ecebe9" stroke-width="12"/>
+          <path d="M1060 600 L1495 270 L1680 410" stroke="#fbe3d0" stroke-width="44"/>
+        </g>
+        <g fill="#e9e5e2">
+          <rect x="57" y="330" width="34" height="32" rx="3"/><rect x="97" y="330" width="34" height="32" rx="3"/><rect x="57" y="368" width="34" height="32" rx="3"/><rect x="97" y="368" width="34" height="32" rx="3"/>
+          <rect x="1108" y="405" width="26" height="25" rx="3"/><rect x="1140" y="405" width="26" height="25" rx="3"/><rect x="1108" y="436" width="26" height="25" rx="3"/><rect x="1140" y="436" width="26" height="25" rx="3"/>
+          <rect x="1433" y="455" width="38" height="36" rx="3"/><rect x="1482" y="455" width="38" height="36" rx="3"/><rect x="1433" y="497" width="38" height="36" rx="3"/><rect x="1482" y="497" width="38" height="36" rx="3"/>
+        </g>
+      </svg>
+      <div class="boot-copy">
+        <h2>Espere un momento...</h2>
+        <p>Estamos cargando la información</p>
+        <div class="boot-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+      </div>
+    </div>
     <div id="authGate" class="auth-gate auth-play login-screen login3" data-mode="login">
       <div class="l3-bg" aria-hidden="true"></div>
       <div class="l3-corner-logo" aria-hidden="true"><img src="assets/logo-ruben-clear.png?v=1" alt=""><strong>Ruben Perla</strong></div>
