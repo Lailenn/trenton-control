@@ -86,7 +86,8 @@
     const covered = index => result.some(item => index >= item.index && index < item.index + item.length);
     const range = /\b([01]?\d|2[0-3])(?::([0-5]\d))?\s*(?:-|–|—|a|to|hasta)\s*([01]?\d|2[0-3])(?::([0-5]\d))?\b/gi;
     while ((match = range.exec(source))) {
-      if (match[2] == null && match[4] == null) continue; // "1-9" could be a date, not a schedule
+      // "1-9" could be a date, but "de 7 a 3" / "7 to 3" / "7 hasta 3" is a schedule.
+      if (match[2] == null && match[4] == null && !/\s(?:a|to|hasta)\s/i.test(match[0])) continue;
       const startIndex = match.index;
       const endIndex = match.index + match[0].lastIndexOf(match[3]);
       if (match[2] == null && !covered(startIndex)) {
@@ -133,15 +134,37 @@
     return candidate;
   }
 
-  function parseLunch(line) {
+  // Lunch phrases, in minutes or hours: "almuerzo 30", "30 min de almuerzo", "almuerzo 1 hora",
+  // "media hora de almuerzo", "lunch 1.5 hr", "sin almuerzo". Returns minutes or null.
+  const LUNCH_WORD = String.raw`(?:lunch|almuerzo|comida|break|descanso)`;
+  const LUNCH_PATTERNS = [
+    { re: new RegExp(String.raw`\b(?:sin|no)\s+` + LUNCH_WORD, "i"), minutes: () => 0 },
+    { re: new RegExp(String.raw`\bmedia\s+hora\s+(?:de\s+)?` + LUNCH_WORD + String.raw`|` + LUNCH_WORD + String.raw`\s*(?:de\s+)?media\s+hora`, "i"), minutes: () => 30 },
+    { re: new RegExp(LUNCH_WORD + String.raw`\s*[:=-]?\s*(?:de\s+)?(\d+(?:[.,]\d+)?)\s*(?:hrs?|hours?|horas?)\b`, "i"), minutes: m => Math.round(numberValue(m[1]) * 60) },
+    { re: new RegExp(String.raw`\b(\d+(?:[.,]\d+)?)\s*(?:hrs?|hours?|horas?)\s+(?:de\s+)?` + LUNCH_WORD, "i"), minutes: m => Math.round(numberValue(m[1]) * 60) },
+    { re: new RegExp(LUNCH_WORD + String.raw`\s*[:=-]?\s*(?:de\s+)?(\d{1,3})\s*(?:min(?:ute)?s?|m)?\b`, "i"), minutes: m => Number(m[1]) },
+    { re: new RegExp(String.raw`\b(\d{1,3})\s*(?:min(?:ute)?s?|mins?|m)\b(?:\s+(?:de\s+)?` + LUNCH_WORD + String.raw`)?`, "i"), minutes: m => Number(m[1]) }
+  ];
+  function lunchMatch(line) {
     const source = String(line || "");
-    let match = source.match(/(?:lunch|almuerzo|comida|break)\s*[:=-]?\s*(\d{1,3})\s*(?:min(?:ute)?s?|m)?\b/i);
-    if (!match) match = source.match(/\b(\d{1,3})\s*(?:min(?:ute)?s?|mins?|m)\b/i);
-    return match ? Math.max(0, Number(match[1])) : null;
+    for (const pattern of LUNCH_PATTERNS) {
+      const match = source.match(pattern.re);
+      if (match) return { minutes: Math.max(0, pattern.minutes(match) || 0), text: match[0], index: match.index };
+    }
+    return null;
+  }
+  function parseLunch(line) {
+    const found = lunchMatch(line);
+    return found ? found.minutes : null;
+  }
+  // The line without its lunch phrase, so "almuerzo 1 hora" is never read as 1 hour worked.
+  function withoutLunch(line) {
+    const found = lunchMatch(line);
+    return found ? String(line).slice(0, found.index) + " " + String(line).slice(found.index + found.text.length) : String(line || "");
   }
 
   function parseHours(line) {
-    const match = String(line || "").match(/\b(\d+(?:[.,]\d+)?)\s*(?:hrs?|hours?|horas?)\b/i);
+    const match = withoutLunch(line).match(/\b(\d+(?:[.,]\d+)?)\s*(?:hrs?|hours?|horas?)\b/i);
     return match ? numberValue(match[1]) : null;
   }
 
@@ -209,7 +232,8 @@
       }
       const date = parseDateText(line, fallbackYear);
       if (date && !fields.reportDate) fields.reportDate = date;
-      const rate = parseRate(line);
+      // The report-wide rate comes from a rate line, not from one employee's own rate.
+      const rate = extractTimes(line).length === 0 && parseHours(line) == null ? parseRate(line) : null;
       if (rate != null && fields.defaultRate == null) fields.defaultRate = rate;
       const description = line.match(/^(?:descripci[oó]n(?:\s+del\s+trabajo)?|description|trabajo(?:\s+realizado)?)\s*[:=-]\s*(.*)$/i);
       if (description && description[1]) fields.description = description[1].trim();
@@ -248,7 +272,7 @@
       if (match) { const rate = parseRate(line) ?? numberValue(match[1]); if (rate != null) (current || entries[entries.length - 1] || ensureCurrent()).rate = rate; continue; }
 
       const times = extractTimes(line);
-      const simpleHoursMatch = line.match(/\b(\d+(?:[.,]\d+)?)\s*(?:hrs?|hours?|horas?)\b/i);
+      const simpleHoursMatch = withoutLunch(line).match(/\b(\d+(?:[.,]\d+)?)\s*(?:hrs?|hours?|horas?)\b/i);
       if (simpleHoursMatch && times.length < 2) {
         const employee = simpleEmployee(line, simpleHoursMatch) || (current && current.employee) || pendingEmployee;
         const hours = numberValue(simpleHoursMatch[1]);
@@ -270,7 +294,8 @@
         }
       }
       if (times.length >= 2) {
-        const prefix = line.slice(0, times[0].index).replace(/[|,:;]+$/g, "").trim();
+        // Drop words like "entrada", "de", "from" that sit between the name and the first time.
+        const prefix = line.slice(0, times[0].index).replace(/[|,:;]+$/g, "").replace(/(?:\s+(?:entrada|entr[oó]|de|desde|from|in|time\s*in|empez[oó]|start(?:ed)?))+\s*$/i, "").trim();
         const name = cleanName(prefix) || looseName(prefix) || (current && current.employee) || pendingEmployee;
         if (current && current.employee && !current.timeIn && (!prefix || name === current.employee)) {
           current.timeIn = times[0].value; current.timeOut = times[1].value;

@@ -52,17 +52,43 @@ const WhatsAppInvoiceParser = (() => {
       date.getMonth() === month - 1 && date.getDate() === day ? dateValue(date) : null;
   }
 
+  const MONTHS_ES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+  const MONTHS_EN = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+  // Month name (Spanish or English, full or 3-letter) → 1..12, or 0.
+  function monthNumber(word) {
+    const w = String(word || "").replace(/\.$/, "");
+    const es = MONTHS_ES.findIndex(m => m === w || (w.length >= 3 && m.startsWith(w)));
+    if (es >= 0) return es + 1;
+    const en = MONTHS_EN.findIndex(m => m === w || (w.length >= 3 && m.startsWith(w)));
+    return en >= 0 ? en + 1 : 0;
+  }
+  function shiftDays(now, days) { const d = new Date(now); d.setDate(d.getDate() + days); return dateValue(d); }
+
   function readDate(value, now) {
-    const clean = fold(value).replace(/[.!]$/, "").trim();
-    if (/^(?:con\s+)?fecha\s+de\s+hoy$|^hoy$|^today$|^today['’]s date$/.test(clean)) return dateValue(now);
+    const clean = fold(value).replace(/[.!]$/, "").replace(/^(?:con\s+)?(?:fecha|date)\s*(?:de|del|:)?\s*/, "").trim();
+    if (/^(?:hoy|today|today['’]s date)$/.test(clean) || /^(?:con\s+)?fecha\s+de\s+hoy$/.test(fold(value).replace(/[.!]$/, "").trim())) return dateValue(now);
+    if (/^(?:ayer|yesterday)$/.test(clean)) return shiftDays(now, -1);
+    if (/^(?:manana|tomorrow)$/.test(clean)) return shiftDays(now, 1);
     let match = clean.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
     if (match) return exactDate(Number(match[1]), Number(match[2]), Number(match[3]));
-    match = clean.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
-    if (match) return exactDate(Number(match[3]), Number(match[2]), Number(match[1]));
-    const months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-    match = clean.match(/^(\d{1,2})\s+(?:de\s+)?([a-z]+)\s+(?:de\s+)?(\d{4})$/);
-    if (match && months.includes(match[2])) return exactDate(Number(match[3]), months.indexOf(match[2]) + 1, Number(match[1]));
+    match = clean.match(/^(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{2}|\d{4}))?$/);
+    if (match) {
+      const a = Number(match[1]), b = Number(match[2]);
+      const year = match[3] ? (match[3].length === 2 ? 2000 + Number(match[3]) : Number(match[3])) : now.getFullYear();
+      // Unambiguous when one side is over 12 (10/20 → Oct 20; 20/10 → Oct 20); otherwise day/month.
+      return b > 12 ? exactDate(year, a, b) : exactDate(year, b, a);
+    }
+    match = clean.match(/^(\d{1,2})\s+(?:de\s+)?([a-z]+\.?)(?:\s+(?:de\s+|del\s+)?(\d{4}))?$/);
+    if (match && monthNumber(match[2])) return exactDate(match[3] ? Number(match[3]) : now.getFullYear(), monthNumber(match[2]), Number(match[1]));
+    match = clean.match(/^([a-z]+\.?)\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(\d{4}))?$/);
+    if (match && monthNumber(match[1])) return exactDate(match[3] ? Number(match[3]) : now.getFullYear(), monthNumber(match[1]), Number(match[2]));
     return null;
+  }
+  // A whole line that is only a date ("10/20/2026", "20 de octubre", "Oct 20, 2026", "ayer").
+  function lineIsDate(line) {
+    const clean = fold(line).replace(/[.!]$/, "").trim();
+    return /^\d{1,2}[/.-]\d{1,2}(?:[/.-]\d{2,4})?$|^\d{4}-\d{1,2}-\d{1,2}$|^(?:hoy|ayer|manana|today|yesterday|tomorrow)$/.test(clean) ||
+      (/^(?:\d{1,2}\s+(?:de\s+)?[a-z]+\.?(?:\s+(?:de\s+)?\d{4})?|[a-z]+\.?\s+\d{1,2}(?:st|nd|rd|th)?(?:,?\s+\d{4})?)$/.test(clean) && readDate(clean, new Date()) != null);
   }
 
   const PRICE_PHRASE = String.raw`(?:price\s+(?:for|per|of)\s+(?:materials?\s+and\s+)?labou?r(?:\s+total)?|price\s+per\s+labou?r|labou?r\s+(?:price|cost|total)|cost\s+(?:for|of|per)\s+(?:materials?\s+and\s+)?labou?r|precio\s+(?:(?:por|de|para|total)\s+)?(?:materiales?\s+y\s+)?(?:mano\s+de\s+obra|labou?r)(?:\s+total)?)`;
@@ -155,11 +181,30 @@ const WhatsAppInvoiceParser = (() => {
       } else add(key, number);
     };
 
+    const items = [];
     for (let index = 0; index < lines.length; index++) {
-      const line = lines[index];
+      // "Hola, es para…" → "para…": a greeting in front of real data is dropped.
+      const line = lines[index].replace(/^(?:hola|buen(?:os|as)?\s+(?:dias?|tardes|noches)|saludos)[,!.\s]+(?=\S)/i, "").replace(/^es\s+(?=para\b)/i, "");
       const normalized = fold(line);
       let match;
       const following = (value) => value.trim() || (lines[++index] || "").trim();
+      // Anything left after a recognised piece on the same line is read as its own line.
+      const rest = (value) => { const text = String(value || "").replace(/^[\s,.;:-]+/, "").trim(); if (text) lines.splice(index + 1, 0, text); };
+
+      // Document type: estimate words → ESTIMATE; "invoice" / "factura final" → INVOICE.
+      if (/^(?:es\s+(?:un\s+|una\s+)?)?(?:estimado|estimate|presupuesto|cotizaci[oó]n|quote)\b(?!\s+and\b)(?!\s+y\s+aprobado)/i.test(line)) {
+        add("docTitle", "ESTIMATE");
+        rest(line.replace(/^(?:es\s+(?:un\s+|una\s+)?)?(?:estimado|estimate|presupuesto|cotizaci[oó]n|quote)\b[\s:.-]*/i, ""));
+        continue;
+      }
+      if (/^(?:es\s+(?:un\s+|una\s+)?)?(?:invoice|factura\s+final)\s*$/i.test(line)) { add("docTitle", "INVOICE"); continue; }
+      // No approval line wanted.
+      if (/^(?:sin\s+(?:aprobaci[oó]n|diego|approved)|no\s+approval|without\s+approval)\b/i.test(normalized)) { add("showApproval", false); continue; }
+      // A line that is only a date.
+      if (lineIsDate(line)) { add("issuedDate", readDate(line, now)); continue; }
+      // Another company: "para otra empresa: ABC Builders", "cliente: ABC".
+      match = line.match(/^(?:para\s+)?otra\s+(?:empresa|compa[nñ][ií]a)\s*[:\-]?\s*(.*)$/i);
+      if (match) { if (match[1].trim()) add("billName", match[1].trim()); continue; }
 
       match = line.match(/^(?:nota|note|observaciones|condiciones de pago)\s*:\s*(.*)$/i);
       if (match) { notes.push(match[1]); continuation = "note"; continue; }
@@ -198,6 +243,16 @@ const WhatsAppInvoiceParser = (() => {
         continue;
       }
 
+      // "Factura #021 para Trenton", "Invoice no. 21", "número de factura: 021", or a line that is just "#021".
+      match = line.match(/^(?:(?:n[uú]mero\s+de\s+(?:invoice|factura|estimado))|invoice|factura|estimado|estimate)(?:\s*(?:no\.?|number|num\.?|n[.º°]+))?\s*(?::|#|=|\s)\s*#?\s*([A-Za-z]{0,3}-?\d[\w./-]{0,20})\b(.*)$/i)
+        || line.match(/^#\s*(\d[\w./-]{0,20})\b(.*)$/);
+      if (match) {
+        add("invoiceNumber", "#" + match[1].replace(/^#/, ""));
+        if (/^(?:invoice|factura)\b/i.test(line)) add("docTitle", "INVOICE");
+        if (/^(?:estimado|estimate)\b/i.test(line)) add("docTitle", "ESTIMATE");
+        rest(match[2]);
+        continue;
+      }
       match = line.match(/^(?:n[uú]mero de (?:invoice|factura)|invoice(?:\s*(?:no\.?|number|n[.º°]+))?|factura(?:\s*(?:no\.?|n[.º°]+))?)\s*(?::|#|=)\s*(.*)$/i);
       if (match) {
         const value = following(match[1]).replace(/^#/, "");
@@ -216,7 +271,8 @@ const WhatsAppInvoiceParser = (() => {
         const date = readDate(value, now) || readDate(line, now);
         if (date) {
           add("issuedDate", date);
-          if (/^\d{1,2}[/-]\d{1,2}[/-]\d{4}$/.test(value)) review.push("La fecha numérica se leyó como día/mes/año.");
+          const parts = value.match(/^(\d{1,2})[/.-](\d{1,2})[/.-]\d{2,4}$/);
+          if (parts && Number(parts[1]) <= 12 && Number(parts[2]) <= 12 && parts[1] !== parts[2]) review.push("La fecha " + value + " puede ser día/mes o mes/día: la leí como día/mes. Revísala.");
         } else { rejected.add("issuedDate"); review.push("Revisa la fecha: “" + value + "” no es una fecha válida reconocida."); }
         continue;
       }
@@ -249,6 +305,16 @@ const WhatsAppInvoiceParser = (() => {
       if (/^(?:horas?|hours?|tarifa|rate)\b/.test(normalized) || /^[\d$.,:\s]+$/.test(line)) {
         review.push("Línea para revisar manualmente: “" + line + "”."); continue;
       }
+      // A concept with its own price: "Materiales 2,000", "Mano de obra: $2,800", "Labor - 2800".
+      match = line.match(/^([^\d$].*?[a-záéíóúñ)])\s*[:=\-–]?\s*((?:US\$|USD|\$)\s*\d[\d.,]*|\d[\d.,]*)\s*(?:USD|d[oó]lares?)?\.?$/i);
+      if (match) {
+        const amount = numberValue(match[2]);
+        const hasCurrency = /\$|USD/i.test(match[2]) || /USD|d[oó]lares?/i.test(line);
+        if (amount != null && amount > 0 && (hasCurrency || amount >= 10)) {
+          items.push({ description: match[1].trim(), price: amount });
+          continue;
+        }
+      }
       const split = splitPrice(line);
       if (split.amount != null) add("total", split.amount);
       if (split.text) (continuation === "note" ? notes : description).push(split.text);
@@ -259,7 +325,9 @@ const WhatsAppInvoiceParser = (() => {
     for (const [key, values] of candidates) {
       const unique = [...new Map(values.map((value) => [String(value).toLowerCase(), value])).values()];
       if (unique.length > 1) {
-        if (key === "billAddress") {
+        if (key === "docTitle" || key === "showApproval") {
+          fields[key] = values[values.length - 1]; // the last mention wins
+        } else if (key === "billAddress") {
           fields[key] = unique[0];
           review.push("Había más de una dirección. Dejé la primera: “" + unique[0] + "”.");
         } else conflicts.push(key);
@@ -290,6 +358,25 @@ const WhatsAppInvoiceParser = (() => {
       }
     }
     if (notes.some(Boolean)) fields.note = notes.filter(Boolean).join("\n");
+    // Concepts with their own price. Two or more become separate lines of the invoice; the general
+    // description (if any) goes on top of the first one. One alone is just the price.
+    if (items.length >= 2) {
+      const sum = Math.round(items.reduce((total, item) => total + item.price * 100, 0)) / 100;
+      if (fields.total != null && Math.round(fields.total * 100) !== Math.round(sum * 100)) {
+        review.push(`El total del mensaje (${fields.total}) no coincide con la suma de los conceptos (${sum}). Usé la suma.`);
+      }
+      delete fields.total;
+      const general = fields.description || "";
+      fields.items = items.map((item, i) => ({ description: i === 0 && general ? general + "\n" + item.description : item.description, qty: 1, price: item.price }));
+      fields.description = fields.items[0].description;
+      fields.qty = 1;
+      fields.price = items[0].price;
+      return { fields, detectedTotal: sum, review, error: conflicts.length ? "Hay datos distintos para un mismo campo. Revisa las líneas repetidas." : "" };
+    }
+    if (items.length === 1) {
+      if (fields.total == null) fields.total = items[0].price;
+      if (!fields.description) fields.description = items[0].description;
+    }
     if (conflicts.length) return { fields: {}, review: [], error: "Hay datos distintos para un mismo campo. Pega solo un trabajo y un monto final, o corrige las líneas repetidas." };
 
     let detectedTotal = fields.total;

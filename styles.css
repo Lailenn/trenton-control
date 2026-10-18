@@ -7456,3 +7456,8 @@ html.boot-session body::after {
   .translator-actions > div .button { width: 100%; padding: 0 12px; }
   .translator-actions > div .button:first-child { grid-column: 1 / -1; }
 }
+
+/* WhatsApp boxes: the example reads as an example (lighter, smaller), not as real content */
+.whatsapp-import textarea::placeholder { color: #aab3c5; font-size: .88em; font-style: italic; line-height: 1.55; }
+.whatsapp-import > label { color: #5b6580; font-size: 13.5px; line-height: 1.5; }
+.whatsapp-import textarea { min-height: 150px; }

@@ -941,19 +941,33 @@
         key === "issuedDate" ? invoiceDateLabel(value) : String(value);
       applied.push({ label: key === "billAddress" ? "Dirección del cliente y nombre en el tablero" : label, display });
     }
+    // Document type, approval line and extra concepts from the message.
+    if (parsed.fields.docTitle) {
+      $("#builderDocTitle").value = parsed.fields.docTitle;
+      applied.push({ label: "Título del documento", display: parsed.fields.docTitle });
+    }
+    if (parsed.fields.showApproval === false) {
+      $("#builderShowApproval").checked = false;
+      applied.push({ label: "Aprobación", display: "No se muestra" });
+    } else if (parsed.fields.approval) $("#builderShowApproval").checked = true;
+    const extra = (parsed.fields.items || []).slice(1);
+    writeExtraLines(extra.map(item => ({ description: item.description, qty: String(item.qty || 1), price: String(item.price) })));
+    renderExtraLines();
+    extra.forEach((item, i) => applied.push({ label: `Concepto ${i + 2}`, display: `${item.description} · ${money(item.price)}` }));
     const split = WhatsAppInvoiceParser.splitPrice($("#builderDescription").value);
     $("#builderDescription").value = split.text;
     if (split.amount != null && !(Number($("#builderPrice").value) > 0)) {
       $("#builderPrice").value = split.amount;
     }
     if (!(Number($("#builderQty").value) > 0)) $("#builderQty").value = 1;
-    if (Number($("#builderPrice").value) > 0 && Number($("#builderQty").value) > 0) {
+    if (Number($("#builderPrice").value) > 0 && Number($("#builderQty").value) > 0 && !extra.length) {
       const total = Core.cents(Number($("#builderQty").value) * Number($("#builderPrice").value)) / 100;
       parsed.detectedTotal = parsed.detectedTotal ?? total;
     }
     updateInvoicePreview();
     const missing = ["billName", "billAddress", "description", "approval", "invoiceNumber", "issuedDate", "price", "deposit"]
       .filter((key) => !Object.prototype.hasOwnProperty.call(parsed.fields, key))
+      .filter((key) => !(key === "approval" && parsed.fields.showApproval === false) && !(key === "price" && parsed.fields.docTitle === "ESTIMATE"))
       .map((key) => fieldMap[key][1].toLowerCase());
     const detectedMoney = parsed.detectedTotal != null
       ? `<p class="money-detected"><strong>Monto detectado:</strong> ${esc(money(parsed.detectedTotal))}</p>`
