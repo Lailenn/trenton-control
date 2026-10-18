@@ -29,7 +29,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet" />
     <link rel="icon" href="assets/app-icon.png?v=2" type="image/png" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2" />
-    <link rel="stylesheet" href="styles.css?v=sticky-3" />
+    <link rel="stylesheet" href="styles.css?v=builder2-4" />
   </head>
   <body>
     <div class="boot-screen" id="bootScreen" aria-live="polite" aria-busy="true">
@@ -727,7 +727,7 @@
 
           <section class="page-view hidden" id="invoiceView">
             <div class="invoice-page-heading">
-              <div><p class="eyebrow">Generador de documentos</p><h1>Crear una invoice</h1><p class="hero-copy">Llena los campos y revisa la factura en tiempo real con el formato de Rubén.</p></div>
+              <div><p class="eyebrow">Generador de documentos</p><h1>Crear una invoice</h1><p class="hero-copy">Pega un mensaje de WhatsApp y se completarán los campos automáticamente.</p></div>
               <div class="invoice-page-actions"><button class="button button-ghost" id="resetInvoiceButton" type="button">Limpiar campos</button><button class="button button-primary" id="printInvoiceButton" type="button">Guardar y descargar PDF</button></div>
             </div>
             <div id="invoiceDraftBanner" class="draft-banner hidden" role="status">
@@ -740,72 +740,104 @@
                 <button class="button button-ghost" id="discardInvoiceDraftButton" type="button">Descartar</button>
               </div>
             </div>
-            <section class="whatsapp-import" aria-labelledby="whatsappTitle">
-              <div class="whatsapp-heading"><div><p class="eyebrow">Desde el mensaje de Rubén</p><h2 id="whatsappTitle">Pegar mensaje de WhatsApp</h2></div><span class="whatsapp-badge">Texto → invoice</span></div>
-              <label for="whatsappText">Pega aquí el mensaje de Rubén y la app llena la factura sola. Se detecta: empresa, dirección, descripción, precio (o varios conceptos con su precio), fecha, número y si es estimado.</label>
-              <textarea id="whatsappText" rows="7" maxlength="16000" placeholder="Ej.&#10;Para Trenton&#10;1117 C St SE, Washington, DC 20003&#10;Preparation and installation of stucco&#10;Total: 9,200&#10;Hoy" aria-describedby="whatsappHelp"></textarea>
-              <div class="whatsapp-actions"><p id="whatsappHelp">Un trabajo por mensaje. Podrás corregir los campos antes de guardar.</p><button class="button button-primary" id="fillInvoiceFromTextButton" type="button">Completar invoice</button></div>
-              <div id="whatsappResult" class="whatsapp-result hidden" role="status" aria-live="polite"></div>
-            </section>
-            <section class="translator-panel" data-translator="invoice" data-target="builderDescription" data-langpair="es|en" data-dir="es-en">
-              <div class="translator-heading"><div><p class="eyebrow">Traductor</p><h2 data-translator-title>Español → Inglés</h2></div><span class="whatsapp-badge" data-translator-badge>ES → EN</span></div>
-              <p data-translator-hint>Pega el texto en español. El resultado saldrá en inglés para la descripción de la invoice.</p>
-              <div class="translator-switch" role="group" aria-label="Dirección de traducción">
-                <button type="button" class="translator-dir is-active" data-pair="es|en" aria-pressed="true"><strong>Español → Inglés</strong><small>De español a inglés</small></button>
-                <button type="button" class="translator-swap" data-translator-swap aria-label="Invertir idiomas">⇄</button>
-                <button type="button" class="translator-dir" data-pair="en|es" aria-pressed="false"><strong>Inglés → Español</strong><small>De inglés a español</small></button>
-              </div>
-              <div class="translator-grid">
-                <label><span data-translator-source-label>Texto en español</span><textarea data-translator-source rows="5" maxlength="8000" placeholder="Escribe o pega aquí en español…"></textarea></label>
-                <label><span data-translator-output-label>Traducción al inglés</span><textarea data-translator-output rows="5" maxlength="8000" readonly placeholder="Aquí aparecerá el inglés…"></textarea></label>
-              </div>
-              <div class="translator-actions"><p data-translator-status>Dirección activa: de español a inglés.</p><div><button type="button" class="button button-primary" data-translator-go>Traducir al inglés</button><button type="button" class="button button-ghost" data-translator-copy>Copiar</button><button type="button" class="button button-ghost" data-translator-apply>Usar en descripción</button></div></div>
-            </section>
-            <div class="invoice-builder">
-              <section class="invoice-form-panel">
-                <div class="builder-panel-heading"><div><p class="eyebrow">Datos editables</p><h2>Información de la invoice</h2></div><span class="builder-step">01</span></div>
-                <div class="invoice-fields">
-                  <div class="field-group full"><p class="field-group-title">1 · Encabezado</p></div>
-                  <label class="field"><span>Número de invoice</span><input id="builderInvoiceNumber" type="text" value="" placeholder="Ej. #004" autocomplete="off" /></label>
-                  <label class="field"><span>Fecha de emisión</span><input id="builderIssuedDate" type="date" /></label>
-                  <label class="field full"><span>Título del documento</span><select id="builderDocTitle"><option value="ESTIMATE">ESTIMATE (presupuesto)</option><option value="INVOICE">INVOICE (factura)</option></select></label>
-                  <label class="field full"><span>Texto superior derecho</span><input id="builderApproval" type="text" value="ESTIMATED AND APPROVED BY DIEGO" placeholder="Ej. ESTIMATED AND APPROVED BY DIEGO" /></label>
-<label class="field full check-field"><input id="builderShowApproval" type="checkbox" checked /><span>Mostrar este texto en el documento <small>(opcional)</small></span></label>
-
-                  <div class="field-group full"><p class="field-group-title">2 · De (quien factura)</p></div>
-                  <label class="field"><span>Nombre</span><input id="builderFromName" type="text" value="Ruben Perla" /></label>
-                  <label class="field"><span>Teléfono</span><input id="builderFromPhone" type="tel" value="+1 (469) 650-4958" /></label>
-                  <label class="field full"><span>Correo electrónico</span><input id="builderFromEmail" type="email" value="pr391665@gmail.com" /></label>
-                  <label class="field full"><span>Dirección</span><input id="builderFromAddress" type="text" value="11804 Birchview Ct. Clinton MD 20735" /></label>
-
-                  <div class="field-group full"><p class="field-group-title">3 · Para (quien paga)</p></div>
-                  <label class="field full"><span>Empresa o cliente</span><input id="builderBillName" type="text" value="Trenton Builders LLC" placeholder="Ej. Trenton Builders LLC" /></label>
-                  <label class="field full"><span>Dirección del cliente</span><input id="builderBillAddress" type="text" value="1117 C St SE, Washington, DC 20003" placeholder="Ej. 1117 C St SE, Washington, DC 20003" /></label>
-
-                  <div class="field-group full"><p class="field-group-title">4 · Trabajo</p></div>
-                  <label class="field full"><span>Descripción <em>*</em></span><textarea id="builderDescription" class="js-grow" rows="5" placeholder="Ej. Preparation and installation of stucco"></textarea></label>
-                  <label class="field"><span>Cantidad</span><input id="builderQty" type="number" min="0" step="0.01" value="1" inputmode="decimal" /></label>
-                  <label class="field"><span>Precio (USD) <em>*</em></span><div class="money-input"><b>$</b><input id="builderPrice" type="number" min="0" step="0.01" value="" placeholder="Ej. 9200.00" inputmode="decimal" /></div></label>
-                  <div class="field full builder-extra">
-                    <input id="builderExtraLines" type="hidden" value="" />
-                    <div id="builderExtraList" class="builder-extra-list"></div>
-                    <button type="button" class="button button-ghost builder-extra-add" id="addInvoiceLineButton">＋ Agregar otro concepto</button>
-                    <small class="field-hint">Ej. Materiales $2,000 y Mano de obra $2,800. Cada concepto sale en su propia línea y se suman en el total.</small>
+            <div class="invoice-builder builder-v2">
+              <div class="builder-left">
+                <section class="whatsapp-import wa-compact" aria-labelledby="whatsappTitle">
+                  <div class="wa-head">
+                    <span class="wa-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.2a9.7 9.7 0 0 0-8.4 14.6L2.3 21.7l5-1.3A9.7 9.7 0 1 0 12 2.2zm0 17.7c-1.5 0-3-.4-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1 1 12 19.9zm4.4-6c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1l-.8 1c-.1.2-.3.2-.5.1a6.6 6.6 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.5-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.4-.6 1.6-1.1.2-.6.2-1 .1-1.1l-.4-.2z"/></svg></span>
+                    <div><h2 id="whatsappTitle">Desde el mensaje de WhatsApp</h2><p>Pega aquí el mensaje de Rubén y la app completará la información automáticamente.</p></div>
+                    <span class="wa-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 2l1.8 4.9L16.7 9l-4.9 1.8L10 15.7 8.2 10.8 3.3 9l4.9-2.1zm8 9l.9 2.4 2.4.9-2.4.9L18 18.6l-.9-2.4-2.4-.9 2.4-.9z"/></svg> Detección automática</span>
                   </div>
-                  <label class="field full check-field"><input id="builderShowLines" type="checkbox" /><span>Mostrar cantidad y precio en la tabla <small>(opcional)</small></span><small class="field-hint">Llena las columnas QTY, Price y Amount de la factura. Si no lo marcas, solo sale el total abajo.</small></label>
+                  <textarea id="whatsappText" rows="6" maxlength="16000" placeholder="Ej.&#10;Para Trenton&#10;1117 C St SE, Washington, DC 20003&#10;Preparation and installation of stucco&#10;Total: 9,200&#10;Hoy" aria-describedby="whatsappHelp" aria-label="Mensaje de WhatsApp"></textarea>
+                  <div class="wa-actions">
+                    <button class="button wa-analyze" id="fillInvoiceFromTextButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 2l1.8 4.9L16.7 9l-4.9 1.8L10 15.7 8.2 10.8 3.3 9l4.9-2.1zm8 9l.9 2.4 2.4.9-2.4.9L18 18.6l-.9-2.4-2.4-.9 2.4-.9z"/></svg> Analizar mensaje</button>
+                    <p id="whatsappHelp"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm0 1.8a8.2 8.2 0 1 0 0 16.4 8.2 8.2 0 0 0 0-16.4zM11 10h2v7h-2zm0-3h2v2h-2z"/></svg> Se detecta: empresa, dirección, descripción, precio, fecha, número y más.</p>
+                  </div>
+                  <div id="whatsappResult" class="whatsapp-result hidden" role="status" aria-live="polite"></div>
+                </section>
 
-                  <div class="field-group full"><p class="field-group-title">5 · Pago</p></div>
-<label class="field full"><span>Texto junto al TOTAL <small>(opcional)</small></span><input id="builderTotalLabel" type="text" value="Materials and Labor" placeholder="Ej. Materials and Labor" /><small class="field-hint">Sale entre paréntesis al lado de TOTAL. Déjalo vacío para que solo diga TOTAL.</small></label>
-                  <label class="field"><span>Anticipo requerido (%)</span><input id="builderDeposit" type="number" min="0" max="100" step="1" value="50" inputmode="numeric" /></label>
-                  <div class="field builder-totals" aria-live="polite"><span>Resumen</span><p id="builderTotals">Total $0.00</p></div>
-                  <label class="field full"><span>Nota de pago</span><textarea id="builderNote" class="js-grow" rows="3" placeholder="Se genera automáticamente con el anticipo. Escribe aquí solo si quieres otra nota."></textarea></label>
+                <section class="invoice-form-panel builder-cards">
+                  <div class="b-card">
+                    <h3 class="b-step"><i>1</i>Encabezado</h3>
+                    <div class="b-grid">
+                      <label class="field"><span>Número de invoice</span><input id="builderInvoiceNumber" type="text" value="" placeholder="Ej. #004" autocomplete="off" /></label>
+                      <label class="field"><span>Fecha de emisión</span><input id="builderIssuedDate" type="date" /></label>
+                      <label class="field"><span>Título del documento</span><select id="builderDocTitle"><option value="ESTIMATE">ESTIMATE (presupuesto)</option><option value="INVOICE">INVOICE (factura)</option></select></label>
+                      <label class="field"><span>Texto superior derecho <small>(opcional)</small></span><input id="builderApproval" type="text" value="ESTIMATED AND APPROVED BY DIEGO" placeholder="Ej. ESTIMATED AND APPROVED BY DIEGO" /></label>
+                      <label class="b-check b-span"><input id="builderShowApproval" type="checkbox" checked /> Mostrar el texto superior derecho en el documento</label>
+                    </div>
+                  </div>
 
-                  <div class="field-group full"><p class="field-group-title">6 · Tablero</p></div>
-                  <label class="field full"><span>Nombre en el tablero <em>*</em></span><input id="builderWorkAddress" type="text" list="addressHistory" value="" placeholder="Ej. 2501 Naylor Rd SE, Washington, DC 20020" /><small class="field-hint">Así se llama la tarjeta en el tablero y en Invoices / PDFs (y el nombre del archivo). No sale en la factura.</small></label>
-                  <label class="field full logo-field"><span>Logo (opcional)</span><input id="builderLogo" type="file" accept="image/*" /><small>Se usa el logo de Rubén. Puedes cargar otro si lo necesitas.</small></label>
-                </div>
+                  <div class="b-card">
+                    <h3 class="b-step"><i>2</i>De (quién factura)</h3>
+                    <div class="b-grid">
+                      <label class="field"><span>Nombre</span><input id="builderFromName" type="text" value="Ruben Perla" /></label>
+                      <label class="field"><span>Teléfono</span><input id="builderFromPhone" type="tel" value="+1 (469) 650-4958" /></label>
+                      <label class="field"><span>Correo electrónico</span><input id="builderFromEmail" type="email" value="pr391665@gmail.com" /></label>
+                      <label class="field"><span>Dirección</span><input id="builderFromAddress" type="text" value="11804 Birchview Ct. Clinton MD 20735" /></label>
+                    </div>
+                  </div>
+
+                  <div class="b-card">
+                    <h3 class="b-step"><i>3</i>Para (quién paga)</h3>
+                    <div class="b-grid">
+                      <label class="field"><span>Empresa o cliente</span><input id="builderBillName" type="text" value="Trenton Builders LLC" placeholder="Ej. Trenton Builders LLC" /></label>
+                      <label class="field"><span>Dirección</span><input id="builderBillAddress" type="text" value="1117 C St SE, Washington, DC 20003" placeholder="Ej. 1117 C St SE, Washington, DC 20003" /></label>
+                    </div>
+                  </div>
+
+                  <div class="b-card">
+                    <h3 class="b-step"><i>4</i>Trabajo y precio</h3>
+                    <div class="line-table" role="table" aria-label="Conceptos">
+                      <div class="line-row line-head" role="row"><span>Descripción</span><span>Cantidad</span><span>Precio (USD)</span><span>Monto (USD)</span><span></span></div>
+                      <div class="line-row line-main" role="row">
+                        <label class="field"><span class="sr-only">Descripción</span><textarea id="builderDescription" class="js-grow" rows="1" data-min-h="44" data-max-h="200" placeholder="Ej. Preparation and installation of stucco"></textarea></label>
+                        <label class="field"><span class="sr-only">Cantidad</span><input id="builderQty" type="number" min="0" step="0.01" value="1" inputmode="decimal" /></label>
+                        <label class="field"><span class="sr-only">Precio (USD)</span><input id="builderPrice" type="number" min="0" step="0.01" value="" placeholder="Ej. 9200.00" inputmode="decimal" /></label>
+                        <output class="line-amount" id="builderMainAmount">0.00</output>
+                        <span></span>
+                      </div>
+                      <input id="builderExtraLines" type="hidden" value="" />
+                      <div id="builderExtraList" class="builder-extra-list"></div>
+                    </div>
+                    <button type="button" class="button button-ghost builder-extra-add" id="addInvoiceLineButton">＋ Agregar otra fila</button>
+                    <label class="b-check"><input id="builderShowLines" type="checkbox" /> Mostrar cantidad y precio en la factura <small>(con varias filas se muestran siempre)</small></label>
+                  </div>
+
+                  <div class="b-card">
+                    <h3 class="b-step"><i>5</i>Pago</h3>
+                    <div class="b-pay">
+                      <label class="field"><span>Anticipo requerido (%)</span><input id="builderDeposit" type="number" min="0" max="100" step="1" value="50" inputmode="numeric" /></label>
+                      <div class="pay-box" id="builderTotals" aria-live="polite"></div>
+                    </div>
+                    <div class="b-grid">
+                      <label class="field"><span>Texto junto al TOTAL <small>(opcional)</small></span><input id="builderTotalLabel" type="text" value="Materials and Labor" placeholder="Ej. Materials and Labor" /></label>
+                      <label class="field"><span>Nota de pago <small>(opcional)</small></span><textarea id="builderNote" class="js-grow" rows="1" data-min-h="40" data-max-h="200" placeholder="Se genera sola con el anticipo"></textarea></label>
+                    </div>
+                  </div>
+
+                  <div class="b-card b-card-inline">
+                    <h3 class="b-step"><i>6</i>Guardar en tablero</h3>
+                    <label class="field b-inline"><span>Nombre en el tablero</span><input id="builderWorkAddress" type="text" list="addressHistory" value="" placeholder="Ej. 2501 Naylor Rd SE, Washington, DC 20020" title="Nombre de la tarjeta en el tablero y del archivo. No sale en la factura." /></label>
+                  </div>
+                  <label class="field logo-field b-logo"><span>Logo (opcional)</span><input id="builderLogo" type="file" accept="image/*" /><small>Se usa el logo de Rubén. Puedes cargar otro si lo necesitas.</small></label>
                 <div class="builder-save-row"><button class="button button-primary" id="saveGeneratedInvoiceButton" type="button">Guardar invoice y PDF</button><a id="generatedPdfLink" class="hidden" href="#" target="_blank" rel="noopener">Si no se bajó, toca aquí para abrir el PDF</a><p>Se genera el PDF a color, se descarga y queda en el tablero y en Todos los PDFs.</p></div>
-              </section>
+                </section>
+                <section class="translator-panel" data-translator="invoice" data-target="builderDescription" data-langpair="es|en" data-dir="es-en">
+                  <div class="translator-heading"><div><p class="eyebrow">Traductor</p><h2 data-translator-title>Español → Inglés</h2></div><span class="whatsapp-badge" data-translator-badge>ES → EN</span></div>
+                  <p data-translator-hint>Pega el texto en español. El resultado saldrá en inglés para la descripción de la invoice.</p>
+                  <div class="translator-switch" role="group" aria-label="Dirección de traducción">
+                    <button type="button" class="translator-dir is-active" data-pair="es|en" aria-pressed="true"><strong>Español → Inglés</strong><small>De español a inglés</small></button>
+                    <button type="button" class="translator-swap" data-translator-swap aria-label="Invertir idiomas">⇄</button>
+                    <button type="button" class="translator-dir" data-pair="en|es" aria-pressed="false"><strong>Inglés → Español</strong><small>De inglés a español</small></button>
+                  </div>
+                  <div class="translator-grid">
+                    <label><span data-translator-source-label>Texto en español</span><textarea data-translator-source rows="5" maxlength="8000" placeholder="Escribe o pega aquí en español…"></textarea></label>
+                    <label><span data-translator-output-label>Traducción al inglés</span><textarea data-translator-output rows="5" maxlength="8000" readonly placeholder="Aquí aparecerá el inglés…"></textarea></label>
+                  </div>
+                  <div class="translator-actions"><p data-translator-status>Dirección activa: de español a inglés.</p><div><button type="button" class="button button-primary" data-translator-go>Traducir al inglés</button><button type="button" class="button button-ghost" data-translator-copy>Copiar</button><button type="button" class="button button-ghost" data-translator-apply>Usar en descripción</button></div></div>
+                </section>
+              </div>
 
               <section class="invoice-preview-panel">
   <div class="preview-toolbar">
@@ -1132,7 +1164,7 @@
     <script src="check-viewer.js?v=1" defer></script>
     <script src="balance-ui.js?v=1" defer></script>
     <script src="dash-stats.js?v=2" defer></script>
-    <script src="app.js?v=parse-2" defer></script>
+    <script src="app.js?v=builder2-1" defer></script>
     <script src="ux-motion.js?v=4" defer></script>
   </body>
 </html>

@@ -7470,3 +7470,102 @@ html.boot-session .boot-screen {
   .invoice-builder, .hours-layout { align-items: start; }
   :is(#invoiceView, #hoursView, #jobView) :is(.invoice-preview-panel, .hours-preview-panel) { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow: auto; }
 }
+
+/* ===== Crear invoice v2: WhatsApp box + numbered cards on the left, preview on the right ===== */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+#invoiceView .invoice-builder.builder-v2 { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 22px; }
+.builder-left { display: grid; gap: 14px; min-width: 0; align-content: start; }
+
+/* WhatsApp card */
+#invoiceView .whatsapp-import.wa-compact { margin: 0; padding: 18px 20px; border: 1px solid #e6eaf3; border-radius: 18px; background: #fff; box-shadow: 0 8px 22px rgba(36, 48, 86, .05); }
+.wa-head { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; margin-bottom: 14px; }
+.wa-icon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: #25d366; color: #fff; box-shadow: 0 6px 14px rgba(37, 211, 102, .3); }
+.wa-icon svg { width: 26px; height: 26px; }
+.wa-head h2 { margin: 0; color: #1b2a4e; font: 700 16px/1.25 "Plus Jakarta Sans", sans-serif; }
+.wa-head p { margin: 3px 0 0; color: #6b7590; font: 500 12.5px/1.4 "Plus Jakarta Sans", sans-serif; }
+.wa-badge { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 10px; background: #efeaff; color: #6d4fe0; font: 700 12.5px "Plus Jakarta Sans", sans-serif; white-space: nowrap; }
+.wa-badge svg, .wa-analyze svg, #whatsappHelp svg { width: 16px; height: 16px; flex: none; }
+#invoiceView .wa-compact textarea { min-height: 140px; border-radius: 12px; }
+.wa-actions { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
+#invoiceView .wa-analyze { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 18px; border: 0; border-radius: 12px; background: #eef1ff; color: #3d4fd6; font: 700 14.5px "Plus Jakarta Sans", sans-serif; box-shadow: none; }
+#invoiceView .wa-analyze:hover { background: #e2e7ff; }
+#whatsappHelp { display: flex; align-items: center; gap: 6px; margin: 0; color: #7d879c; font: 500 12.5px/1.4 "Plus Jakarta Sans", sans-serif; }
+
+/* Cards */
+#invoiceView .invoice-form-panel.builder-cards { display: grid; gap: 12px; padding: 0; border: 0; background: transparent; box-shadow: none; }
+.b-card { padding: 16px 20px 18px; border: 1px solid #e6eaf3; border-radius: 16px; background: #fff; box-shadow: 0 6px 18px rgba(36, 48, 86, .04); }
+.b-step { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; color: #1b2a4e; font: 700 17px "Plus Jakarta Sans", sans-serif; }
+.b-step i { display: grid; place-items: center; width: 30px; height: 30px; flex: none; border-radius: 50%; background: linear-gradient(135deg, #6b5cf0, #4f46e5); color: #fff; font: 700 14px "Plus Jakarta Sans", sans-serif; font-style: normal; box-shadow: 0 4px 10px rgba(79, 70, 229, .3); }
+.b-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; padding-left: 42px; }
+.b-card .field { margin: 0; }
+.b-card .field > span { margin-bottom: 5px; color: #4a5470; font: 600 12.5px "Plus Jakarta Sans", sans-serif; }
+.b-card .field > span small { color: #9aa3b5; font-weight: 500; }
+.b-card .field input, .b-card .field select, .b-card .field textarea { min-height: 40px; border-radius: 10px; font-size: 14px; }
+.b-span { grid-column: 1 / -1; }
+.b-check { display: flex; align-items: center; gap: 8px; margin-top: 4px; color: #4a5470; font: 500 12.5px "Plus Jakarta Sans", sans-serif; cursor: pointer; }
+.b-check input { width: 16px; height: 16px; accent-color: #4f46e5; }
+.b-check small { color: #9aa3b5; }
+.b-card > .b-check { padding-left: 42px; }
+
+/* Concept table */
+.line-table { margin-left: 42px; border: 1px solid #e3e8f2; border-radius: 10px; overflow: hidden; }
+.line-row { display: grid; grid-template-columns: minmax(0, 2.4fr) minmax(0, .9fr) minmax(0, 1.2fr) minmax(0, 1.2fr) 40px; align-items: stretch; border-top: 1px solid #edf0f6; }
+.line-row:first-child { border-top: 0; }
+.line-head { background: #f3f5fa; }
+.line-head span { padding: 9px 12px; color: #1b2a4e; font: 700 12.5px "Plus Jakarta Sans", sans-serif; text-align: center; }
+.line-head span:first-child { text-align: left; }
+.line-row > .field input, .line-row > .field textarea { width: 100%; height: 100%; min-height: 42px; border: 0 !important; border-radius: 0; background: transparent !important; box-shadow: none !important; text-align: center; }
+.line-row > .field:first-child input, .line-row > .field:first-child textarea { text-align: left; }
+.line-row > .field { border-right: 1px solid #edf0f6; }
+.line-row > .field.is-invalid { background: #fff6f6; }
+.line-row textarea { resize: none; padding: 11px 12px; line-height: 1.35; }
+.line-amount { display: grid; place-items: center; padding: 0 12px; border-right: 1px solid #edf0f6; color: #1b2a4e; font: 600 14px "Plus Jakarta Sans", sans-serif; }
+.builder-extra-list { display: contents; }
+.builder-extra-row { position: static; padding: 0; border: 0; border-top: 1px solid #edf0f6; border-radius: 0; background: transparent; }
+.builder-extra-remove { position: static; display: grid; place-items: center; width: 30px; height: 30px; margin: auto; border: 0; border-radius: 8px; background: transparent; color: #e53935; cursor: pointer; }
+.builder-extra-remove:hover { background: #fde8e8; }
+.b-card .builder-extra-add { margin: 10px 0 0 42px; min-height: 36px; padding: 0 14px; border-radius: 10px; font-size: 13px; }
+
+/* Payment */
+.b-pay { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.3fr); gap: 18px; align-items: end; padding-left: 42px; margin-bottom: 12px; }
+.pay-box { display: grid; grid-template-columns: 1fr 1fr; min-height: 66px; border: 1px solid #f5c9a6; border-radius: 12px; background: #fff7f0; }
+.pay-box > div { display: grid; align-content: center; gap: 2px; padding: 8px 18px; }
+.pay-box > div + div { border-left: 1px solid #f2d3ba; }
+.pay-box small { color: #5b6070; font: 500 12.5px "Plus Jakarta Sans", sans-serif; }
+.pay-box strong { color: #e5701f; font: 800 20px "Plus Jakarta Sans", sans-serif; }
+.pay-box .pay-empty { grid-column: 1 / -1; }
+
+/* Board name inline */
+.b-card-inline { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 18px; padding-top: 14px; padding-bottom: 14px; }
+.b-card-inline .b-step { margin: 0; }
+.b-inline { display: grid !important; grid-template-columns: auto 1fr; align-items: center; gap: 12px; }
+.b-inline > span { margin: 0 !important; white-space: nowrap; }
+.b-logo { padding: 0 6px; }
+.b-logo small { color: #9aa3b5; font-size: 11.5px; }
+#invoiceView .builder-cards .builder-save-row { margin: 4px 0 0; }
+
+/* Medium screens: one column (preview first, as before) */
+@media (max-width: 1180px) {
+  #invoiceView .invoice-builder.builder-v2 { grid-template-columns: 1fr; }
+  #invoiceView .invoice-builder.builder-v2 .invoice-preview-panel { position: static; max-height: none; }
+}
+/* Phone: stacked fields, concept rows as small cards */
+@media (max-width: 640px) {
+  .b-grid, .b-pay { grid-template-columns: 1fr; padding-left: 0; }
+  .line-table, .b-card .builder-extra-add { margin-left: 0; }
+  .b-card > .b-check { padding-left: 0; }
+  .wa-head { grid-template-columns: auto 1fr; }
+  .wa-badge { grid-column: 1 / -1; justify-self: start; }
+  .wa-actions { flex-direction: column; align-items: stretch; }
+  .line-head { display: none; }
+  .line-row { grid-template-columns: 1fr 1fr 40px; }
+  .line-row > .field:first-child { grid-column: 1 / -1; border-right: 0; border-bottom: 1px solid #edf0f6; }
+  .line-amount { grid-column: 1 / 3; justify-items: end; padding: 8px 12px; border-top: 1px solid #edf0f6; }
+  .line-amount::before { content: "Monto: "; color: #7d879c; font-weight: 500; }
+  .b-card-inline, .b-inline { grid-template-columns: 1fr; }
+}
+#invoiceView .line-row textarea { min-height: 44px !important; height: auto; max-height: 160px; }
+#invoiceView .line-row > .field { display: flex; align-items: center; }
+#invoiceView .b-card .field textarea#builderNote { min-height: 40px !important; }
+#invoiceView .builder-extra-row { gap: 0; }
+@media (max-width: 640px) { #invoiceView .line-amount { display: flex; justify-content: flex-end; align-items: center; gap: 6px; } }

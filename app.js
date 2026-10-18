@@ -562,12 +562,19 @@
     const box = $("#builderExtraList");
     if (!box) return;
     box.innerHTML = readExtraLines().map((item, i) => `
-      <div class="builder-extra-row" data-line="${i}">
-        <label class="field"><span>Concepto ${i + 2}</span><input type="text" data-key="description" value="${esc(item.description)}" placeholder="Ej. Mano de obra"></label>
-        <label class="field"><span>Cantidad</span><input type="number" min="0" step="0.01" inputmode="decimal" data-key="qty" value="${esc(item.qty)}"></label>
-        <label class="field"><span>Precio (USD)</span><div class="money-input"><b>$</b><input type="number" min="0" step="0.01" inputmode="decimal" data-key="price" value="${esc(item.price)}" placeholder="Ej. 2800.00"></div></label>
-        <button type="button" class="builder-extra-remove" data-remove="${i}" aria-label="Quitar concepto ${i + 2}">×</button>
+      <div class="line-row builder-extra-row" role="row" data-line="${i}">
+        <label class="field"><span class="sr-only">Concepto ${i + 2}</span><input type="text" data-key="description" value="${esc(item.description)}" placeholder="Ej. Mano de obra"></label>
+        <label class="field"><span class="sr-only">Cantidad</span><input type="number" min="0" step="0.01" inputmode="decimal" data-key="qty" value="${esc(item.qty)}"></label>
+        <label class="field"><span class="sr-only">Precio (USD)</span><input type="number" min="0" step="0.01" inputmode="decimal" data-key="price" value="${esc(item.price)}" placeholder="Ej. 2800.00"></label>
+        <output class="line-amount" data-amount="${i}">${esc(lineAmountText(item))}</output>
+        <button type="button" class="builder-extra-remove" data-remove="${i}" aria-label="Quitar fila ${i + 2}"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4zm-3 6h12l-1 12H7zm4 2v8h2v-8zm4 0v8h2v-8z"/></svg></button>
       </div>`).join("");
+  }
+  // Amount of one concept row (qty × price), shown in its "Monto" column.
+  function lineAmountText(item) {
+    const qty = Number(item?.qty) > 0 ? Number(item.qty) : 1;
+    const price = Number(item?.price) || 0;
+    return (Core.cents(qty * price) / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
   function extraLinesChanged() {
     updateInvoicePreview();
@@ -803,14 +810,17 @@
     // Live summary next to the deposit: total, what is asked up front and what is left.
     const summary = $("#builderTotals");
     if (summary) {
-      if (data.price > 0) {
+      if (total > 0) {
         const pct = Math.min(100, Math.max(0, Math.round(data.deposit)));
         const first = Math.round(Core.cents(total) * pct / 100) / 100;
-        summary.innerHTML = `<strong>Total ${esc(money(total))}</strong><small>Anticipo ${esc(money(first))} · Al final ${esc(money(total - first))}</small>`;
+        summary.innerHTML = `<div><small>Anticipo (${pct}%)</small><strong>${esc(money(first).replace("$", "$ "))}</strong></div><div><small>Saldo (${100 - pct}%)</small><strong>${esc(money(total - first).replace("$", "$ "))}</strong></div>`;
       } else {
-        summary.innerHTML = "<small>Escribe el precio para ver el total.</small>";
+        summary.innerHTML = '<div class="pay-empty"><small>Escribe el precio para ver el anticipo y el saldo.</small></div>';
       }
     }
+    // "Monto" column of the concept rows.
+    if ($("#builderMainAmount")) $("#builderMainAmount").textContent = lineAmountText(data.items[0]);
+    readExtraLines().forEach((item, i) => { const cell = document.querySelector(`[data-amount="${i}"]`); if (cell) cell.textContent = lineAmountText(item); });
     const examples = {
       "#previewInvoiceNumber": data.invoiceNumber ? "" : $("#builderInvoiceNumber")?.placeholder,
       "#previewBillName": data.billName ? "" : $("#builderBillName")?.placeholder,
