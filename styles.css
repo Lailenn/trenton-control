@@ -7446,3 +7446,13 @@ html.boot-session body::after {
 #invoicePaper.paper-v2 .invoice-brand { padding-left: 0; margin-left: -14px; }
 #invoicePaper.paper-v2 .invoice-logo { width: 170px; height: 68px; }
 #invoicePaper.paper-v2 .invoice-logo img { object-position: left center; }
+
+/* Translator buttons: comfortable spacing, and full-width stacked buttons on phones */
+.translator-actions > div { display: flex; flex-wrap: wrap; gap: 12px; }
+.translator-actions > div .button { min-height: 44px; padding: 0 20px; }
+@media (max-width: 700px) {
+  .translator-actions { flex-direction: column; align-items: stretch; gap: 12px; }
+  .translator-actions > div { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .translator-actions > div .button { width: 100%; padding: 0 12px; }
+  .translator-actions > div .button:first-child { grid-column: 1 / -1; }
+}
