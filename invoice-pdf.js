@@ -151,8 +151,8 @@
         }
       }
       // ESTIMATE / INVOICE title with an accent underline, number, date and approval line.
-      rightText(docTitle, right, 56, 40, bold, ink);
-      accentBar(right - measure(bold, docTitle, 40), 106, 48);
+      rightText(docTitle, right, 60, 30, bold, ink);
+      accentBar(right - measure(bold, docTitle, 30), 98, 40);
       rightText(data.invoiceNumber, right, 128, 15, regular, muted);
       rightText("Issued " + dateLabel, right, 150, 15, regular, muted);
       let approvalY = 178;

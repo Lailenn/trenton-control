@@ -7436,3 +7436,6 @@ html.boot-session body::after {
 #invoicePaper.paper-v2 .paper-total strong { border: 0 !important; border-top: 3px solid #e66a22 !important; box-shadow: none; height: 66px; box-sizing: border-box; }
 /* Total box exactly as wide as the AMOUNT column above it (table is 14px wider on each side) */
 #invoicePaper.paper-v2 .paper-total strong { width: calc((100% + 14px) * .206); flex: 0 0 auto; }
+/* Smaller document title (ESTIMATE / INVOICE) */
+#invoicePaper.paper-v2 .paper-title { margin-bottom: 26px; font-size: 30px; }
+#invoicePaper.paper-v2 .paper-title::after { width: 40px; bottom: -11px; }
