@@ -7322,3 +7322,14 @@ html.boot-session body::after {
 }
 /* Preview: example text for empty fields */
 #invoicePaper .is-example { color: #b4bccb !important; font-style: italic; }
+
+/* Invoice builder: section titles span the whole row; live payment summary */
+.invoice-fields .field-group.full { grid-column: 1 / -1; padding-top: 12px; border-top: 1px solid #edf0f6; }
+.invoice-fields .field-group.full:first-child { padding-top: 0; border-top: 0; }
+.invoice-fields .field-group-title { color: #3563e9; font-size: 11px; }
+.invoice-fields .field > span em { color: #e53935; font-style: normal; }
+.invoice-fields .field-hint { color: #8c96aa; font-size: 11.5px; }
+.builder-totals p { display: grid; gap: 2px; min-height: 44px; margin: 0; padding: 8px 12px; border-radius: 12px; background: #f1f5ff; }
+.builder-totals strong { color: #1b2a4e; font: 800 15px "Plus Jakarta Sans", sans-serif; }
+.builder-totals small { color: #6b7590; font: 500 12px "Plus Jakarta Sans", sans-serif; }
+@media (max-width: 570px) { .invoice-fields .field-group.full { grid-column: auto; } }

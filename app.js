@@ -730,7 +730,18 @@
     };
     Object.entries(values).forEach(([selector, value]) => { const element = $(selector); if (element) element.textContent = value; });
     // Empty fields show their example (in grey) on the preview, so the sheet never looks broken.
-    const examplePrice = Number((String($("#builderPrice")?.placeholder || "").match(/\d[\d.]*/) || ["0"])[0]) || 0;
+    const examplePrice = Number((String($("#builderPrice")?.placeholder || "").match(/\d[\d.]*/) || ["0"])[0]) || 9200;
+    // Live summary next to the deposit: total, what is asked up front and what is left.
+    const summary = $("#builderTotals");
+    if (summary) {
+      if (data.price > 0) {
+        const pct = Math.min(100, Math.max(0, Math.round(data.deposit)));
+        const first = Math.round(Core.cents(total) * pct / 100) / 100;
+        summary.innerHTML = `<strong>Total ${esc(money(total))}</strong><small>Anticipo ${esc(money(first))} · Al final ${esc(money(total - first))}</small>`;
+      } else {
+        summary.innerHTML = "<small>Escribe el precio para ver el total.</small>";
+      }
+    }
     const examples = {
       "#previewInvoiceNumber": data.invoiceNumber ? "" : $("#builderInvoiceNumber")?.placeholder,
       "#previewBillName": data.billName ? "" : $("#builderBillName")?.placeholder,
