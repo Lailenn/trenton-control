@@ -7310,3 +7310,13 @@ html.boot-session body::after {
   .login3[data-mode="login"] .l3-secure i { width: 32px; height: 32px; }
   .login3[data-mode="login"] .l3-secure svg { width: 17px; height: 17px; }
 }
+
+/* Invoice builder: fields that are missing or wrong when saving */
+#invoiceView .field.is-invalid > span { color: #c62828; }
+#invoiceView .field.is-invalid input,
+#invoiceView .field.is-invalid textarea,
+#invoiceView .field.is-invalid .money-input {
+  border-color: #e53935 !important;
+  background: #fff6f6 !important;
+  box-shadow: 0 0 0 3px rgba(229, 57, 53, .12);
+}

@@ -57,6 +57,15 @@
     const total = cents(r.amount);
     return (r.stage === "paid" ? total - collected(r) : Math.max(0, total - cents(r.received))) / 100;
   }
+  // Payment note under the table; shared by the live preview and the PDF so both always match.
+  function paymentNote(total, deposit, money) {
+    const pct = Math.min(100, Math.max(0, Math.round(Number(deposit) || 0)));
+    const totalCents = cents(total);
+    const first = Math.round(totalCents * pct / 100);
+    if (pct === 0) return `Note: The full amount of ${money(totalCents / 100)} is due at the end of the work.`;
+    if (pct === 100) return `Note: The full amount of ${money(totalCents / 100)} is required at the beginning of the project.`;
+    return `Note: At the beginning of the project, ${pct}% equivalent to ${money(first / 100)} is required, and at the end of the work, the final ${100 - pct}% equivalent to ${money((totalCents - first) / 100)} is required.`;
+  }
   function summarize(records) {
     let total = 0, paid = 0;
     for (const r of records) { total += cents(r.amount); if (r.stage === "paid") paid += collected(r); }
@@ -126,5 +135,5 @@
     if (!fields.issuedDate) warnings.push("Completa la fecha de emisión para incluirla en el año correcto.");
     return {fields, warnings};
   }
-  return {amount, cents, isoDate, issuedDate, addressNorm, numberNorm, logicalKey, select, summarize, collected, owed, fileName, extract};
+  return {amount, cents, isoDate, issuedDate, addressNorm, numberNorm, logicalKey, select, summarize, collected, owed, paymentNote, fileName, extract};
 });

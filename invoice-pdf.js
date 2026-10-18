@@ -64,9 +64,7 @@
     const regular = await doc.embedFont(StandardFonts.Helvetica);
     const bold = await doc.embedFont(StandardFonts.HelveticaBold);
     const total = C.cents(Number(data.qty) * Number(data.price)) / 100;
-    const deposit = Math.min(100, Math.max(0, Number(data.deposit) || 0));
-    const first = Math.round(total * deposit) / 100;
-    const note = data.note || `Note: At the beginning of the project, ${deposit}% equivalent to ${money(first)} is required, and at the end of the work, the final ${100 - deposit}% equivalent to ${money(Math.round((total - first) * 100) / 100)} is required.`;
+    const note = data.note || C.paymentNote(total, data.deposit, money);
     const date = C.isoDate(data.issuedDate);
     const dateLabel = date ? date.slice(5, 7) + "/" + date.slice(8, 10) + "/" + date.slice(0, 4) : "";
     const logo = await embedLogo(doc, logoBytes);

@@ -42,6 +42,8 @@
     return window.CompanyApp?.draftKey?.("invoice") || INVOICE_DRAFT_KEY;
   }
   const DEFAULT_FROM_ADDRESS = "11804 Birchview Ct. Clinton MD 20735";
+  const DEFAULT_APPROVAL = "ESTIMATED AND APPROVED BY DIEGO";
+  const defaultApproval = () => (window.CompanyApp?.isOtras?.() ? "" : DEFAULT_APPROVAL);
   const INVOICE_DRAFT_FIELDS = ["builderInvoiceNumber", "builderIssuedDate", "builderApproval", "builderFromName", "builderBillName", "builderFromPhone", "builderBillAddress", "builderWorkAddress", "builderFromEmail", "builderFromAddress", "builderDescription", "builderQty", "builderPrice", "builderDeposit", "builderNote"];
   let invoiceDraftTimer = 0;
   let applyingInvoiceDraft = false;
@@ -548,7 +550,8 @@
     return {
       invoiceNumber: $("#builderInvoiceNumber").value.trim(),
       issuedDate: $("#builderIssuedDate").value,
-      approval: $("#builderApproval").value.trim() || "ESTIMATED AND APPROVED BY DIEGO",
+      // Diego approves Trenton's work only; another company's invoice can leave this line empty.
+      approval: $("#builderApproval").value.trim() || (window.CompanyApp?.isOtras?.() ? "" : DEFAULT_APPROVAL),
       fromName: $("#builderFromName").value.trim() || "Ruben Perla",
       billName: $("#builderBillName").value.trim() || defaultBill().name,
       fromPhone: $("#builderFromPhone").value.trim(),
@@ -575,7 +578,7 @@
   function invoiceDraftDefaults() {
     return {
       builderIssuedDate: WhatsAppInvoiceParser.dateValue(),
-      builderApproval: "ESTIMATED AND APPROVED BY DIEGO",
+      builderApproval: defaultApproval(),
       builderFromName: "Ruben Perla",
       builderBillName: defaultBill().name,
       builderFromPhone: "+1 (469) 650-4958",
@@ -707,9 +710,7 @@
   function updateInvoicePreview() {
     const data = invoiceData();
     const total = Core.cents(data.qty * data.price) / 100;
-    const depositAmount = Math.round(Core.cents(total) * data.deposit / 100) / 100;
-    const remainingAmount = (Core.cents(total) - Core.cents(depositAmount)) / 100;
-    const note = data.note || `Note: At the beginning of the project, ${data.deposit}% equivalent to ${money(depositAmount)} is required, and at the end of the work, the final ${100 - data.deposit}% equivalent to ${money(remainingAmount)} is required.`;
+    const note = data.note || Core.paymentNote(total, data.deposit, money);
     const values = {
       "#previewApproval": data.approval,
       "#previewInvoiceNumber": data.invoiceNumber,
@@ -804,7 +805,7 @@
       window.AuthApp?.replayWelcome?.();
       window.JobApp?.render?.();
     }
-    if (view === "invoice") updateInvoicePreview();
+    if (view === "invoice") ensureBuilderBasics();
     if (view === "hours") window.HoursApp?.open();
     if (view === "job") window.JobApp?.open();
   }
@@ -878,7 +879,7 @@
     builderRecordId = null;
     $("#builderInvoiceNumber").value = await Cloud.nextInvoiceNumber(records);
     $("#builderIssuedDate").value = WhatsAppInvoiceParser.dateValue();
-    $("#builderApproval").value = "ESTIMATED AND APPROVED BY DIEGO";
+    $("#builderApproval").value = defaultApproval();
     $("#builderFromName").value = "Ruben Perla";
     $("#builderBillName").value = defaultBill().name;
     $("#builderFromPhone").value = "+1 (469) 650-4958";
@@ -896,11 +897,48 @@
     $("#whatsappResult").textContent = "";
     $("#whatsappResult").classList.add("hidden");
     logoDataUrl = DEFAULT_LOGO_URL;
+    document.querySelectorAll("#invoiceView .field.is-invalid").forEach(field => field.classList.remove("is-invalid"));
     $("#paperLogo").classList.add("has-image");
     $("#paperLogo").innerHTML = `<img src="${DEFAULT_LOGO_URL}" alt="Logo de Ruben Perla" />`;
     updateInvoicePreview();
     growAllTextareas();
     if (!options.keepDraft) clearInvoiceDraft();
+  }
+
+  // Next free number from the invoices already loaded (used offline and to check duplicates).
+  function localNextInvoiceNumber() {
+    const max = records.reduce((value, record) => {
+      const number = Core.numberNorm(String(record.invoiceNumber || "").trim());
+      return /^\d+$/.test(number) ? Math.max(value, Number(number)) : value;
+    }, 0);
+    return "#" + String(max + 1).padStart(3, "0");
+  }
+  // A restored draft or a failed cloud load can leave the date or the number empty: fill them in.
+  function ensureBuilderBasics() {
+    if (!Core.isoDate($("#builderIssuedDate").value)) $("#builderIssuedDate").value = WhatsAppInvoiceParser.dateValue();
+    if (!$("#builderInvoiceNumber").value.trim()) $("#builderInvoiceNumber").value = localNextInvoiceNumber();
+    updateInvoicePreview();
+  }
+  // Another invoice (not the one being edited) already using this number.
+  function duplicateInvoiceNumber(number) {
+    const key = Core.numberNorm(String(number || "").trim());
+    return key ? records.find(record => record.id !== builderRecordId && Core.numberNorm(String(record.invoiceNumber || "").trim()) === key) : null;
+  }
+  // Check the builder before generating the PDF; marks the fields that need attention.
+  function builderProblems(data) {
+    const problems = [];
+    const mark = (id, message) => { problems.push({ id, message }); };
+    if (!data.workAddress) mark("builderWorkAddress", "la dirección del trabajo");
+    if (!data.invoiceNumber) mark("builderInvoiceNumber", "el número de invoice");
+    if (!Core.isoDate(data.issuedDate)) mark("builderIssuedDate", "la fecha de emisión");
+    if (!data.billName) mark("builderBillName", "la empresa que paga");
+    if (!(Number($("#builderQty").value) > 0)) mark("builderQty", "una cantidad mayor que cero");
+    if (!(data.price > 0)) mark("builderPrice", "un precio mayor que cero");
+    const deposit = Number($("#builderDeposit").value);
+    if ($("#builderDeposit").value !== "" && (!(deposit >= 0) || deposit > 100)) mark("builderDeposit", "un anticipo entre 0% y 100%");
+    document.querySelectorAll("#invoiceView .field.is-invalid").forEach(field => field.classList.remove("is-invalid"));
+    problems.forEach(problem => $("#" + problem.id)?.closest(".field")?.classList.add("is-invalid"));
+    return problems;
   }
 
   function withTimeout(work, ms, message) {
@@ -961,7 +999,26 @@
     if (savingBuilder) { showToast("Esta invoice ya se está guardando. Espera un momento."); return; }
     const data = invoiceData();
     const amount = Core.amount(data.qty * data.price);
-    if (!data.workAddress || !data.invoiceNumber || !Core.isoDate(data.issuedDate) || amount == null || amount <= 0 || data.qty <= 0 || data.price <= 0) { showToast("Completa la dirección del trabajo, el número, la fecha y un monto mayor que cero."); return; }
+    const problems = builderProblems(data);
+    if (problems.length || amount == null || amount <= 0) {
+      const list = problems.map(problem => problem.message);
+      showToast(list.length ? `Falta ${list.join(", ")}.` : "El total debe ser mayor que cero.");
+      $("#" + (problems[0]?.id || "builderPrice"))?.focus();
+      return;
+    }
+    const taken = duplicateInvoiceNumber(data.invoiceNumber);
+    if (taken) {
+      const free = localNextInvoiceNumber();
+      if (confirm(`El número ${data.invoiceNumber} ya lo usa la invoice de ${taken.address || "otra dirección"}.\n\nAceptar: usar el siguiente libre (${free}).\nCancelar: revisar el número.`)) {
+        $("#builderInvoiceNumber").value = free;
+        data.invoiceNumber = free;
+        updateInvoicePreview();
+      } else {
+        $("#builderInvoiceNumber").closest(".field")?.classList.add("is-invalid");
+        $("#builderInvoiceNumber").focus();
+        return;
+      }
+    }
     const previous = records.find(r => r.id === builderRecordId);
     const record = {...(previous || {}), id: previous?.id || makeId(), address: data.workAddress, invoiceNumber: data.invoiceNumber, issuedDate: data.issuedDate, amount: Core.cents(amount) / 100, hours: previous?.hours || 0, description: data.description, stage: previous?.stage || "created", updatedAt: new Date().toISOString(), paidAt: previous?.paidAt || null};
     savingBuilder = true;
@@ -1027,10 +1084,12 @@
     setDock("archive");
   }
 
-  function editGeneratedInvoice() {
+  async function editGeneratedInvoice() {
     const record = records.find(r => r.id === editingId);
     if (!record?.invoiceData) return;
-    resetInvoiceBuilder(); builderRecordId = record.id;
+    // Wait for the reset: it fetches the next number and would otherwise overwrite the loaded data.
+    await resetInvoiceBuilder({ keepDraft: true });
+    builderRecordId = record.id;
     const data = record.invoiceData;
     const map = {invoiceNumber: "InvoiceNumber", issuedDate: "IssuedDate", approval: "Approval", fromName: "FromName", billName: "BillName", fromPhone: "FromPhone", billAddress: "BillAddress", workAddress: "WorkAddress", fromEmail: "FromEmail", fromAddress: "FromAddress", description: "Description", qty: "Qty", price: "Price", deposit: "Deposit", note: "Note"};
     Object.entries(map).forEach(([key, id]) => { if (data[key] != null) $("#builder" + id).value = data[key]; });
@@ -1039,6 +1098,7 @@
     logoDataUrl = /^data:image\/(png|jpeg|webp);base64,/i.test(data.logoDataUrl || "") ? data.logoDataUrl : DEFAULT_LOGO_URL;
     const img = document.createElement("img"); img.src = logoDataUrl; img.alt = "Logo de Ruben Perla";
     $("#paperLogo").replaceChildren(img);
+    updateInvoicePreview(); growAllTextareas();
     closeModal(); navClick("invoice");
     persistInvoiceDraft(true);
     showInvoiceDraftBanner();
@@ -1247,6 +1307,8 @@
   $("#fillInvoiceFromTextButton").addEventListener("click", fillInvoiceFromText);
   $("#whatsappText").addEventListener("paste", () => setTimeout(fillInvoiceFromText, 0));
   INVOICE_DRAFT_FIELDS.forEach((id) => $("#" + id).addEventListener("input", () => { updateInvoicePreview(); persistInvoiceDraft(); }));
+  // Typing in a field marked as missing clears its warning.
+  INVOICE_DRAFT_FIELDS.forEach((id) => $("#" + id).addEventListener("input", () => $("#" + id).closest(".field")?.classList.remove("is-invalid")));
   $("#whatsappText").addEventListener("input", () => { $("#whatsappResult").classList.add("hidden"); persistInvoiceDraft(); });
   document.querySelectorAll("textarea.js-grow").forEach(el => el.addEventListener("input", () => growTextarea(el)));
   growAllTextareas();
@@ -1363,6 +1425,7 @@
       await migrateLegacy();
       await resetInvoiceBuilder({ keepDraft: true });
       restoreInvoiceDraft();
+      ensureBuilderBasics();
       updateSaved("En la nube y en este navegador");
       render();
       growAllTextareas();
@@ -1374,6 +1437,7 @@
     } catch (error) {
       console.error(error);
       restoreInvoiceDraft();
+      ensureBuilderBasics();
       ready = true;
       updateSaved("Nube no disponible");
       render();
