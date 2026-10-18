@@ -23,6 +23,18 @@
     return Number.isNaN(date.getTime()) ? null : date;
   };
   const dayName = value => pdfSafe(dateValue(value)?.toLocaleDateString("en-US", {weekday: "long"}) || value || "");
+  // "August 26, 2026" or "August 26-28, 2026" for the dates in the report.
+  const rangeLabel = dates => {
+    const sorted = [...new Set((dates || []).filter(Boolean))].sort();
+    if (!sorted.length) return "";
+    const first = dateValue(sorted[0]), last = dateValue(sorted[sorted.length - 1]);
+    if (!first || !last) return pdfSafe(sorted[0]);
+    if (sorted[0] === sorted[sorted.length - 1]) return pdfSafe(first.toLocaleDateString("en-US", {month: "long", day: "numeric", year: "numeric"}));
+    if (first.getMonth() === last.getMonth() && first.getFullYear() === last.getFullYear()) {
+      return pdfSafe(`${first.toLocaleDateString("en-US", {month: "long"})} ${first.getDate()}-${last.getDate()}, ${first.getFullYear()}`);
+    }
+    return pdfSafe(`${first.toLocaleDateString("en-US", {month: "long", day: "numeric"})}-${last.toLocaleDateString("en-US", {month: "long", day: "numeric", year: "numeric"})}`);
+  };
   const fullDate = value => pdfSafe(dateValue(value)?.toLocaleDateString("en-US", {weekday: "long", month: "long", day: "numeric", year: "numeric"}) || value || "");
   const hoursLabel = value => {
     const number = Number(value) || 0;
@@ -224,6 +236,10 @@
       const employeeTotal = rows.reduce((sum, row) => sum + row.hours, 0);
       pagedTable(columns, ["DATE", "EMPLOYEE", "TIME IN", "TIME OUT", "LUNCH", "TOTAL HOURS"], tableRows, ["TOTAL", "", "", "", "", hoursLabel(employeeTotal)]);
     }
+    // "GRAND TOTAL — dates" above the pay summary, like the other hours format.
+    if (cursor + 24 + 120 > pageH - 42) header();
+    text(`GRAND TOTAL - ${rangeLabel((data.entries || []).map(row => row.date).concat(data.reportDate))}`, left, cursor, 13, bold, ink);
+    cursor += 24;
     const summaryRows = summary.map(row => [row.employee, hoursLabel(row.totalHours), row.rate == null ? "VARIES" : `${money(row.rate)}/HR`, money(row.pay)]);
     pagedTable([180, 130, 140, Math.max(70, width - 180 - 130 - 140)], ["EMPLOYEE", "TOTAL HOURS", "HOURLY RATE", "TOTAL PAY"], summaryRows, ["TOTAL", hoursLabel(totalHours), "", money(totalPay)], true, 57);
     text("Description:", left, cursor, 11, bold, ink);
@@ -506,7 +522,7 @@
       .slice(0, 500);
   }
 
-  const api = {generate, hash, calcHours, fullDate, dayName, money, timeLabel, read, parseEnglishDate};
+  const api = {generate, hash, calcHours, fullDate, rangeLabel, dayName, money, timeLabel, read, parseEnglishDate};
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.HoursPDF = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);
