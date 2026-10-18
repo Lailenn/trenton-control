@@ -225,7 +225,9 @@
         box(columns[3], boxTop, columns[4] - columns[3], boxH, peach);
         box(columns[3], boxTop - 3, columns[4] - columns[3], 3, accent);
         const labelY = boxTop + (boxH - 18) / 2;
-        const small = "(Materials and Labor)";
+        // Text next to TOTAL is editable; older invoices (no field) keep "Materials and Labor".
+        const labelText = data.totalLabel == null ? "Materials and Labor" : String(data.totalLabel).trim();
+        const small = labelText ? `(${labelText})` : "";
         const labelW = measure(bold, "TOTAL", 18) + 8 + measure(regular, small, 13);
         const labelX = columns[3] - 22 - labelW;
         draw("TOTAL", labelX, labelY, 18, bold, ink);

@@ -44,7 +44,7 @@
   const DEFAULT_FROM_ADDRESS = "11804 Birchview Ct. Clinton MD 20735";
   const DEFAULT_APPROVAL = "ESTIMATED AND APPROVED BY DIEGO";
   const defaultApproval = () => (window.CompanyApp?.isOtras?.() ? "" : DEFAULT_APPROVAL);
-  const INVOICE_DRAFT_FIELDS = ["builderInvoiceNumber", "builderIssuedDate", "builderDocTitle", "builderApproval", "builderShowApproval", "builderFromName", "builderBillName", "builderFromPhone", "builderBillAddress", "builderWorkAddress", "builderFromEmail", "builderFromAddress", "builderDescription", "builderQty", "builderPrice", "builderShowLines", "builderExtraLines", "builderDeposit", "builderNote"];
+  const INVOICE_DRAFT_FIELDS = ["builderInvoiceNumber", "builderIssuedDate", "builderDocTitle", "builderApproval", "builderShowApproval", "builderFromName", "builderBillName", "builderFromPhone", "builderBillAddress", "builderWorkAddress", "builderFromEmail", "builderFromAddress", "builderDescription", "builderQty", "builderPrice", "builderShowLines", "builderExtraLines", "builderTotalLabel", "builderDeposit", "builderNote"];
   // Checkboxes travel through the draft as "1" / "".
   const fieldValue = el => (el?.type === "checkbox" ? (el.checked ? "1" : "") : (el?.value || ""));
   const setFieldValue = (el, value) => { if (!el) return; if (el.type === "checkbox") el.checked = value === "1" || value === true; else el.value = value; };
@@ -586,6 +586,7 @@
       issuedDate: $("#builderIssuedDate").value,
       docTitle: $("#builderDocTitle")?.value || "ESTIMATE",
       isEstimate: ($("#builderDocTitle")?.value || "ESTIMATE") === "ESTIMATE",
+      totalLabel: $("#builderTotalLabel") ? $("#builderTotalLabel").value.trim() : "Materials and Labor",
       // Diego approves Trenton's work only; another company's invoice can leave this line empty.
       approval: $("#builderShowApproval")?.checked === false ? "" : ($("#builderApproval").value.trim() || (window.CompanyApp?.isOtras?.() ? "" : DEFAULT_APPROVAL)),
       fromName: $("#builderFromName").value.trim() || "Ruben Perla",
@@ -634,6 +635,7 @@
       builderPrice: "",
       builderShowLines: "",
       builderExtraLines: "",
+      builderTotalLabel: "Materials and Labor",
       builderDeposit: "50",
       builderNote: "",
       whatsappText: ""
@@ -773,6 +775,7 @@
       "#previewAmount": money(total),
       "#previewTotal": money(total).replace("$", "$ "),
       "#previewDocTitle": data.docTitle,
+      "#previewTotalLabel": data.totalLabel ? `(${data.totalLabel})` : "",
       "#previewNote": String(note).replace(/^\s*note\s*:\s*/i, "")
     };
     Object.entries(values).forEach(([selector, value]) => { const element = $(selector); if (element) element.textContent = value; });
@@ -988,6 +991,7 @@
     $("#builderShowLines").checked = false;
     writeExtraLines([]);
     renderExtraLines();
+    $("#builderTotalLabel").value = "Materials and Labor";
     $("#builderDeposit").value = "50";
     $("#builderNote").value = "";
     $("#builderLogo").value = "";
@@ -1199,7 +1203,7 @@
     await resetInvoiceBuilder({ keepDraft: true });
     builderRecordId = record.id;
     const data = record.invoiceData;
-    const map = {invoiceNumber: "InvoiceNumber", issuedDate: "IssuedDate", docTitle: "DocTitle", approval: "Approval", fromName: "FromName", billName: "BillName", fromPhone: "FromPhone", billAddress: "BillAddress", workAddress: "WorkAddress", fromEmail: "FromEmail", fromAddress: "FromAddress", description: "Description", qty: "Qty", price: "Price", deposit: "Deposit", note: "Note"};
+    const map = {invoiceNumber: "InvoiceNumber", issuedDate: "IssuedDate", docTitle: "DocTitle", totalLabel: "TotalLabel", approval: "Approval", fromName: "FromName", billName: "BillName", fromPhone: "FromPhone", billAddress: "BillAddress", workAddress: "WorkAddress", fromEmail: "FromEmail", fromAddress: "FromAddress", description: "Description", qty: "Qty", price: "Price", deposit: "Deposit", note: "Note"};
     Object.entries(map).forEach(([key, id]) => { if (data[key] != null) $("#builder" + id).value = data[key]; });
     $("#builderShowLines").checked = Boolean(data.showLines);
     $("#builderShowApproval").checked = Boolean(data.approval);
