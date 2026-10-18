@@ -29,7 +29,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet" />
     <link rel="icon" href="assets/app-icon.png?v=2" type="image/png" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2" />
-    <link rel="stylesheet" href="styles.css?v=trfold-2" />
+    <link rel="stylesheet" href="styles.css?v=hrsv2-1" />
   </head>
   <body>
     <div class="boot-screen" id="bootScreen" aria-live="polite" aria-busy="true">
@@ -529,41 +529,54 @@
                 <div id="hoursBoard" class="board hours-board"></div>
               </div>
             </section>
-            <section class="whatsapp-import hours-whatsapp-import" aria-labelledby="hoursWhatsappTitle">
-              <div class="whatsapp-heading"><div><p class="eyebrow">Desde el mensaje de Rubén</p><h2 id="hoursWhatsappTitle">Pegar texto de WhatsApp</h2></div><span class="whatsapp-badge">Texto → horas</span></div>
-              <label for="hoursWhatsAppText">Copia el mensaje, pégalo aquí y pulsa “Desglosar horas”.</label>
-              <textarea id="hoursWhatsAppText" rows="7" maxlength="16000" placeholder="Ej.&#10;4406 Woodfield Rd, Kensington, MD 20895&#10;Lunes 20 de octubre&#10;Josué Zúñiga 7:00 a 15:30 almuerzo 30 min&#10;Pablo 8 horas&#10;Tarifa 30"></textarea>
-              <div class="whatsapp-actions"><p id="hoursWhatsAppHelp">Un empleado por línea, con su horario (7:00 a 15:30, 7am-3pm, de 7 a 3) o sus horas (8 horas). El almuerzo puede ir en minutos u horas.</p><button class="button button-primary" id="parseHoursWhatsAppButton" type="button">Desglosar horas</button></div>
-              <div id="hoursWhatsAppResult" class="whatsapp-result hidden" role="status" aria-live="polite"></div>
-            </section>
-            <section class="translator-panel" data-translator="hours" data-target="hoursDescription" data-langpair="es|en" data-dir="es-en">
-              <div class="translator-heading"><div><p class="eyebrow">Traductor</p><h2 data-translator-title>Español → Inglés</h2></div><span class="whatsapp-badge" data-translator-badge>ES → EN</span></div>
-              <p data-translator-hint>Pega el texto en español. El resultado saldrá en inglés para la descripción del reporte de horas.</p>
-              <div class="translator-switch" role="group" aria-label="Dirección de traducción">
-                <button type="button" class="translator-dir is-active" data-pair="es|en" aria-pressed="true"><strong>Español → Inglés</strong><small>De español a inglés</small></button>
-                <button type="button" class="translator-swap" data-translator-swap aria-label="Invertir idiomas">⇄</button>
-                <button type="button" class="translator-dir" data-pair="en|es" aria-pressed="false"><strong>Inglés → Español</strong><small>De inglés a español</small></button>
+            <div class="hours-layout builder-v2">
+              <div class="builder-left">
+                <section class="whatsapp-import wa-compact" aria-labelledby="hoursWhatsappTitle">
+                  <div class="wa-head">
+                    <span class="wa-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.2a9.7 9.7 0 0 0-8.4 14.6L2.3 21.7l5-1.3A9.7 9.7 0 1 0 12 2.2zm0 17.7c-1.5 0-3-.4-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1 1 12 19.9zm4.4-6c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1l-.8 1c-.1.2-.3.2-.5.1a6.6 6.6 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.5-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.4-.6 1.6-1.1.2-.6.2-1 .1-1.1l-.4-.2z"/></svg></span>
+                    <div><h2 id="hoursWhatsappTitle">Desde el mensaje de WhatsApp</h2><p>Pega aquí el mensaje de Rubén y la app llenará los empleados y horas automáticamente.</p></div>
+                    <span class="wa-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 2l1.8 4.9L16.7 9l-4.9 1.8L10 15.7 8.2 10.8 3.3 9l4.9-2.1zm8 9l.9 2.4 2.4.9-2.4.9L18 18.6l-.9-2.4-2.4-.9 2.4-.9z"/></svg> Detección automática</span>
+                  </div>
+                  <textarea id="hoursWhatsAppText" rows="6" maxlength="16000" placeholder="Ej.&#10;4406 Woodfield Rd, Kensington, MD 20895&#10;Lunes 20 de octubre&#10;Josué Zúñiga 7:00 a 15:30 almuerzo 30 min&#10;Pablo 8 horas&#10;Tarifa 30"></textarea>
+                  <div class="wa-actions">
+                    <button class="button wa-analyze" id="parseHoursWhatsAppButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 2l1.8 4.9L16.7 9l-4.9 1.8L10 15.7 8.2 10.8 3.3 9l4.9-2.1zm8 9l.9 2.4 2.4.9-2.4.9L18 18.6l-.9-2.4-2.4-.9 2.4-.9z"/></svg> Desglosar horas</button>
+                    <p id="hoursWhatsAppHelp" class="wa-help"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm0 1.8a8.2 8.2 0 1 0 0 16.4 8.2 8.2 0 0 0 0-16.4zM11 10h2v7h-2zm0-3h2v2h-2z"/></svg> Un empleado por línea: horario (7:00 a 15:30, de 7 a 3) u horas (8 horas). Almuerzo en minutos u horas.</p>
+                  </div>
+                  <div id="hoursWhatsAppResult" class="whatsapp-result hidden" role="status" aria-live="polite"></div>
+                </section>
+                <section class="translator-panel" data-translator="hours" data-target="hoursDescription" data-langpair="es|en" data-dir="es-en">
+                  <div class="translator-heading"><div><p class="eyebrow">Traductor</p><h2 data-translator-title>Español → Inglés</h2></div><span class="whatsapp-badge" data-translator-badge>ES → EN</span></div>
+                  <p data-translator-hint>Pega el texto en español. El resultado saldrá en inglés para la descripción del reporte de horas.</p>
+                  <div class="translator-switch" role="group" aria-label="Dirección de traducción">
+                    <button type="button" class="translator-dir is-active" data-pair="es|en" aria-pressed="true"><strong>Español → Inglés</strong><small>De español a inglés</small></button>
+                    <button type="button" class="translator-swap" data-translator-swap aria-label="Invertir idiomas">⇄</button>
+                    <button type="button" class="translator-dir" data-pair="en|es" aria-pressed="false"><strong>Inglés → Español</strong><small>De inglés a español</small></button>
+                  </div>
+                  <div class="translator-grid">
+                    <label><span data-translator-source-label>Texto en español</span><textarea data-translator-source rows="5" maxlength="8000" placeholder="Escribe o pega aquí en español…"></textarea></label>
+                    <label><span data-translator-output-label>Traducción al inglés</span><textarea data-translator-output rows="5" maxlength="8000" readonly placeholder="Aquí aparecerá el inglés…"></textarea></label>
+                  </div>
+                  <div class="translator-actions"><p data-translator-status>Dirección activa: de español a inglés.</p><div><button type="button" class="button button-primary" data-translator-go>Traducir al inglés</button><button type="button" class="button button-ghost" data-translator-copy>Copiar</button><button type="button" class="button button-ghost" data-translator-apply>Usar en descripción</button></div></div>
+                </section>
+                <section class="hours-form-panel builder-cards">
+                  <div class="b-card">
+                    <h3 class="b-step"><i>1</i>Datos del trabajo</h3>
+                    <div class="b-grid">
+                      <label class="field b-span"><span>Dirección del trabajo <em>*</em></span><input id="hoursJobAddress" type="text" list="addressHistory" placeholder="Ej. 4406 Woodfield Rd, Kensington, MD 20895" required></label>
+                      <label class="field"><span>Fecha del reporte <em>*</em></span><input id="hoursReportDate" type="date" required></label>
+                      <label class="field"><span>Tarifa predeterminada (USD/h)</span><div class="money-input"><b>$</b><input id="hoursDefaultRate" type="number" min="0" step="0.01" value="30"></div></label>
+                      <label class="field b-span"><span>Descripción</span><textarea id="hoursDescription" class="js-grow" rows="6" placeholder="Descripción del trabajo realizado"></textarea></label>
+                    </div>
+                  </div>
+                  <div class="b-card">
+                    <div class="b-step-row"><h3 class="b-step"><i>2</i>Empleados y jornadas</h3><button class="button button-ghost" id="addHoursEntryButton" type="button">＋ Agregar registro</button></div>
+                    <p class="b-hint">El total se calcula con entrada, salida y almuerzo. También puedes escribir las horas directamente.</p>
+                    <div id="hoursEntries" class="hours-entries"></div>
+                    <p class="form-error" id="hoursError" role="alert"></p>
+                    <div class="builder-save-row"><button class="button button-primary" id="saveHoursButton" type="button">Guardar reporte y PDF</button><p>Se guarda en la nube y en este teléfono; después se descarga el PDF.</p></div>
+                  </div>
+                </section>
               </div>
-              <div class="translator-grid">
-                <label><span data-translator-source-label>Texto en español</span><textarea data-translator-source rows="5" maxlength="8000" placeholder="Escribe o pega aquí en español…"></textarea></label>
-                <label><span data-translator-output-label>Traducción al inglés</span><textarea data-translator-output rows="5" maxlength="8000" readonly placeholder="Aquí aparecerá el inglés…"></textarea></label>
-              </div>
-              <div class="translator-actions"><p data-translator-status>Dirección activa: de español a inglés.</p><div><button type="button" class="button button-primary" data-translator-go>Traducir al inglés</button><button type="button" class="button button-ghost" data-translator-copy>Copiar</button><button type="button" class="button button-ghost" data-translator-apply>Usar en descripción</button></div></div>
-            </section>
-            <div class="hours-layout">
-              <section class="hours-form-panel">
-                <div class="builder-panel-heading"><div><p class="eyebrow">Datos editables</p><h2>Información del trabajo</h2></div><span class="builder-step">02</span></div>
-                <div class="hours-fields">
-                  <label class="field full"><span>Dirección del trabajo <em>*</em></span><input id="hoursJobAddress" type="text" list="addressHistory" placeholder="Ej. 4406 Woodfield Rd, Kensington, MD 20895" required></label>
-                  <label class="field"><span>Fecha del reporte <em>*</em></span><input id="hoursReportDate" type="date" required></label>
-                  <label class="field"><span>Tarifa predeterminada (USD/h)</span><div class="money-input"><b>$</b><input id="hoursDefaultRate" type="number" min="0" step="0.01" value="30"></div></label>
-                  <label class="field full"><span>Descripción</span><textarea id="hoursDescription" class="js-grow" rows="6" placeholder="Descripción del trabajo realizado"></textarea></label>
-                </div>
-                <div class="hours-entry-title"><div><p class="field-group-title">Empleados y jornadas</p><small>El total se calcula con entrada, salida y almuerzo. También puedes escribir las horas directamente.</small></div><button class="button button-ghost" id="addHoursEntryButton" type="button">＋ Agregar registro</button></div>
-                <div id="hoursEntries" class="hours-entries"></div>
-                <p class="form-error" id="hoursError" role="alert"></p>
-                <div class="builder-save-row"><button class="button button-primary" id="saveHoursButton" type="button">Guardar reporte y PDF</button><p>Se guarda en la nube y en este teléfono; después se descarga el PDF.</p></div>
-              </section>
 
               <section class="hours-preview-panel">
                 <div class="preview-toolbar"><span><i></i> Vista previa del reporte</span><small>Hoja carta</small></div>
@@ -603,25 +616,38 @@
                 <button class="button button-ghost" id="discardJobDraftButton" type="button">Descartar</button>
               </div>
             </div>
-            <section class="whatsapp-import hours-whatsapp-import" aria-labelledby="jobWhatsappTitle">
-              <div class="whatsapp-heading"><div><p class="eyebrow">Desde el texto del reporte</p><h2 id="jobWhatsappTitle">Pegar texto o filas del PDF</h2></div><span class="whatsapp-badge">Texto → reporte</span></div>
-              <label for="jobWhatsAppText">Pega el bloque JOB, las fechas y las filas de empleados. Detecta descripción, horario o solo horas.</label>
-              <textarea id="jobWhatsAppText" rows="8" maxlength="20000" placeholder="JOB: 1117 C St SE, Washington, DC 20003&#10;Friday, September 11, 2026&#10;Friday Pablo Matamoros Plywood demolition 11:00 AM 7:00 PM 30 MIN 8 HRS&#10;Friday Rubén Perla Purchase of materials — — — 4 HRS"></textarea>
-              <div class="whatsapp-actions"><p>Usa horario de 12 horas (AM/PM) o deja el reloj vacío y escribe las horas. La tarifa sale de $30/HR si está en el texto.</p><button class="button button-primary" id="parseJobWhatsAppButton" type="button">Desglosar job</button></div>
-              <div id="jobWhatsAppResult" class="whatsapp-result hidden" role="status" aria-live="polite"></div>
-            </section>
-            <div class="hours-layout">
-              <section class="hours-form-panel">
-                <div class="builder-panel-heading"><div><p class="eyebrow">Datos editables</p><h2>Información del reporte</h2></div><span class="builder-step">03</span></div>
-                <div class="hours-fields">
-                  <label class="field full"><span>Dirección del trabajo <em>*</em></span><input id="jobAddress" type="text" list="addressHistory" placeholder="Ej. 1117 C St SE, Washington, DC 20003" required></label>
-                  <label class="field"><span>Tarifa predeterminada (USD/h)</span><div class="money-input"><b>$</b><input id="jobDefaultRate" type="number" min="0" step="0.01" value="30"></div></label>
-                </div>
-                <div class="hours-entry-title"><div><p class="field-group-title">Días, empleados y descripción</p><small>Si no hay entrada y salida, escribe las horas a mano. El PDF agrupa por fecha y suma un gran total.</small></div><button class="button button-ghost" id="addJobEntryButton" type="button">＋ Agregar registro</button></div>
-                <div id="jobEntries" class="hours-entries"></div>
-                <p class="form-error" id="jobError" role="alert"></p>
-                <div class="builder-save-row"><button class="button button-primary" id="saveJobButton" type="button">Guardar reporte y PDF</button><p>Se guarda en la nube y en este aparato; después se descarga el PDF.</p></div>
-              </section>
+            <div class="hours-layout builder-v2">
+              <div class="builder-left">
+                <section class="whatsapp-import wa-compact" aria-labelledby="jobWhatsappTitle">
+                  <div class="wa-head">
+                    <span class="wa-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.2a9.7 9.7 0 0 0-8.4 14.6L2.3 21.7l5-1.3A9.7 9.7 0 1 0 12 2.2zm0 17.7c-1.5 0-3-.4-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1 1 12 19.9zm4.4-6c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1l-.8 1c-.1.2-.3.2-.5.1a6.6 6.6 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.5-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.4-.6 1.6-1.1.2-.6.2-1 .1-1.1l-.4-.2z"/></svg></span>
+                    <div><h2 id="jobWhatsappTitle">Desde el texto del reporte</h2><p>Pega el bloque JOB, las fechas y las filas de empleados; la app llena el reporte.</p></div>
+                    <span class="wa-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 2l1.8 4.9L16.7 9l-4.9 1.8L10 15.7 8.2 10.8 3.3 9l4.9-2.1zm8 9l.9 2.4 2.4.9-2.4.9L18 18.6l-.9-2.4-2.4-.9 2.4-.9z"/></svg> Detección automática</span>
+                  </div>
+                  <textarea id="jobWhatsAppText" rows="6" maxlength="20000" placeholder="JOB: 1117 C St SE, Washington, DC 20003&#10;Friday, September 11, 2026&#10;Friday Pablo Matamoros Plywood demolition 11:00 AM 7:00 PM 30 MIN 8 HRS&#10;Friday Rubén Perla Purchase of materials — — — 4 HRS"></textarea>
+                  <div class="wa-actions">
+                    <button class="button wa-analyze" id="parseJobWhatsAppButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 2l1.8 4.9L16.7 9l-4.9 1.8L10 15.7 8.2 10.8 3.3 9l4.9-2.1zm8 9l.9 2.4 2.4.9-2.4.9L18 18.6l-.9-2.4-2.4-.9 2.4-.9z"/></svg> Desglosar job</button>
+                    <p class="wa-help"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm0 1.8a8.2 8.2 0 1 0 0 16.4 8.2 8.2 0 0 0 0-16.4zM11 10h2v7h-2zm0-3h2v2h-2z"/></svg> Horario de 12 horas (AM/PM) o solo las horas. La tarifa sale de $30/HR si está en el texto.</p>
+                  </div>
+                  <div id="jobWhatsAppResult" class="whatsapp-result hidden" role="status" aria-live="polite"></div>
+                </section>
+                <section class="hours-form-panel builder-cards">
+                  <div class="b-card">
+                    <h3 class="b-step"><i>1</i>Datos del reporte</h3>
+                    <div class="b-grid">
+                      <label class="field b-span"><span>Dirección del trabajo <em>*</em></span><input id="jobAddress" type="text" list="addressHistory" placeholder="Ej. 1117 C St SE, Washington, DC 20003" required></label>
+                      <label class="field"><span>Tarifa predeterminada (USD/h)</span><div class="money-input"><b>$</b><input id="jobDefaultRate" type="number" min="0" step="0.01" value="30"></div></label>
+                    </div>
+                  </div>
+                  <div class="b-card">
+                    <div class="b-step-row"><h3 class="b-step"><i>2</i>Días, empleados y descripción</h3><button class="button button-ghost" id="addJobEntryButton" type="button">＋ Agregar registro</button></div>
+                    <p class="b-hint">Si no hay entrada y salida, escribe las horas a mano. El PDF agrupa por fecha y suma un gran total.</p>
+                    <div id="jobEntries" class="hours-entries"></div>
+                    <p class="form-error" id="jobError" role="alert"></p>
+                    <div class="builder-save-row"><button class="button button-primary" id="saveJobButton" type="button">Guardar reporte y PDF</button><p>Se guarda en la nube y en este aparato; después se descarga el PDF.</p></div>
+                  </div>
+                </section>
+              </div>
               <section class="hours-preview-panel">
                 <div class="preview-toolbar"><span><i></i> Vista previa del reporte</span><small>Hoja A3</small></div>
                 <div class="hours-preview-viewport" id="jobPreviewViewport">
@@ -755,6 +781,20 @@
                   </div>
                   <div id="whatsappResult" class="whatsapp-result hidden" role="status" aria-live="polite"></div>
                 </section>
+                <section class="translator-panel" data-translator="invoice" data-target="builderDescription" data-langpair="es|en" data-dir="es-en">
+                  <div class="translator-heading"><div><p class="eyebrow">Traductor</p><h2 data-translator-title>Español → Inglés</h2></div><span class="whatsapp-badge" data-translator-badge>ES → EN</span></div>
+                  <p data-translator-hint>Pega el texto en español. El resultado saldrá en inglés para la descripción de la invoice.</p>
+                  <div class="translator-switch" role="group" aria-label="Dirección de traducción">
+                    <button type="button" class="translator-dir is-active" data-pair="es|en" aria-pressed="true"><strong>Español → Inglés</strong><small>De español a inglés</small></button>
+                    <button type="button" class="translator-swap" data-translator-swap aria-label="Invertir idiomas">⇄</button>
+                    <button type="button" class="translator-dir" data-pair="en|es" aria-pressed="false"><strong>Inglés → Español</strong><small>De inglés a español</small></button>
+                  </div>
+                  <div class="translator-grid">
+                    <label><span data-translator-source-label>Texto en español</span><textarea data-translator-source rows="5" maxlength="8000" placeholder="Escribe o pega aquí en español…"></textarea></label>
+                    <label><span data-translator-output-label>Traducción al inglés</span><textarea data-translator-output rows="5" maxlength="8000" readonly placeholder="Aquí aparecerá el inglés…"></textarea></label>
+                  </div>
+                  <div class="translator-actions"><p data-translator-status>Dirección activa: de español a inglés.</p><div><button type="button" class="button button-primary" data-translator-go>Traducir al inglés</button><button type="button" class="button button-ghost" data-translator-copy>Copiar</button><button type="button" class="button button-ghost" data-translator-apply>Usar en descripción</button></div></div>
+                </section>
 
                 <section class="invoice-form-panel builder-cards">
                   <div class="b-card">
@@ -822,20 +862,6 @@
                   </div>
                   <label class="field logo-field b-logo"><span>Logo (opcional)</span><input id="builderLogo" type="file" accept="image/*" /><small>Se usa el logo de Rubén. Puedes cargar otro si lo necesitas.</small></label>
                 <div class="builder-save-row"><button class="button button-primary" id="saveGeneratedInvoiceButton" type="button">Guardar invoice y PDF</button><a id="generatedPdfLink" class="hidden" href="#" target="_blank" rel="noopener">Si no se bajó, toca aquí para abrir el PDF</a><p>Se genera el PDF a color, se descarga y queda en el tablero y en Todos los PDFs.</p></div>
-                </section>
-                <section class="translator-panel" data-translator="invoice" data-target="builderDescription" data-langpair="es|en" data-dir="es-en">
-                  <div class="translator-heading"><div><p class="eyebrow">Traductor</p><h2 data-translator-title>Español → Inglés</h2></div><span class="whatsapp-badge" data-translator-badge>ES → EN</span></div>
-                  <p data-translator-hint>Pega el texto en español. El resultado saldrá en inglés para la descripción de la invoice.</p>
-                  <div class="translator-switch" role="group" aria-label="Dirección de traducción">
-                    <button type="button" class="translator-dir is-active" data-pair="es|en" aria-pressed="true"><strong>Español → Inglés</strong><small>De español a inglés</small></button>
-                    <button type="button" class="translator-swap" data-translator-swap aria-label="Invertir idiomas">⇄</button>
-                    <button type="button" class="translator-dir" data-pair="en|es" aria-pressed="false"><strong>Inglés → Español</strong><small>De inglés a español</small></button>
-                  </div>
-                  <div class="translator-grid">
-                    <label><span data-translator-source-label>Texto en español</span><textarea data-translator-source rows="5" maxlength="8000" placeholder="Escribe o pega aquí en español…"></textarea></label>
-                    <label><span data-translator-output-label>Traducción al inglés</span><textarea data-translator-output rows="5" maxlength="8000" readonly placeholder="Aquí aparecerá el inglés…"></textarea></label>
-                  </div>
-                  <div class="translator-actions"><p data-translator-status>Dirección activa: de español a inglés.</p><div><button type="button" class="button button-primary" data-translator-go>Traducir al inglés</button><button type="button" class="button button-ghost" data-translator-copy>Copiar</button><button type="button" class="button button-ghost" data-translator-apply>Usar en descripción</button></div></div>
                 </section>
               </div>
 

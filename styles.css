@@ -5593,29 +5593,29 @@ body.pdf-viewer-open { overflow: hidden; }
 /* The icon is always visible (no entrance pop that could leave it hidden) */
 .ds-card.ds-play .ds-icon i { animation: none; opacity: 1; transform: none; }
 
-/* Slightly smaller type on the home page, in scale with the side rail */
+/* Comfortable type scale on the home page */
 @media (min-width: 600px) {
-  #boardView h1 { font-size: clamp(26px, 3.1vw, 36px); }
-  #boardView .welcome-greeting { font-size: 14px; }
-  #boardView .hero-copy { font-size: 13px; }
-  #boardView .dash-quote { font-size: 11.5px; }
-  #boardView .dash-stats .ds-meta .stat-label { font-size: 13px; }
-  #boardView .dash-stats .ds-value strong { font-size: min(26px, 15.5cqi); }
-  #boardView .dash-stats .ds-meta small { font-size: 11.5px; }
-  #boardView .dash-stats .ds-icon { width: 52px; height: 52px; border-radius: 16px; }
-  #boardView .dash-stats .ds-icon i { width: 30px; height: 30px; }
-  #boardView .dash-stats .ds-chart { height: 76px; }
-  #boardView .dash-stats .ds-cta { padding: 8px 14px; font-size: 12.5px; }
-  #boardView .board-toolbar h2 { font-size: 17px; }
-  #boardView .board-toolbar p { font-size: 12.5px; }
-  #boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .column-name h3 { font-size: 14px; }
-  #boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .column-sub { font-size: 11.5px; }
-  #boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .card-invoice { font-size: 13px; }
-  #boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .card-date { font-size: 12px; }
-  #boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .card-address { font-size: 12.5px; }
-  #boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .card-amount { font-size: 15px; }
-  #boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .card-link { font-size: 12.5px; }
-  #boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .add-card-button { font-size: 13px; min-height: 40px; }
+  #boardView h1 { font-size: clamp(30px, 3.6vw, 46px); }
+  #boardView .welcome-greeting { font-size: 16px; }
+  #boardView .hero-copy { font-size: 14.5px; }
+  #boardView .dash-quote { font-size: 13px; }
+  #boardView .dash-stats .ds-meta .stat-label { font-size: 14px; }
+  #boardView .dash-stats .ds-value strong { font-size: min(30px, 18cqi); }
+  #boardView .dash-stats .ds-meta small { font-size: 12.5px; }
+  #boardView .dash-stats .ds-icon { width: 58px; height: 58px; border-radius: 18px; }
+  #boardView .dash-stats .ds-icon i { width: 34px; height: 34px; }
+  #boardView .dash-stats .ds-chart { height: 86px; }
+  #boardView .dash-stats .ds-cta { padding: 9px 16px; font-size: 13.5px; }
+  #boardView .board-toolbar h2 { font-size: 19px; }
+  #boardView .board-toolbar p { font-size: 13.5px; }
+  #boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .column-name h3 { font-size: 15.5px; }
+  #boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .column-sub { font-size: 12.5px; }
+  #boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .card-invoice { font-size: 14px; }
+  #boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .card-date { font-size: 12.5px; }
+  #boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .card-address { font-size: 13.5px; }
+  #boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .card-amount { font-size: 17px; }
+  #boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .card-link { font-size: 13px; }
+  #boardView :is(#board, #hoursHomeBoard, #jobHomeBoard) .add-card-button { font-size: 14px; min-height: 44px; }
 }
 
 /* Home hero illustration: invoice card with logo, orbit, tiles and handwritten notes */
@@ -7474,10 +7474,12 @@ html.boot-session .boot-screen {
 /* ===== Crear invoice v2: WhatsApp box + numbered cards on the left, preview on the right ===== */
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 #invoiceView .invoice-builder.builder-v2 { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 22px; }
+:is(#hoursView, #jobView) .hours-layout.builder-v2 { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 22px; }
 .builder-left { display: grid; gap: 14px; min-width: 0; align-content: start; }
 
 /* WhatsApp card */
-#invoiceView .whatsapp-import.wa-compact { margin: 0; padding: 18px 20px; border: 1px solid #e6eaf3; border-radius: 18px; background: #fff; box-shadow: 0 8px 22px rgba(36, 48, 86, .05); }
+#invoiceView .whatsapp-import.wa-compact,
+:is(#hoursView, #jobView) .whatsapp-import.wa-compact { margin: 0; padding: 18px 20px; border: 1px solid #e6eaf3; border-radius: 18px; background: #fff; box-shadow: 0 8px 22px rgba(36, 48, 86, .05); }
 .wa-head { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; margin-bottom: 14px; }
 .wa-icon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: #25d366; color: #fff; box-shadow: 0 6px 14px rgba(37, 211, 102, .3); }
 .wa-icon svg { width: 26px; height: 26px; }
@@ -7485,14 +7487,20 @@ html.boot-session .boot-screen {
 .wa-head p { margin: 3px 0 0; color: #6b7590; font: 500 12.5px/1.4 "Plus Jakarta Sans", sans-serif; }
 .wa-badge { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 10px; background: #efeaff; color: #6d4fe0; font: 700 12.5px "Plus Jakarta Sans", sans-serif; white-space: nowrap; }
 .wa-badge svg, .wa-analyze svg, #whatsappHelp svg { width: 16px; height: 16px; flex: none; }
-#invoiceView .wa-compact textarea { min-height: 140px; border-radius: 12px; }
+#invoiceView .wa-compact textarea,
+:is(#hoursView, #jobView) .wa-compact textarea { min-height: 140px; border-radius: 12px; }
 .wa-actions { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
-#invoiceView .wa-analyze { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 18px; border: 0; border-radius: 12px; background: #eef1ff; color: #3d4fd6; font: 700 14.5px "Plus Jakarta Sans", sans-serif; box-shadow: none; }
-#invoiceView .wa-analyze:hover { background: #e2e7ff; }
+#invoiceView .wa-analyze,
+:is(#hoursView, #jobView) .wa-analyze { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 18px; border: 0; border-radius: 12px; background: #eef1ff; color: #3d4fd6; font: 700 14.5px "Plus Jakarta Sans", sans-serif; box-shadow: none; }
+#invoiceView .wa-analyze:hover,
+:is(#hoursView, #jobView) .wa-analyze:hover { background: #e2e7ff; }
 #whatsappHelp { display: flex; align-items: center; gap: 6px; margin: 0; color: #7d879c; font: 500 12.5px/1.4 "Plus Jakarta Sans", sans-serif; }
+.wa-help { display: flex; align-items: center; gap: 6px; margin: 0; color: #7d879c; font: 500 12.5px/1.4 "Plus Jakarta Sans", sans-serif; }
+.wa-help svg { width: 15px; height: 15px; flex: none; }
 
 /* Cards */
-#invoiceView .invoice-form-panel.builder-cards { display: grid; gap: 12px; padding: 0; border: 0; background: transparent; box-shadow: none; }
+#invoiceView .invoice-form-panel.builder-cards,
+:is(#hoursView, #jobView) .hours-form-panel.builder-cards { display: grid; gap: 12px; padding: 0; border: 0; background: transparent; box-shadow: none; }
 .b-card { padding: 16px 20px 18px; border: 1px solid #e6eaf3; border-radius: 16px; background: #fff; box-shadow: 0 6px 18px rgba(36, 48, 86, .04); }
 .b-step { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; color: #1b2a4e; font: 700 17px "Plus Jakarta Sans", sans-serif; }
 .b-step i { display: grid; place-items: center; width: 30px; height: 30px; flex: none; border-radius: 50%; background: linear-gradient(135deg, #6b5cf0, #4f46e5); color: #fff; font: 700 14px "Plus Jakarta Sans", sans-serif; font-style: normal; box-shadow: 0 4px 10px rgba(79, 70, 229, .3); }
@@ -7506,6 +7514,9 @@ html.boot-session .boot-screen {
 .b-check input { width: 16px; height: 16px; accent-color: #4f46e5; }
 .b-check small { color: #9aa3b5; }
 .b-card > .b-check { padding-left: 42px; }
+.b-step-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.b-step-row .b-step { margin-bottom: 0; }
+.b-hint { margin: 0 0 12px; padding-left: 42px; color: #7d879c; font: 500 12.5px/1.5 "Plus Jakarta Sans", sans-serif; }
 
 /* Concept table */
 .line-table { margin-left: 42px; border: 1px solid #e3e8f2; border-radius: 10px; overflow: hidden; }
@@ -7542,12 +7553,15 @@ html.boot-session .boot-screen {
 .b-inline > span { margin: 0 !important; white-space: nowrap; }
 .b-logo { padding: 0 6px; }
 .b-logo small { color: #9aa3b5; font-size: 11.5px; }
-#invoiceView .builder-cards .builder-save-row { margin: 4px 0 0; }
+#invoiceView .builder-cards .builder-save-row,
+:is(#hoursView, #jobView) .builder-cards .builder-save-row { margin: 4px 0 0; }
 
 /* Medium screens: one column (preview first, as before) */
 @media (max-width: 1180px) {
   #invoiceView .invoice-builder.builder-v2 { grid-template-columns: 1fr; }
   #invoiceView .invoice-builder.builder-v2 .invoice-preview-panel { position: static; max-height: none; }
+  :is(#hoursView, #jobView) .hours-layout.builder-v2 { grid-template-columns: 1fr; }
+  :is(#hoursView, #jobView) .hours-layout.builder-v2 .hours-preview-panel { position: static; max-height: none; }
 }
 /* Phone: stacked fields, concept rows as small cards */
 @media (max-width: 640px) {
@@ -7580,3 +7594,27 @@ html.boot-session .boot-screen {
 .translator-panel:not(.is-collapsed) .translator-toggle svg { transform: rotate(180deg); }
 .translator-heading:focus-visible { outline: 2px solid #4f46e5; outline-offset: 4px; border-radius: 8px; }
 .translator-panel .translator-heading > [data-translator-badge] { margin-left: auto; }
+
+/* ===== Horas / Otro formato: same builder v2 look as Crear invoice ===== */
+:is(#hoursView, #jobView) .hours-layout.builder-v2 { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+:is(#hoursView, #jobView) .whatsapp-import.wa-compact { margin: 0; padding: 18px 20px; border: 1px solid #e6eaf3; border-radius: 18px; background: #fff; box-shadow: 0 8px 22px rgba(36, 48, 86, .05); }
+:is(#hoursView, #jobView) .wa-compact textarea { min-height: 140px; border-radius: 12px; }
+:is(#hoursView, #jobView) .wa-analyze { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 18px; border: 0; border-radius: 12px; background: #eef1ff; color: #3d4fd6; font: 700 14.5px "Plus Jakarta Sans", sans-serif; box-shadow: none; white-space: nowrap; }
+:is(#hoursView, #jobView) .wa-analyze:hover { background: #e2e7ff; }
+.wa-help { display: flex; align-items: center; gap: 6px; margin: 0; color: #7d879c; font: 500 12.5px/1.4 "Plus Jakarta Sans", sans-serif; }
+.wa-help svg { width: 16px; height: 16px; flex: none; }
+:is(#hoursView, #jobView) .hours-form-panel.builder-cards { display: grid; gap: 12px; padding: 0; border: 0; background: transparent; box-shadow: none; }
+.b-step-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+.b-step-row .b-step { margin: 0; }
+.b-step-row .button { min-height: 36px; padding: 0 14px; border-radius: 10px; font-size: 13px; white-space: nowrap; }
+.b-hint { margin: 0 0 12px 42px; color: #7d879c; font: 500 12.5px/1.4 "Plus Jakarta Sans", sans-serif; }
+:is(#hoursView, #jobView) .builder-cards .builder-save-row { margin: 12px 0 0; }
+@media (max-width: 1180px) {
+  :is(#hoursView, #jobView) .hours-layout.builder-v2 { grid-template-columns: 1fr; }
+  :is(#hoursView, #jobView) .hours-layout.builder-v2 .hours-preview-panel { position: static; max-height: none; }
+}
+@media (max-width: 640px) {
+  .b-hint { margin-left: 0; }
+  .b-step-row { flex-wrap: wrap; }
+  .b-step-row .button { width: 100%; }
+}
