@@ -34,7 +34,7 @@
   const COLUMN_PREVIEW = 5;
   const expandedColumns = new Set();
   let archive, hoursArchive, jobArchive, builderRecordId = null, savingBuilder = false, readingPdf = false;
-  const DEFAULT_LOGO_URL = "assets/logo-ruben.png";
+  const DEFAULT_LOGO_URL = "assets/logo-ruben-clear.png"; // transparent background for the invoice
   let logoDataUrl = DEFAULT_LOGO_URL;
   const pdfUrls = new Map();
   const INVOICE_DRAFT_KEY = "trenton.draft.invoice";
@@ -44,7 +44,7 @@
   const DEFAULT_FROM_ADDRESS = "11804 Birchview Ct. Clinton MD 20735";
   const DEFAULT_APPROVAL = "ESTIMATED AND APPROVED BY DIEGO";
   const defaultApproval = () => (window.CompanyApp?.isOtras?.() ? "" : DEFAULT_APPROVAL);
-  const INVOICE_DRAFT_FIELDS = ["builderInvoiceNumber", "builderIssuedDate", "builderApproval", "builderFromName", "builderBillName", "builderFromPhone", "builderBillAddress", "builderWorkAddress", "builderFromEmail", "builderFromAddress", "builderDescription", "builderQty", "builderPrice", "builderShowLines", "builderExtraLines", "builderDeposit", "builderNote"];
+  const INVOICE_DRAFT_FIELDS = ["builderInvoiceNumber", "builderIssuedDate", "builderDocTitle", "builderApproval", "builderFromName", "builderBillName", "builderFromPhone", "builderBillAddress", "builderWorkAddress", "builderFromEmail", "builderFromAddress", "builderDescription", "builderQty", "builderPrice", "builderShowLines", "builderExtraLines", "builderDeposit", "builderNote"];
   // Checkboxes travel through the draft as "1" / "".
   const fieldValue = el => (el?.type === "checkbox" ? (el.checked ? "1" : "") : (el?.value || ""));
   const setFieldValue = (el, value) => { if (!el) return; if (el.type === "checkbox") el.checked = value === "1" || value === true; else el.value = value; };
@@ -584,6 +584,7 @@
     return {
       invoiceNumber: $("#builderInvoiceNumber").value.trim(),
       issuedDate: $("#builderIssuedDate").value,
+      docTitle: $("#builderDocTitle")?.value || "ESTIMATE",
       // Diego approves Trenton's work only; another company's invoice can leave this line empty.
       approval: $("#builderApproval").value.trim() || (window.CompanyApp?.isOtras?.() ? "" : DEFAULT_APPROVAL),
       fromName: $("#builderFromName").value.trim() || "Ruben Perla",
@@ -617,6 +618,7 @@
   function invoiceDraftDefaults() {
     return {
       builderIssuedDate: WhatsAppInvoiceParser.dateValue(),
+      builderDocTitle: "ESTIMATE",
       builderApproval: defaultApproval(),
       builderFromName: "Ruben Perla",
       builderBillName: defaultBill().name,
@@ -768,7 +770,8 @@
       "#previewPrice": money(data.price),
       "#previewAmount": money(total),
       "#previewTotal": money(total).replace("$", "$ "),
-      "#previewNote": note
+      "#previewDocTitle": data.docTitle,
+      "#previewNote": String(note).replace(/^\s*note\s*:\s*/i, "")
     };
     Object.entries(values).forEach(([selector, value]) => { const element = $(selector); if (element) element.textContent = value; });
     // QTY / Price / Amount columns: optional with one concept, always shown with several.
@@ -965,6 +968,7 @@
     builderRecordId = null;
     $("#builderInvoiceNumber").value = await Cloud.nextInvoiceNumber(records);
     $("#builderIssuedDate").value = WhatsAppInvoiceParser.dateValue();
+    $("#builderDocTitle").value = "ESTIMATE";
     $("#builderApproval").value = defaultApproval();
     $("#builderFromName").value = "Ruben Perla";
     $("#builderBillName").value = defaultBill().name;
@@ -1189,7 +1193,7 @@
     await resetInvoiceBuilder({ keepDraft: true });
     builderRecordId = record.id;
     const data = record.invoiceData;
-    const map = {invoiceNumber: "InvoiceNumber", issuedDate: "IssuedDate", approval: "Approval", fromName: "FromName", billName: "BillName", fromPhone: "FromPhone", billAddress: "BillAddress", workAddress: "WorkAddress", fromEmail: "FromEmail", fromAddress: "FromAddress", description: "Description", qty: "Qty", price: "Price", deposit: "Deposit", note: "Note"};
+    const map = {invoiceNumber: "InvoiceNumber", issuedDate: "IssuedDate", docTitle: "DocTitle", approval: "Approval", fromName: "FromName", billName: "BillName", fromPhone: "FromPhone", billAddress: "BillAddress", workAddress: "WorkAddress", fromEmail: "FromEmail", fromAddress: "FromAddress", description: "Description", qty: "Qty", price: "Price", deposit: "Deposit", note: "Note"};
     Object.entries(map).forEach(([key, id]) => { if (data[key] != null) $("#builder" + id).value = data[key]; });
     $("#builderShowLines").checked = Boolean(data.showLines);
     writeExtraLines((data.extraItems || []).map(item => ({ description: item.description, qty: String(item.qty), price: String(item.price) })));

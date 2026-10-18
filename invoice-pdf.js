@@ -64,16 +64,20 @@
     const regular = await doc.embedFont(StandardFonts.Helvetica);
     const bold = await doc.embedFont(StandardFonts.HelveticaBold);
     const total = C.invoiceTotal(data);
-    const note = data.note || C.paymentNote(total, data.deposit, money);
+    // The NOTE heading already says "note": drop a leading "Note:" from the text.
+    const note = String(data.note || C.paymentNote(total, data.deposit, money)).replace(/^\s*note\s*:\s*/i, "");
     const date = C.isoDate(data.issuedDate);
     const dateLabel = date ? date.slice(5, 7) + "/" + date.slice(8, 10) + "/" + date.slice(0, 4) : "";
+    const docTitle = String(data.docTitle || "ESTIMATE").trim().toUpperCase();
     const logo = await embedLogo(doc, logoBytes);
-    const s = .75, height = 1056, left = 56, right = 803, width = right - left;
-    const copper = rgb(212 / 255, 101 / 255, 47 / 255);
-    const peach = rgb(253 / 255, 233 / 255, 217 / 255);
-    const ink = rgb(0, 0, 0);
-    const muted = rgb(128 / 255, 128 / 255, 128 / 255);
-    const lineColor = rgb(0, 0, 0);
+    // Layout in a 816 × 1056 grid (letter at 96 dpi), scaled to PDF points.
+    const s = .75, height = 1056, left = 58, right = 758, width = right - left;
+    const accent = rgb(230 / 255, 106 / 255, 34 / 255);
+    const peach = rgb(251 / 255, 239 / 255, 230 / 255);
+    const greyFill = rgb(240 / 255, 240 / 255, 241 / 255);
+    const ink = rgb(30 / 255, 33 / 255, 38 / 255);
+    const muted = rgb(80 / 255, 84 / 255, 92 / 255);
+    const lineColor = rgb(196 / 255, 199 / 255, 204 / 255);
     function measure(font, value, size) {
       const text = pdfSafe(value);
       try { return font.widthOfTextAtSize(text, size); }
@@ -117,37 +121,61 @@
     function rightText(value, x, y, size = 16, font = regular, color = ink) {
       draw(value, x - measure(font, value, size), y, size, font, color);
     }
+    // Small capitals with letter spacing (labels like FROM, BILL TO, DESCRIPTION).
+    const tracking = size => size * .14;
+    function spacedWidth(value, size, font = bold) {
+      const text = pdfSafe(value);
+      return [...text].reduce((sum, ch) => sum + measure(font, ch, size), 0) + Math.max(0, text.length - 1) * tracking(size);
+    }
+    function spaced(value, x, y, size, font = bold, color = ink) {
+      let cursor = x;
+      for (const ch of pdfSafe(value)) { draw(ch, cursor, y, size, font, color); cursor += measure(font, ch, size) + tracking(size); }
+    }
     function line(x1, y1, x2, y2, thickness = 1, color = lineColor) {
       page.drawLine({start: {x: x1 * s, y: (height - y1) * s}, end: {x: x2 * s, y: (height - y2) * s}, thickness, color});
     }
+    function box(x, y, w, h, color) {
+      page.drawRectangle({x: x * s, y: (height - y - h) * s, width: w * s, height: h * s, color});
+    }
+    function accentBar(x, y, w = 34) { box(x, y, w, 3, accent); }
     function linesAt(lines, x, y, size, font, spacing, color = ink) { lines.forEach((l, i) => draw(l, x, y + i * spacing, size, font, color)); return y + lines.length * spacing; }
     function header(parties = true) {
       if (++pageCount > 8) throw new Error("El PDF se volvió demasiado largo. Acorta la descripción o la nota.");
       page = doc.addPage([612, 792]);
+      box(0, 0, 816, height, rgb(1, 1, 1));
       if (logo && Number(logo.width) > 1 && Number(logo.height) > 1) {
-        const factor = Math.min(156 / logo.width, 76 / logo.height);
+        const factor = Math.min(240 / logo.width, 96 / logo.height);
         const logoH = logo.height * factor;
         if (Number.isFinite(factor) && Number.isFinite(logoH) && logoH > 0) {
-          page.drawImage(logo, {x: 62 * s, y: (height - 56 - logoH) * s, width: logo.width * factor * s, height: logoH * s});
+          page.drawImage(logo, {x: left * s, y: (height - 52 - logoH) * s, width: logo.width * factor * s, height: logoH * s});
         }
       }
-      const approval = wrap(data.approval || "", bold, 14, 420);
-      approval.forEach((l, i) => rightText(l, right, 69 + i * 18, 14, bold, ink));
-      const numberY = 69 + approval.length * 18 + 22;
-      rightText(data.invoiceNumber, right, numberY, 16, regular, muted);
-      rightText("Issued " + dateLabel, right, numberY + 20, 16, regular, muted);
-      if (!parties) return 205;
-      const y = 225;
-      function party(label, name, details, x, max) {
-        draw(label, x, y, 16, bold, ink);
-        let bottom = linesAt(wrap(name, bold, 20, max), x, y + 36, 20, bold, 24, ink) + 10;
-        for (const detail of details.filter(Boolean)) bottom = linesAt(wrap(detail, regular, 16, max), x, bottom, 16, regular, 20, ink) + 6;
-        return Number.isFinite(bottom) ? bottom - 6 : y + 80;
+      // ESTIMATE / INVOICE title with an accent underline, number, date and approval line.
+      rightText(docTitle, right, 56, 40, bold, ink);
+      accentBar(right - measure(bold, docTitle, 40), 106, 48);
+      rightText(data.invoiceNumber, right, 128, 15, regular, muted);
+      rightText("Issued " + dateLabel, right, 150, 15, regular, muted);
+      let approvalY = 178;
+      for (const l of wrap(String(data.approval || "").toUpperCase(), regular, 11, 380)) {
+        if (l) spaced(l, right - spacedWidth(l, 11, regular), approvalY, 11, regular, muted);
+        approvalY += 16;
       }
-      const a = party("FROM", data.fromName, [data.fromPhone, data.fromEmail, data.fromAddress], 62, 342);
-      const b = party("BILL TO", data.billName, [data.billAddress], 415, 382);
-      const top = Math.max(402, a + 35, b + 35);
-      return Number.isFinite(top) ? top : 402;
+      if (!parties) return Math.max(250, approvalY + 30);
+      const y = Math.max(236, approvalY + 30);
+      const mid = left + width / 2;
+      function party(label, name, details, x, max) {
+        spaced(label, x, y, 12, bold, ink);
+        accentBar(x, y + 22, 34);
+        let bottom = linesAt(wrap(name, bold, 22, max), x, y + 44, 22, bold, 27, ink) + 6;
+        for (const detail of details.filter(Boolean)) bottom = linesAt(wrap(detail, regular, 15, max), x, bottom, 15, regular, 22, ink) + 2;
+        return Number.isFinite(bottom) ? bottom : y + 90;
+      }
+      const a = party("FROM", data.fromName, [data.fromPhone, data.fromEmail, data.fromAddress], left + 16, width / 2 - 40);
+      const b = party("BILL TO", data.billName, [data.billAddress], mid + 46, width / 2 - 60);
+      const partiesBottom = Math.max(a, b);
+      line(mid + 10, y - 6, mid + 10, partiesBottom + 6, 1, lineColor);
+      const top = partiesBottom + 34;
+      return Number.isFinite(top) ? top : 470;
     }
     // Every concept becomes wrapped description lines; its first line carries qty / price / amount.
     // A blank line separates concepts. Several concepts always show their amounts.
@@ -156,56 +184,66 @@
     const description = [];
     items.forEach((item, i) => {
       if (i) description.push({ text: "" });
-      wrap(item.description || "Work performed", regular, 16, width * .576 - 12)
+      wrap(item.description || "Work performed", regular, 15, width * .48 - 30)
         .forEach((text, j) => description.push({ text, item: j === 0 ? item : null }));
     });
-    let index = 0, tableBottom = 402, safety = 0;
+    const columns = [left - 14, left - 14 + (width + 28) * .494, left - 14 + (width + 28) * .603, left - 14 + (width + 28) * .794, right + 14];
+    const headH = 62, rowH = 24;
+    let index = 0, tableBottom = 470, safety = 0;
     while (index < description.length && safety++ < 8) {
       const top = header();
-      let capacity = Math.floor((height - 90 - top - 48 - 36) / 20);
+      let capacity = Math.floor((height - 90 - top - headH - 120) / rowH);
       if (!Number.isFinite(capacity) || capacity < 1) capacity = 6;
       const chunk = description.slice(index, index + capacity);
       if (!chunk.length) break;
       index += chunk.length;
-      const body = Math.max(226, chunk.length * 20 + 36);
-      tableBottom = top + 48 + body;
-      page.drawRectangle({x: left * s, y: (height - top - 48) * s, width: width * s, height: 48 * s, color: peach});
-      const columns = [left, left + width * .576, left + width * .654, left + width * .818, right];
+      const body = Math.max(190, chunk.length * rowH + 44);
+      tableBottom = top + headH + body;
+      box(columns[0], top, columns[4] - columns[0], headH, peach);
       columns.forEach(x => line(x, top, x, tableBottom, 1, lineColor));
-      [top, top + 48, tableBottom].forEach(y => line(left, y, right, y, 1, lineColor));
-      ["Description", "QTY", "Price, USD", "Amount, USD"].forEach((label, i) => {
-        const x = i === 0 ? left + 8 : (columns[i] + columns[i + 1] - measure(bold, label, 14)) / 2;
-        draw(label, x, top + 15, 14, bold, ink);
+      [top, top + headH, tableBottom].forEach(y => line(columns[0], y, columns[4], y, 1, lineColor));
+      ["DESCRIPTION", "QTY", "PRICE, USD", "AMOUNT, USD"].forEach((label, i) => {
+        const x = i === 0 ? columns[0] + 28 : (columns[i] + columns[i + 1] - spacedWidth(label, 12)) / 2;
+        spaced(label, x, top + (headH - 12) / 2, 12, bold, ink);
       });
       chunk.forEach((row, i) => {
-        const y = top + 66 + i * 20;
-        draw(row.text, left + 5, y, 16, regular, ink);
+        const y = top + headH + 34 + i * rowH;
+        draw(row.text, columns[0] + 28, y, 15, regular, ink);
         if (!showAmounts || !row.item) return;
         const amount = C.cents(row.item.qty * row.item.price) / 100;
-        [String(row.item.qty), money(row.item.price), money(amount)].forEach((text, k) => {
-          const col = k + 1, room = columns[col + 1] - columns[col] - 8;
+        [String(row.item.qty), money(row.item.price).replace("$", "$ "), money(amount).replace("$", "$ ")].forEach((text, k) => {
+          const col = k + 1, room = columns[col + 1] - columns[col] - 12;
           const size = Math.min(15, room / Math.max(measure(regular, text, 1), 0.01));
           draw(text, (columns[col] + columns[col + 1] - measure(regular, text, size)) / 2, y, size, regular, ink);
         });
       });
       if (index === description.length) {
-        page.drawRectangle({x: columns[3] * s, y: (height - tableBottom - 27) * s, width: (right - columns[3]) * s, height: 27 * s, color: peach});
-        line(columns[3], tableBottom, columns[3], tableBottom + 27, 1, lineColor);
-        line(right, tableBottom, right, tableBottom + 27, 1, lineColor);
-        line(columns[3], tableBottom + 27, right, tableBottom + 27, 1, lineColor);
-        rightText("Price for materials and labor:", columns[3] - 7, tableBottom + 4, 16, regular, ink);
+        // TOTAL (Materials and Labor) | $ amount
+        const boxTop = tableBottom + 12, boxH = 66;
+        box(columns[2] - 120, boxTop, columns[3] - (columns[2] - 120), boxH, greyFill);
+        box(columns[3], boxTop, columns[4] - columns[3], boxH, peach);
+        box(columns[3], boxTop - 3, columns[4] - columns[3], 3, accent);
+        const labelY = boxTop + (boxH - 18) / 2;
+        const small = "(Materials and Labor)";
+        const labelW = measure(bold, "TOTAL", 18) + 8 + measure(regular, small, 13);
+        const labelX = columns[3] - 22 - labelW;
+        draw("TOTAL", labelX, labelY, 18, bold, ink);
+        draw(small, labelX + measure(bold, "TOTAL", 18) + 8, labelY + 4, 13, regular, ink);
         const totalText = money(total).replace("$", "$ ");
-        const totalSize = Math.min(16, (right - columns[3] - 12) / Math.max(measure(bold, totalText, 1), 0.01));
-        draw(totalText, columns[3] + 6, tableBottom + 4, totalSize, bold, ink);
+        const totalSize = Math.min(20, (columns[4] - columns[3] - 24) / Math.max(measure(bold, totalText, 1), 0.01));
+        draw(totalText, (columns[3] + columns[4] - measure(bold, totalText, totalSize)) / 2, boxTop + (boxH - totalSize) / 2, totalSize, bold, ink);
+        tableBottom = boxTop + boxH;
       }
     }
-    const noteLines = wrap(note, bold, 17, right - 42);
-    let noteY = tableBottom + 77;
-    for (const l of noteLines) {
-      if (noteY + 24 > height - 48) noteY = header(false);
-      draw(l, 42, noteY, 17, bold, ink); noteY += 24;
+    let noteY = tableBottom + 48;
+    if (noteY + 90 > height - 48) noteY = header(false);
+    spaced("NOTE", left + 16, noteY, 12, bold, ink);
+    accentBar(left + 16, noteY + 22, 34);
+    noteY += 52;
+    for (const l of wrap(note, regular, 15, width * .72)) {
+      if (noteY + 22 > height - 30) noteY = header(false);
+      draw(l, left + 16, noteY, 15, regular, muted); noteY += 24;
     }
-    doc.getPages().forEach(sheet => sheet.drawRectangle({x: 0, y: 0, width: 612, height: 10, color: copper}));
     doc.setTitle(pdfSafe((data.workAddress || data.billAddress || "Invoice") + " - " + data.invoiceNumber));
     doc.setAuthor(pdfSafe(data.fromName || "Ruben Perla"));
     try {

@@ -76,9 +76,9 @@
     const pct = Math.min(100, Math.max(0, Math.round(Number(deposit) || 0)));
     const totalCents = cents(total);
     const first = Math.round(totalCents * pct / 100);
-    if (pct === 0) return `Note: The full amount of ${money(totalCents / 100)} is due at the end of the work.`;
-    if (pct === 100) return `Note: The full amount of ${money(totalCents / 100)} is required at the beginning of the project.`;
-    return `Note: At the beginning of the project, ${pct}% equivalent to ${money(first / 100)} is required, and at the end of the work, the final ${100 - pct}% equivalent to ${money((totalCents - first) / 100)} is required.`;
+    if (pct === 0) return `The full amount of ${money(totalCents / 100)} is due at the end of the work.`;
+    if (pct === 100) return `The full amount of ${money(totalCents / 100)} is required at the beginning of the project.`;
+    return `At the beginning of the project, ${pct}% equivalent to ${money(first / 100)} is required, and at the end of the work, the final ${100 - pct}% equivalent to ${money((totalCents - first) / 100)} is required.`;
   }
   function summarize(records) {
     let total = 0, paid = 0;

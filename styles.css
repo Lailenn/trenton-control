@@ -7387,3 +7387,50 @@ html.boot-session body::after {
   background: #fff6f6 !important;
   box-shadow: 0 0 0 3px rgba(229, 57, 53, .12);
 }
+
+/* ===== Invoice preview v2 (matches the PDF): ESTIMATE title, spaced labels, light grid, total box, NOTE ===== */
+#invoicePaper.paper-v2 { padding: 52px 58px 56px; border-bottom: 0; color: #1e2126; font-family: Helvetica, Arial, sans-serif; }
+#invoicePaper.paper-v2 .invoice-logo { width: 240px; height: 96px; }
+#invoicePaper.paper-v2 .invoice-meta { padding-top: 0; }
+#invoicePaper.paper-v2 .paper-title { position: relative; margin: 0 0 30px; color: #1e2126; font: 700 40px/1 Helvetica, Arial, sans-serif; letter-spacing: .01em; }
+#invoicePaper.paper-v2 .paper-title::after { content: ""; position: absolute; left: 0; bottom: -14px; width: 48px; height: 3px; background: #e66a22; }
+#invoicePaper.paper-v2 .invoice-meta > span { color: #50545c; font-size: 15px; line-height: 22px; }
+#invoicePaper.paper-v2 .paper-approval { display: block; margin: 10px 0 0; color: #50545c; font: 400 11px/16px Helvetica, Arial, sans-serif; letter-spacing: .16em; text-transform: uppercase; }
+#invoicePaper.paper-v2 .invoice-meta > strong:not(.paper-approval) { margin: 0; }
+#invoicePaper.paper-v2 .invoice-parties { grid-template-columns: 1fr 1fr; margin-top: 44px; padding: 0 16px; }
+#invoicePaper.paper-v2 .invoice-parties > div:first-child { padding-right: 30px; border-right: 1px solid #c4c7cc; }
+#invoicePaper.paper-v2 .invoice-parties > div:last-child { padding-left: 46px; }
+#invoicePaper.paper-v2 .invoice-party-label { position: relative; margin-bottom: 30px; color: #1e2126; font: 700 12px/1 Helvetica, Arial, sans-serif; letter-spacing: .16em; }
+#invoicePaper.paper-v2 .invoice-party-label::after { content: ""; position: absolute; left: 0; bottom: -12px; width: 34px; height: 3px; background: #e66a22; }
+#invoicePaper.paper-v2 .invoice-parties strong { font-size: 22px; line-height: 27px; }
+#invoicePaper.paper-v2 .invoice-parties p { font-size: 15px; line-height: 22px; }
+#invoicePaper.paper-v2 .invoice-table { width: calc(100% + 28px); margin: 34px -14px 0; }
+#invoicePaper.paper-v2 .invoice-table th,
+#invoicePaper.paper-v2 .invoice-table tbody td { border-color: #c4c7cc; }
+#invoicePaper.paper-v2 .invoice-table th { height: 62px; background: #fbefe6; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
+#invoicePaper.paper-v2 .invoice-table th:first-child { padding-left: 28px; }
+#invoicePaper.paper-v2 .invoice-table tbody td { height: 190px; padding: 24px 6px; font-size: 15px; }
+#invoicePaper.paper-v2 .invoice-table tbody td:first-child { padding-left: 28px; }
+#invoicePaper.paper-v2 .invoice-table tbody.has-extra td { height: auto; padding-top: 8px; padding-bottom: 4px; }
+#invoicePaper.paper-v2 .invoice-table tbody.has-extra tr:first-child td { padding-top: 24px; }
+#invoicePaper.paper-v2 .invoice-table tbody.has-extra tr:last-child td { height: 110px; }
+#invoicePaper.paper-v2 .paper-total { display: flex; justify-content: flex-end; margin: 12px -14px 0 0; }
+#invoicePaper.paper-v2 .paper-total-label { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 0 22px 0 54px; background: #f0f0f1; font-size: 13px; }
+#invoicePaper.paper-v2 .paper-total-label b { font-size: 18px; }
+#invoicePaper.paper-v2 .paper-total strong {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  width: 21.9%;
+  height: 66px;
+  padding: 0;
+  border-top: 3px solid #e66a22;
+  background: #fbefe6;
+  font-size: 20px;
+}
+#invoicePaper.paper-v2 .paper-note { margin-top: 48px; padding: 0 16px; }
+#invoicePaper.paper-v2 .invoice-payment-note { max-width: 72%; margin: 0; color: #50545c; font: 400 15px/24px Helvetica, Arial, sans-serif; }
+#invoicePaper.paper-v2 .paper-title { display: inline-block; }
+#invoicePaper.paper-v2 .paper-total { align-items: stretch; gap: 0; }
+#invoicePaper.paper-v2 .paper-total-label { height: 66px; }
+#invoicePaper.paper-v2 .paper-total strong { border: 0 !important; border-top: 3px solid #e66a22 !important; box-shadow: none; height: 66px; box-sizing: border-box; }
