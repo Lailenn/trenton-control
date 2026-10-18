@@ -29,7 +29,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet" />
     <link rel="icon" href="assets/app-icon.png?v=2" type="image/png" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2" />
-    <link rel="stylesheet" href="styles.css?v=builder-1" />
+    <link rel="stylesheet" href="styles.css?v=builder-2" />
   </head>
   <body>
     <div id="authGate" class="auth-gate auth-play login-screen login3" data-mode="login">
@@ -744,23 +744,23 @@
                 <div class="builder-panel-heading"><div><p class="eyebrow">Datos editables</p><h2>Información de la invoice</h2></div><span class="builder-step">01</span></div>
                 <div class="invoice-fields">
                   <div class="field-group full"><p class="field-group-title">Encabezado</p></div>
-                  <label class="field"><span>Número de invoice</span><input id="builderInvoiceNumber" type="text" value="#001" /></label>
+                  <label class="field"><span>Número de invoice</span><input id="builderInvoiceNumber" type="text" value="" placeholder="Ej. #004" /></label>
                   <label class="field"><span>Fecha de emisión</span><input id="builderIssuedDate" type="date" /></label>
                   <label class="field full"><span>Texto superior derecho</span><input id="builderApproval" type="text" value="ESTIMATED AND APPROVED BY DIEGO" /></label>
 
                   <div class="field-group full"><p class="field-group-title">Quién envía y quién recibe</p></div>
                   <label class="field"><span>Nombre de quien factura</span><input id="builderFromName" type="text" value="Ruben Perla" /></label>
-                  <label class="field"><span>Empresa que paga</span><input id="builderBillName" type="text" value="Trenton Builders LLC" /></label>
+                  <label class="field"><span>Empresa que paga</span><input id="builderBillName" type="text" value="Trenton Builders LLC" placeholder="Ej. Trenton Builders LLC" /></label>
                   <label class="field"><span>Teléfono</span><input id="builderFromPhone" type="text" value="+1 (469) 650-4958" /></label>
-                  <label class="field"><span>Dirección del cliente</span><input id="builderBillAddress" type="text" value="1117 C St SE, Washington, DC 20003" /></label>
+                  <label class="field"><span>Dirección del cliente</span><input id="builderBillAddress" type="text" value="1117 C St SE, Washington, DC 20003" placeholder="Ej. 1117 C St SE, Washington, DC 20003" /></label>
                   <label class="field"><span>Correo electrónico</span><input id="builderFromEmail" type="email" value="pr391665@gmail.com" /></label>
                   <label class="field"><span>Dirección de quien factura</span><input id="builderFromAddress" type="text" value="11804 Birchview Ct. Clinton MD 20735" /></label>
-                  <label class="field full"><span>Dirección del trabajo / para guardar</span><input id="builderWorkAddress" type="text" list="addressHistory" value="1117 C St SE, Washington, DC 20003" placeholder="Dirección donde se realizó el trabajo" /></label>
+                  <label class="field full"><span>Dirección del trabajo / para guardar</span><input id="builderWorkAddress" type="text" list="addressHistory" value="" placeholder="Ej. 2501 Naylor Rd SE, Washington, DC 20020" /></label>
 
                   <div class="field-group full"><p class="field-group-title">Detalle del trabajo</p></div>
-                  <label class="field full"><span>Descripción</span><textarea id="builderDescription" class="js-grow" rows="6">Preparation and installation of stucco</textarea></label>
+                  <label class="field full"><span>Descripción</span><textarea id="builderDescription" class="js-grow" rows="6" placeholder="Ej. Preparation and installation of stucco"></textarea></label>
                   <label class="field"><span>Cantidad</span><input id="builderQty" type="number" min="0" step="0.01" value="1" /></label>
-                  <label class="field"><span>Precio / total (USD)</span><div class="money-input"><b>$</b><input id="builderPrice" type="number" min="0" step="0.01" value="9200" /></div></label>
+                  <label class="field"><span>Precio / total (USD)</span><div class="money-input"><b>$</b><input id="builderPrice" type="number" min="0" step="0.01" value="" placeholder="Ej. 9200.00" /></div></label>
                   <label class="field"><span>Anticipo requerido (%)</span><input id="builderDeposit" type="number" min="0" max="100" step="1" value="50" /></label>
                   <label class="field full"><span>Nota de pago</span><textarea id="builderNote" class="js-grow" rows="4" placeholder="Se genera automáticamente si lo dejas vacío."></textarea></label>
                   <label class="field full logo-field"><span>Logo (opcional)</span><input id="builderLogo" type="file" accept="image/*" /><small>Se usa el logo de Rubén. Puedes cargar otro si lo necesitas.</small></label>
@@ -1094,7 +1094,7 @@
     <script src="check-viewer.js?v=1" defer></script>
     <script src="balance-ui.js?v=1" defer></script>
     <script src="dash-stats.js?v=2" defer></script>
-    <script src="app.js?v=builder-1" defer></script>
+    <script src="app.js?v=builder-3" defer></script>
     <script src="ux-motion.js?v=4" defer></script>
   </body>
 </html>

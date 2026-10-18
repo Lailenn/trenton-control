@@ -7320,3 +7320,5 @@ html.boot-session body::after {
   background: #fff6f6 !important;
   box-shadow: 0 0 0 3px rgba(229, 57, 53, .12);
 }
+/* Preview: example text for empty fields */
+#invoicePaper .is-example { color: #b4bccb !important; font-style: italic; }

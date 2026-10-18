@@ -553,13 +553,13 @@
       // Diego approves Trenton's work only; another company's invoice can leave this line empty.
       approval: $("#builderApproval").value.trim() || (window.CompanyApp?.isOtras?.() ? "" : DEFAULT_APPROVAL),
       fromName: $("#builderFromName").value.trim() || "Ruben Perla",
-      billName: $("#builderBillName").value.trim() || defaultBill().name,
+      billName: $("#builderBillName").value.trim(),
       fromPhone: $("#builderFromPhone").value.trim(),
       billAddress: $("#builderBillAddress").value.trim(),
       workAddress: $("#builderWorkAddress").value.trim(),
       fromEmail: $("#builderFromEmail").value.trim(),
       fromAddress: canonicalFromAddress($("#builderFromAddress")?.value),
-      description: split.text || "Trabajo realizado",
+      description: split.text,
       qty: Number($("#builderQty").value) > 0 ? Number($("#builderQty").value) : 1,
       price,
       deposit: Math.min(Math.max(Number($("#builderDeposit").value) || 0, 0), 100),
@@ -586,7 +586,7 @@
       builderWorkAddress: "",
       builderFromEmail: "pr391665@gmail.com",
       builderFromAddress: DEFAULT_FROM_ADDRESS,
-      builderDescription: "Preparation and installation of stucco",
+      builderDescription: "",
       builderQty: "1",
       builderPrice: "",
       builderDeposit: "50",
@@ -729,6 +729,22 @@
       "#previewNote": note
     };
     Object.entries(values).forEach(([selector, value]) => { const element = $(selector); if (element) element.textContent = value; });
+    // Empty fields show their example (in grey) on the preview, so the sheet never looks broken.
+    const examplePrice = Number((String($("#builderPrice")?.placeholder || "").match(/\d[\d.]*/) || ["0"])[0]) || 0;
+    const examples = {
+      "#previewInvoiceNumber": data.invoiceNumber ? "" : $("#builderInvoiceNumber")?.placeholder,
+      "#previewBillName": data.billName ? "" : $("#builderBillName")?.placeholder,
+      "#previewBillAddress": data.billAddress ? "" : $("#builderBillAddress")?.placeholder,
+      "#previewDescription": data.description ? "" : $("#builderDescription")?.placeholder,
+      "#previewTotal": data.price > 0 ? "" : money(examplePrice).replace("$", "$ "),
+      "#previewNote": data.price > 0 || data.note ? "" : Core.paymentNote(examplePrice, data.deposit, money)
+    };
+    Object.entries(examples).forEach(([selector, example]) => {
+      const element = $(selector);
+      if (!element) return;
+      element.classList.toggle("is-example", Boolean(example));
+      if (example) element.textContent = String(example).replace(/^Ej\.\s*/, "");
+    });
   }
 
   // Freeze the page behind the mobile menu so it can't scroll (and keep its position on close).
@@ -887,7 +903,7 @@
     $("#builderWorkAddress").value = "";
     $("#builderFromEmail").value = "pr391665@gmail.com";
     $("#builderFromAddress").value = DEFAULT_FROM_ADDRESS;
-    $("#builderDescription").value = "Preparation and installation of stucco";
+    $("#builderDescription").value = "";
     $("#builderQty").value = "1";
     $("#builderPrice").value = "";
     $("#builderDeposit").value = "50";
@@ -932,6 +948,7 @@
     if (!data.invoiceNumber) mark("builderInvoiceNumber", "el número de invoice");
     if (!Core.isoDate(data.issuedDate)) mark("builderIssuedDate", "la fecha de emisión");
     if (!data.billName) mark("builderBillName", "la empresa que paga");
+    if (!data.description) mark("builderDescription", "la descripción del trabajo");
     if (!(Number($("#builderQty").value) > 0)) mark("builderQty", "una cantidad mayor que cero");
     if (!(data.price > 0)) mark("builderPrice", "un precio mayor que cero");
     const deposit = Number($("#builderDeposit").value);
