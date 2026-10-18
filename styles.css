@@ -6566,7 +6566,7 @@ a { color: var(--blue); }
 .ha-check { top: 22% !important; left: 68% !important; }
 
 /* No sideways page scroll: decorative glows and the backdrop photo may bleed past the edge, the page must not move */
-html, body { overflow-x: hidden; }
+html, body { overflow-x: clip; } /* clip, not hidden: hidden would turn body into a scroll box and break sticky panels */
 .app-shell, .main-shell { overflow-x: clip; }
 #boardView.dash-home { overflow-x: clip; }
 @media (min-width: 821px) {
@@ -7464,3 +7464,9 @@ html.boot-session .boot-screen {
 @keyframes bootIn { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .boot-dots i { animation: none; opacity: .8; } }
 @media (max-width: 600px) { .boot-houses { width: 180%; left: -40%; } }
+
+/* Computer: the document preview stays in view while the (longer) form scrolls beside it */
+@media (min-width: 951px) {
+  .invoice-builder, .hours-layout { align-items: start; }
+  :is(#invoiceView, #hoursView, #jobView) :is(.invoice-preview-panel, .hours-preview-panel) { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow: auto; }
+}
