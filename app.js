@@ -44,7 +44,7 @@
   const DEFAULT_FROM_ADDRESS = "11804 Birchview Ct. Clinton MD 20735";
   const DEFAULT_APPROVAL = "ESTIMATED AND APPROVED BY DIEGO";
   const defaultApproval = () => (window.CompanyApp?.isOtras?.() ? "" : DEFAULT_APPROVAL);
-  const INVOICE_DRAFT_FIELDS = ["builderInvoiceNumber", "builderIssuedDate", "builderApproval", "builderFromName", "builderBillName", "builderFromPhone", "builderBillAddress", "builderWorkAddress", "builderFromEmail", "builderFromAddress", "builderDescription", "builderQty", "builderPrice", "builderShowLines", "builderDeposit", "builderNote"];
+  const INVOICE_DRAFT_FIELDS = ["builderInvoiceNumber", "builderIssuedDate", "builderApproval", "builderFromName", "builderBillName", "builderFromPhone", "builderBillAddress", "builderWorkAddress", "builderFromEmail", "builderFromAddress", "builderDescription", "builderQty", "builderPrice", "builderShowLines", "builderExtraLines", "builderDeposit", "builderNote"];
   // Checkboxes travel through the draft as "1" / "".
   const fieldValue = el => (el?.type === "checkbox" ? (el.checked ? "1" : "") : (el?.value || ""));
   const setFieldValue = (el, value) => { if (!el) return; if (el.type === "checkbox") el.checked = value === "1" || value === true; else el.value = value; };
@@ -429,8 +429,8 @@
       }
       else if (record.invoiceData && !record.pdfBlob) {
         const snapshot = {...record.invoiceData, invoiceNumber: record.invoiceNumber, issuedDate: record.issuedDate, workAddress: record.address, description: record.description};
-        if (Core.cents(Number(snapshot.qty) * Number(snapshot.price)) !== Core.cents(record.amount)) {
-          snapshot.qty = 1; snapshot.price = record.amount;
+        if (Core.cents(Core.invoiceTotal(snapshot)) !== Core.cents(record.amount)) {
+          snapshot.qty = 1; snapshot.price = record.amount; snapshot.items = null; snapshot.extraItems = [];
           if (snapshot.note) throw new Error("Esta invoice tiene una nota de pago personalizada. Modifica el monto y la nota desde Crear invoice para que coincidan.");
         }
         await attachGeneratedPdf(record, snapshot);
@@ -547,9 +547,40 @@
     }
   }
 
+  // Extra concepts (beyond the main description/price) live as JSON in a hidden field so they
+  // travel with the draft like every other field.
+  function readExtraLines() {
+    try {
+      const list = JSON.parse($("#builderExtraLines")?.value || "[]");
+      return Array.isArray(list) ? list.map(item => ({ description: String(item.description || ""), qty: item.qty ?? "1", price: item.price ?? "" })) : [];
+    } catch (_) { return []; }
+  }
+  function writeExtraLines(list) {
+    if ($("#builderExtraLines")) $("#builderExtraLines").value = list.length ? JSON.stringify(list) : "";
+  }
+  function renderExtraLines() {
+    const box = $("#builderExtraList");
+    if (!box) return;
+    box.innerHTML = readExtraLines().map((item, i) => `
+      <div class="builder-extra-row" data-line="${i}">
+        <label class="field"><span>Concepto ${i + 2}</span><input type="text" data-key="description" value="${esc(item.description)}" placeholder="Ej. Mano de obra"></label>
+        <label class="field"><span>Cantidad</span><input type="number" min="0" step="0.01" inputmode="decimal" data-key="qty" value="${esc(item.qty)}"></label>
+        <label class="field"><span>Precio (USD)</span><div class="money-input"><b>$</b><input type="number" min="0" step="0.01" inputmode="decimal" data-key="price" value="${esc(item.price)}" placeholder="Ej. 2800.00"></div></label>
+        <button type="button" class="builder-extra-remove" data-remove="${i}" aria-label="Quitar concepto ${i + 2}">×</button>
+      </div>`).join("");
+  }
+  function extraLinesChanged() {
+    updateInvoicePreview();
+    persistInvoiceDraft();
+  }
+
   function invoiceData() {
     const split = WhatsAppInvoiceParser.splitPrice?.($("#builderDescription").value.trim()) || { text: $("#builderDescription").value.trim(), amount: null };
     const price = Number($("#builderPrice").value) || split.amount || 0;
+    // Only concepts with something written count; half-filled ones are caught when saving.
+    const extraItems = readExtraLines()
+      .filter(item => item.description.trim() || Number(item.price) > 0)
+      .map(item => ({ description: item.description.trim(), qty: Number(item.qty) > 0 ? Number(item.qty) : 1, price: Math.max(0, Number(item.price) || 0) }));
     return {
       invoiceNumber: $("#builderInvoiceNumber").value.trim(),
       issuedDate: $("#builderIssuedDate").value,
@@ -567,6 +598,9 @@
       qty: Number($("#builderQty").value) > 0 ? Number($("#builderQty").value) : 1,
       price,
       showLines: Boolean($("#builderShowLines")?.checked),
+      extraItems,
+      items: [{ description: split.text, qty: Number($("#builderQty").value) > 0 ? Number($("#builderQty").value) : 1, price }, ...extraItems],
+      total: Core.invoiceTotal({ items: [{ description: split.text, qty: $("#builderQty").value, price }, ...extraItems] }),
       deposit: Math.min(Math.max(Number($("#builderDeposit").value) || 0, 0), 100),
       note: $("#builderNote").value.trim(),
       sourceMessage: $("#whatsappText").value.trim(),
@@ -595,6 +629,7 @@
       builderQty: "1",
       builderPrice: "",
       builderShowLines: "",
+      builderExtraLines: "",
       builderDeposit: "50",
       builderNote: "",
       whatsappText: ""
@@ -691,6 +726,7 @@
       if ($("#paperLogo")) $("#paperLogo").innerHTML = `<img src="${logoDataUrl}" alt="Logo" />`;
     }
     if ($("#builderFromAddress")) $("#builderFromAddress").value = canonicalFromAddress($("#builderFromAddress").value);
+    renderExtraLines();
     applyingInvoiceDraft = false;
     updateInvoicePreview();
     growAllTextareas();
@@ -715,7 +751,7 @@
 
   function updateInvoicePreview() {
     const data = invoiceData();
-    const total = Core.cents(data.qty * data.price) / 100;
+    const total = data.total;
     const note = data.note || Core.paymentNote(total, data.deposit, money);
     const values = {
       "#previewApproval": data.approval,
@@ -735,9 +771,23 @@
       "#previewNote": note
     };
     Object.entries(values).forEach(([selector, value]) => { const element = $(selector); if (element) element.textContent = value; });
-    // Optional QTY / Price / Amount columns (only when the box is checked and there is a price).
-    const showLines = data.showLines && data.price > 0;
-    ["#previewQty", "#previewPrice", "#previewAmount"].forEach(selector => { const cell = $(selector); if (cell) cell.hidden = !showLines; });
+    // QTY / Price / Amount columns: optional with one concept, always shown with several.
+    const showLines = (data.showLines || data.extraItems.length > 0) && data.total > 0;
+    ["#previewQty", "#previewPrice", "#previewAmount"].forEach(selector => { const cell = $(selector); if (cell) cell.hidden = !showLines || !(data.price > 0); });
+    if ($("#previewAmount")) $("#previewAmount").textContent = money(Core.cents(data.items[0].qty * data.items[0].price) / 100);
+    // One table row per extra concept, under the main one.
+    const tbody = $("#previewDescription")?.closest("tbody");
+    if (tbody) {
+      tbody.querySelectorAll("tr.extra-line").forEach(row => row.remove());
+      tbody.classList.toggle("has-extra", data.extraItems.length > 0);
+      data.extraItems.forEach(item => {
+        const row = document.createElement("tr");
+        row.className = "extra-line";
+        const amount = Core.cents(item.qty * item.price) / 100;
+        row.innerHTML = `<td>${esc(item.description || "—")}</td><td>${esc(item.qty)}</td><td>${esc(money(item.price))}</td><td>${esc(money(amount))}</td>`;
+        tbody.appendChild(row);
+      });
+    }
     // Empty fields show their example (in grey) on the preview, so the sheet never looks broken.
     const examplePrice = Number((String($("#builderPrice")?.placeholder || "").match(/\d[\d.]*/) || ["0"])[0]) || 9200;
     // Live summary next to the deposit: total, what is asked up front and what is left.
@@ -927,6 +977,8 @@
     $("#builderQty").value = "1";
     $("#builderPrice").value = "";
     $("#builderShowLines").checked = false;
+    writeExtraLines([]);
+    renderExtraLines();
     $("#builderDeposit").value = "50";
     $("#builderNote").value = "";
     $("#builderLogo").value = "";
@@ -972,10 +1024,18 @@
     if (!data.description) mark("builderDescription", "la descripción del trabajo");
     if (!(Number($("#builderQty").value) > 0)) mark("builderQty", "una cantidad mayor que cero");
     if (!(data.price > 0)) mark("builderPrice", "un precio mayor que cero");
+    // Extra concepts need both a description and a price (or be removed).
+    document.querySelectorAll("#builderExtraList .builder-extra-row").forEach((row, i) => {
+      const item = readExtraLines()[i] || {};
+      const started = String(item.description || "").trim() || Number(item.price) > 0;
+      if (!started) return;
+      if (!String(item.description || "").trim()) { problems.push({ id: "", el: row.querySelector('[data-key="description"]'), message: `la descripción del concepto ${i + 2}` }); }
+      if (!(Number(item.price) > 0)) { problems.push({ id: "", el: row.querySelector('[data-key="price"]'), message: `el precio del concepto ${i + 2}` }); }
+    });
     const deposit = Number($("#builderDeposit").value);
     if ($("#builderDeposit").value !== "" && (!(deposit >= 0) || deposit > 100)) mark("builderDeposit", "un anticipo entre 0% y 100%");
     document.querySelectorAll("#invoiceView .field.is-invalid").forEach(field => field.classList.remove("is-invalid"));
-    problems.forEach(problem => $("#" + problem.id)?.closest(".field")?.classList.add("is-invalid"));
+    problems.forEach(problem => (problem.el || $("#" + problem.id))?.closest(".field")?.classList.add("is-invalid"));
     return problems;
   }
 
@@ -1036,12 +1096,12 @@
   async function saveGeneratedInvoice(alsoDownload = false) {
     if (savingBuilder) { showToast("Esta invoice ya se está guardando. Espera un momento."); return; }
     const data = invoiceData();
-    const amount = Core.amount(data.qty * data.price);
+    const amount = data.total;
     const problems = builderProblems(data);
     if (problems.length || amount == null || amount <= 0) {
       const list = problems.map(problem => problem.message);
       showToast(list.length ? `Falta ${list.join(", ")}.` : "El total debe ser mayor que cero.");
-      $("#" + (problems[0]?.id || "builderPrice"))?.focus();
+      (problems[0]?.el || $("#" + (problems[0]?.id || "builderPrice")))?.focus();
       return;
     }
     const taken = duplicateInvoiceNumber(data.invoiceNumber);
@@ -1132,6 +1192,8 @@
     const map = {invoiceNumber: "InvoiceNumber", issuedDate: "IssuedDate", approval: "Approval", fromName: "FromName", billName: "BillName", fromPhone: "FromPhone", billAddress: "BillAddress", workAddress: "WorkAddress", fromEmail: "FromEmail", fromAddress: "FromAddress", description: "Description", qty: "Qty", price: "Price", deposit: "Deposit", note: "Note"};
     Object.entries(map).forEach(([key, id]) => { if (data[key] != null) $("#builder" + id).value = data[key]; });
     $("#builderShowLines").checked = Boolean(data.showLines);
+    writeExtraLines((data.extraItems || []).map(item => ({ description: item.description, qty: String(item.qty), price: String(item.price) })));
+    renderExtraLines();
     $("#builderWorkAddress").value = record.address;
     $("#whatsappText").value = data.sourceMessage || "";
     logoDataUrl = /^data:image\/(png|jpeg|webp);base64,/i.test(data.logoDataUrl || "") ? data.logoDataUrl : DEFAULT_LOGO_URL;
@@ -1347,6 +1409,36 @@
   $("#whatsappText").addEventListener("paste", () => setTimeout(fillInvoiceFromText, 0));
   INVOICE_DRAFT_FIELDS.forEach((id) => $("#" + id).addEventListener("input", () => { updateInvoicePreview(); persistInvoiceDraft(); }));
   $("#builderShowLines").addEventListener("change", () => { updateInvoicePreview(); persistInvoiceDraft(); });
+  // Extra concepts: add, type (kept in the hidden JSON field) and remove.
+  $("#addInvoiceLineButton")?.addEventListener("click", () => {
+    const list = readExtraLines();
+    if (list.length >= 15) { showToast("Máximo 16 conceptos por invoice."); return; }
+    writeExtraLines([...list, { description: "", qty: "1", price: "" }]);
+    renderExtraLines();
+    extraLinesChanged();
+    $("#builderExtraList .builder-extra-row:last-child [data-key=\"description\"]")?.focus();
+  });
+  $("#builderExtraList")?.addEventListener("input", event => {
+    const input = event.target.closest("[data-key]");
+    const row = event.target.closest("[data-line]");
+    if (!input || !row) return;
+    const list = readExtraLines();
+    const item = list[Number(row.dataset.line)];
+    if (!item) return;
+    item[input.dataset.key] = input.value;
+    writeExtraLines(list);
+    input.closest(".field")?.classList.remove("is-invalid");
+    extraLinesChanged();
+  });
+  $("#builderExtraList")?.addEventListener("click", event => {
+    const button = event.target.closest("[data-remove]");
+    if (!button) return;
+    const list = readExtraLines();
+    list.splice(Number(button.dataset.remove), 1);
+    writeExtraLines(list);
+    renderExtraLines();
+    extraLinesChanged();
+  });
   // Typing in a field marked as missing clears its warning.
   INVOICE_DRAFT_FIELDS.forEach((id) => $("#" + id).addEventListener("input", () => $("#" + id).closest(".field")?.classList.remove("is-invalid")));
   $("#whatsappText").addEventListener("input", () => { $("#whatsappResult").classList.add("hidden"); persistInvoiceDraft(); });

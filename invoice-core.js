@@ -57,6 +57,20 @@
     const total = cents(r.amount);
     return (r.stage === "paid" ? total - collected(r) : Math.max(0, total - cents(r.received))) / 100;
   }
+  // Line items of a generated invoice: the main line plus any extra concepts. Older invoices
+  // (no items list) are a single line built from qty × price.
+  function invoiceItems(data) {
+    const items = Array.isArray(data?.items) && data.items.length ? data.items : [{ description: data?.description, qty: data?.qty, price: data?.price }];
+    return items.map(item => ({
+      description: String(item.description || "").trim(),
+      qty: Number(item.qty) > 0 ? Number(item.qty) : 1,
+      price: Math.max(0, Number(item.price) || 0)
+    }));
+  }
+  // Invoice total in dollars, summed in cents so it always matches what is shown line by line.
+  function invoiceTotal(data) {
+    return invoiceItems(data).reduce((sum, item) => sum + cents(item.qty * item.price), 0) / 100;
+  }
   // Payment note under the table; shared by the live preview and the PDF so both always match.
   function paymentNote(total, deposit, money) {
     const pct = Math.min(100, Math.max(0, Math.round(Number(deposit) || 0)));
@@ -135,5 +149,5 @@
     if (!fields.issuedDate) warnings.push("Completa la fecha de emisión para incluirla en el año correcto.");
     return {fields, warnings};
   }
-  return {amount, cents, isoDate, issuedDate, addressNorm, numberNorm, logicalKey, select, summarize, collected, owed, paymentNote, fileName, extract};
+  return {amount, cents, isoDate, issuedDate, addressNorm, numberNorm, logicalKey, select, summarize, collected, owed, paymentNote, invoiceItems, invoiceTotal, fileName, extract};
 });

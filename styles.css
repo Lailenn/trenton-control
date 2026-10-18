@@ -7340,3 +7340,41 @@ html.boot-session body::after {
 .invoice-fields .check-field input[type="checkbox"] { width: 20px; height: 20px; margin: 0; accent-color: #3563e9; }
 .invoice-fields .check-field > span small { color: #8c96aa; font-weight: 500; }
 .invoice-fields .check-field .field-hint { grid-column: 1 / -1; }
+
+/* Invoice builder: extra concepts */
+.builder-extra { display: grid; gap: 10px; }
+.builder-extra-list { display: grid; gap: 10px; }
+.builder-extra-list:empty { display: none; }
+.builder-extra-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, .8fr) minmax(0, 1.2fr);
+  gap: 8px;
+  padding: 12px 40px 12px 12px;
+  border: 1px solid #e3e8f2;
+  border-radius: 14px;
+  background: #f8faff;
+}
+.builder-extra-row .field { margin: 0; }
+.builder-extra-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 8px;
+  background: #fde8e8;
+  color: #c62828;
+  font: 700 16px/1 "Plus Jakarta Sans", sans-serif;
+  cursor: pointer;
+}
+.builder-extra-add { justify-self: start; }
+@media (max-width: 570px) {
+  .builder-extra-row { grid-template-columns: 1fr 1fr; }
+  .builder-extra-row .field:first-child { grid-column: 1 / -1; }
+}
+/* Preview: several concepts share the tall table body instead of each row being tall */
+#invoicePaper .invoice-table tbody.has-extra td { height: auto; padding: 10px 5px 4px; border-top: 0; border-bottom: 0; }
+#invoicePaper .invoice-table tbody.has-extra tr:first-child td { border-top: 1px solid #000; padding-top: 18px; }
+#invoicePaper .invoice-table tbody.has-extra tr:last-child td { border-bottom: 1px solid #000; height: 120px; }

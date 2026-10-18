@@ -63,7 +63,7 @@
     const doc = await PDFDocument.create();
     const regular = await doc.embedFont(StandardFonts.Helvetica);
     const bold = await doc.embedFont(StandardFonts.HelveticaBold);
-    const total = C.cents(Number(data.qty) * Number(data.price)) / 100;
+    const total = C.invoiceTotal(data);
     const note = data.note || C.paymentNote(total, data.deposit, money);
     const date = C.isoDate(data.issuedDate);
     const dateLabel = date ? date.slice(5, 7) + "/" + date.slice(8, 10) + "/" + date.slice(0, 4) : "";
@@ -149,7 +149,16 @@
       const top = Math.max(402, a + 35, b + 35);
       return Number.isFinite(top) ? top : 402;
     }
-    const description = wrap(data.description || "Trabajo realizado", regular, 16, width * .576 - 12);
+    // Every concept becomes wrapped description lines; its first line carries qty / price / amount.
+    // A blank line separates concepts. Several concepts always show their amounts.
+    const items = C.invoiceItems(data);
+    const showAmounts = (data.showLines || items.length > 1) && total > 0;
+    const description = [];
+    items.forEach((item, i) => {
+      if (i) description.push({ text: "" });
+      wrap(item.description || "Work performed", regular, 16, width * .576 - 12)
+        .forEach((text, j) => description.push({ text, item: j === 0 ? item : null }));
+    });
     let index = 0, tableBottom = 402, safety = 0;
     while (index < description.length && safety++ < 8) {
       const top = header();
@@ -157,7 +166,6 @@
       if (!Number.isFinite(capacity) || capacity < 1) capacity = 6;
       const chunk = description.slice(index, index + capacity);
       if (!chunk.length) break;
-      const firstPage = index === 0;
       index += chunk.length;
       const body = Math.max(226, chunk.length * 20 + 36);
       tableBottom = top + 48 + body;
@@ -169,16 +177,17 @@
         const x = i === 0 ? left + 8 : (columns[i] + columns[i + 1] - measure(bold, label, 14)) / 2;
         draw(label, x, top + 15, 14, bold, ink);
       });
-      linesAt(chunk, left + 5, top + 66, 16, regular, 20, ink);
-      // Optional line detail: quantity, unit price and amount, centered in their columns.
-      if (data.showLines && firstPage && Number(data.price) > 0) {
-        const qty = Number(data.qty) > 0 ? Number(data.qty) : 1;
-        [String(qty), money(Number(data.price)), money(total)].forEach((text, i) => {
-          const col = i + 1, room = columns[col + 1] - columns[col] - 8;
+      chunk.forEach((row, i) => {
+        const y = top + 66 + i * 20;
+        draw(row.text, left + 5, y, 16, regular, ink);
+        if (!showAmounts || !row.item) return;
+        const amount = C.cents(row.item.qty * row.item.price) / 100;
+        [String(row.item.qty), money(row.item.price), money(amount)].forEach((text, k) => {
+          const col = k + 1, room = columns[col + 1] - columns[col] - 8;
           const size = Math.min(15, room / Math.max(measure(regular, text, 1), 0.01));
-          draw(text, (columns[col] + columns[col + 1] - measure(regular, text, size)) / 2, top + 66, size, regular, ink);
+          draw(text, (columns[col] + columns[col + 1] - measure(regular, text, size)) / 2, y, size, regular, ink);
         });
-      }
+      });
       if (index === description.length) {
         page.drawRectangle({x: columns[3] * s, y: (height - tableBottom - 27) * s, width: (right - columns[3]) * s, height: 27 * s, color: peach});
         line(columns[3], tableBottom, columns[3], tableBottom + 27, 1, lineColor);
