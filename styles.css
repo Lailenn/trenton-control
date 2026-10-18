@@ -7378,3 +7378,12 @@ html.boot-session body::after {
 #invoicePaper .invoice-table tbody.has-extra td { height: auto; padding: 10px 5px 4px; border-top: 0; border-bottom: 0; }
 #invoicePaper .invoice-table tbody.has-extra tr:first-child td { border-top: 1px solid #000; padding-top: 18px; }
 #invoicePaper .invoice-table tbody.has-extra tr:last-child td { border-bottom: 1px solid #000; height: 120px; }
+/* Hours and job forms: same red marking for missing fields as the invoice builder */
+:is(#hoursView, #jobView) .field.is-invalid > span { color: #c62828; }
+:is(#hoursView, #jobView) .field.is-invalid input,
+:is(#hoursView, #jobView) .field.is-invalid textarea,
+:is(#hoursView, #jobView) .field.is-invalid .money-input {
+  border-color: #e53935 !important;
+  background: #fff6f6 !important;
+  box-shadow: 0 0 0 3px rgba(229, 57, 53, .12);
+}

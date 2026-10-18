@@ -7,21 +7,9 @@
   const money = value => `$${Number(value || 0).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
   const formatHours = value => Number(value || 0).toLocaleString("en-US", {maximumFractionDigits: 2});
   const makeId = () => `job-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  // A new report starts with one empty row dated today (no sample people or old dates).
   const defaultEntries = () => [
-    {date: "2026-09-11", employee: "Pablo Matamoros", description: "Plywood demolition", timeIn: "11:00", timeOut: "19:00", lunch: 30, rate: 30, hoursOverride: 8},
-    {date: "2026-09-11", employee: "Esteban Lemus", description: "Plywood demolition", timeIn: "11:00", timeOut: "19:00", lunch: 30, rate: 30, hoursOverride: 8},
-    {date: "2026-09-11", employee: "Erick Maradiaga", description: "Plywood demolition", timeIn: "11:00", timeOut: "19:00", lunch: 30, rate: 30, hoursOverride: 8},
-    {date: "2026-09-11", employee: "Rubén Perla", description: "Purchase of materials", timeIn: "", timeOut: "", lunch: 0, rate: 30, hoursOverride: 4},
-    {date: "2026-09-11", employee: "Corina", description: "Purchase of materials", timeIn: "", timeOut: "", lunch: 0, rate: 30, hoursOverride: 4},
-    {date: "2026-09-11", employee: "Rubén Perla", description: "Purchase of materials", timeIn: "", timeOut: "", lunch: 0, rate: 30, hoursOverride: 4},
-    {date: "2026-09-11", employee: "Corina", description: "Purchase of materials", timeIn: "", timeOut: "", lunch: 0, rate: 30, hoursOverride: 4},
-    {date: "2026-09-12", employee: "Pablo Matamoros", description: "Plywood demolition", timeIn: "08:00", timeOut: "16:30", lunch: 30, rate: 30, hoursOverride: 8},
-    {date: "2026-09-12", employee: "Esteban Lemus", description: "Plywood demolition", timeIn: "08:00", timeOut: "16:30", lunch: 30, rate: 30, hoursOverride: 8},
-    {date: "2026-09-12", employee: "Erick Maradiaga", description: "Plywood demolition", timeIn: "08:00", timeOut: "16:30", lunch: 30, rate: 30, hoursOverride: 8},
-    {date: "2026-09-12", employee: "Rubén Perla", description: "Purchase of materials", timeIn: "", timeOut: "", lunch: 0, rate: 30, hoursOverride: 2},
-    {date: "2026-09-12", employee: "Corina", description: "Purchase of materials", timeIn: "", timeOut: "", lunch: 0, rate: 30, hoursOverride: 2},
-    {date: "2026-09-12", employee: "Rubén Perla", description: "Trash removal", timeIn: "", timeOut: "", lunch: 0, rate: 30, hoursOverride: 6},
-    {date: "2026-09-12", employee: "Corina", description: "Trash removal", timeIn: "", timeOut: "", lunch: 0, rate: 30, hoursOverride: 6}
+    {date: today(), employee: "", description: "", timeIn: "", timeOut: "", lunch: 0, hoursOverride: ""}
   ];
   let reports = [], entries = [], saving = false;
   const JOB_DRAFT_KEY = "trenton.draft.job";
@@ -34,7 +22,7 @@
 
   function jobDraftDefaults() {
     return {
-      jobAddress: "1117 C St SE, Washington, DC 20003",
+      jobAddress: "",
       defaultRate: "30",
       whatsappText: "",
       entries: defaultEntries()
@@ -155,7 +143,7 @@
   function reset(options = {}) {
     applyingJobDraft = true;
     $("#jobAddress").setAttribute("list", "addressHistory");
-    $("#jobAddress").value = "1117 C St SE, Washington, DC 20003";
+    $("#jobAddress").value = "";
     $("#jobDefaultRate").value = "30";
     $("#jobWhatsAppText").value = "";
     $("#jobWhatsAppResult").textContent = "";
@@ -173,8 +161,8 @@
       <div class="hours-entry-row-top"><strong>Registro ${index + 1}</strong><button class="mini-action delete" type="button" data-job-action="remove" data-index="${index}" aria-label="Eliminar registro">×</button></div>
       <div class="hours-entry-grid job-entry-grid">
         <label class="field"><span>Fecha</span><input type="date" data-job-field="date" data-index="${index}" value="${esc(entry.date || "")}"></label>
-        <label class="field"><span>Empleado</span><input type="text" data-job-field="employee" data-index="${index}" value="${esc(entry.employee)}" placeholder="Nombre completo"></label>
-        <label class="field job-desc-field"><span>Descripción</span><input type="text" data-job-field="description" data-index="${index}" value="${esc(entry.description || "")}" placeholder="Plywood demolition"></label>
+        <label class="field"><span>Empleado</span><input type="text" data-job-field="employee" data-index="${index}" value="${esc(entry.employee)}" placeholder="Ej. Pablo Matamoros"></label>
+        <label class="field job-desc-field"><span>Descripción</span><input type="text" data-job-field="description" data-index="${index}" value="${esc(entry.description || "")}" placeholder="Ej. Plywood demolition"></label>
         <label class="field"><span>Entrada</span><input type="time" data-job-field="timeIn" data-index="${index}" value="${esc(entry.timeIn || "")}"></label>
         <label class="field"><span>Salida</span><input type="time" data-job-field="timeOut" data-index="${index}" value="${esc(entry.timeOut || "")}"></label>
         <label class="field"><span>Almuerzo (min)</span><input type="number" min="0" step="5" data-job-field="lunch" data-index="${index}" value="${esc(entry.lunch || 0)}"></label>
@@ -302,7 +290,7 @@
       description: String(entry.description || "").trim(),
       rate: Number(entry.rate ?? defaultRate) || 0,
       hours: JobPDF.calcHours(entry)
-    })).filter(entry => entry.employee);
+    })).filter(entry => entry.employee || entry.description || entry.hours > 0);
     const dates = datesOf(list);
     return {
       id: makeId(),
@@ -430,8 +418,29 @@
   async function save(downloadAfter = false) {
     if (saving) return;
     const record = recordFromForm();
-    if (!jobReady(record)) {
-      $("#jobError").textContent = "Completa dirección, fecha, empleado, descripción del trabajo y horas (horario o total) con tarifa mayor que cero.";
+    // Name exactly what is missing and mark it in red (empty rows are ignored, half-filled ones are not).
+    const problems = [];
+    const markField = (el, message) => problems.push({ el, message });
+    if (!record.jobAddress) markField($("#jobAddress"), "la dirección del trabajo");
+    if (!record.entries.length) problems.push({ el: document.querySelector('[data-job-field="employee"]'), message: "al menos un registro con empleado y horas" });
+    entries.forEach((entry, index) => {
+      const hours = JobPDF.calcHours(entry);
+      if (!String(entry.employee || "").trim() && !String(entry.description || "").trim() && !(hours > 0)) return;
+      const input = field => document.querySelector(`[data-job-field="${field}"][data-index="${index}"]`);
+      const n = index + 1;
+      if (!String(entry.employee || "").trim()) markField(input("employee"), `el empleado del registro ${n}`);
+      if (!entry.date) markField(input("date"), `la fecha del registro ${n}`);
+      if (!String(entry.description || "").trim()) markField(input("description"), `la descripción del registro ${n}`);
+      if (!(hours > 0)) markField(entry.timeIn ? input("timeOut") : input("hoursOverride"), `las horas del registro ${n}`);
+      if (!(Number(entry.rate ?? record.defaultRate) > 0)) markField(input("rate"), `la tarifa del registro ${n}`);
+    });
+    document.querySelectorAll("#jobView .field.is-invalid").forEach(field => field.classList.remove("is-invalid"));
+    problems.forEach(problem => problem.el?.closest(".field")?.classList.add("is-invalid"));
+    if (problems.length || !jobReady(record)) {
+      $("#jobError").textContent = problems.length
+        ? `Falta ${problems.slice(0, 4).map(problem => problem.message).join(", ")}${problems.length > 4 ? "…" : ""}.`
+        : "Revisa los registros: cada uno necesita empleado, fecha, horas y tarifa.";
+      problems.find(problem => problem.el)?.el.focus();
       return;
     }
     saving = true;
@@ -965,9 +974,12 @@ Cancelar: no se mueve.`)) return;
   }
   function render() { renderHistory(); renderJobBoard(); renderPreview(); }
 
+  $("#jobAddress")?.addEventListener("input", () => $("#jobAddress").closest(".field")?.classList.remove("is-invalid"));
   $("#jobEntries")?.addEventListener("input", event => {
     const field = event.target.dataset.jobField;
-    if (field) updateEntry(Number(event.target.dataset.index), field, event.target.value);
+    if (!field) return;
+    event.target.closest(".field")?.classList.remove("is-invalid");
+    updateEntry(Number(event.target.dataset.index), field, event.target.value);
   });
   $("#jobEntries")?.addEventListener("change", event => {
     const field = event.target.dataset.jobField;

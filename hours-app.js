@@ -8,9 +8,9 @@
   const formatHours = value => Number(value || 0).toLocaleString("en-US", {maximumFractionDigits: 2});
   const dateText = value => HoursPDF.fullDate(value) || "Selecciona una fecha";
   const makeId = () => `hours-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  // A new report starts with one empty row dated today (no sample people or old dates).
   const defaultEntries = () => [
-    {date: "2026-08-26", employee: "Josué Zúñiga", timeIn: "07:00", timeOut: "18:30", lunch: 30, rate: 30, scheduleAuto: true},
-    {date: "2026-08-26", employee: "Pablo Matamoros", timeIn: "07:00", timeOut: "18:30", lunch: 30, rate: 30, scheduleAuto: true}
+    {date: today(), employee: "", timeIn: "", timeOut: "", lunch: 30, hoursOverride: ""}
   ];
   let reports = [], entries = [], saving = false;
   const HOURS_DRAFT_KEY = "trenton.draft.hours";
@@ -23,8 +23,8 @@
 
   function hoursDraftDefaults() {
     return {
-      jobAddress: "4406 Woodfield Rd, Kensington, MD 20895",
-      reportDate: "2026-08-26",
+      jobAddress: "",
+      reportDate: today(),
       defaultRate: "30",
       description: "",
       whatsappText: "",
@@ -108,7 +108,7 @@
     if (!draft) return false;
     applyingHoursDraft = true;
     if ($("#hoursJobAddress")) $("#hoursJobAddress").value = draft.jobAddress || "";
-    if ($("#hoursReportDate")) $("#hoursReportDate").value = draft.reportDate || "";
+    if ($("#hoursReportDate")) $("#hoursReportDate").value = draft.reportDate || today();
     if ($("#hoursDefaultRate")) $("#hoursDefaultRate").value = draft.defaultRate || "30";
     if ($("#hoursDescription")) $("#hoursDescription").value = draft.description || "";
     if ($("#hoursWhatsAppText") && draft.whatsappText != null) $("#hoursWhatsAppText").value = draft.whatsappText;
@@ -160,8 +160,8 @@
   function reset(options = {}) {
     applyingHoursDraft = true;
     $("#hoursJobAddress").setAttribute("list", "addressHistory");
-    $("#hoursJobAddress").value = "4406 Woodfield Rd, Kensington, MD 20895";
-    $("#hoursReportDate").value = "2026-08-26";
+    $("#hoursJobAddress").value = "";
+    $("#hoursReportDate").value = today();
     $("#hoursDefaultRate").value = "30";
     $("#hoursDescription").value = "";
     $("#hoursWhatsAppText").value = "";
@@ -181,7 +181,7 @@
       <div class="hours-entry-row-top"><strong>Registro ${index + 1}</strong><button class="mini-action delete" type="button" data-hours-action="remove" data-index="${index}" aria-label="Eliminar registro">×</button></div>
       <div class="hours-entry-grid">
         <label class="field"><span>Fecha</span><input type="date" data-hours-field="date" data-index="${index}" value="${esc(entry.date || $("#hoursReportDate").value)}"></label>
-        <label class="field hours-employee"><span>Empleado</span><input type="text" data-hours-field="employee" data-index="${index}" value="${esc(entry.employee)}" placeholder="Nombre completo"></label>
+        <label class="field hours-employee"><span>Empleado</span><input type="text" data-hours-field="employee" data-index="${index}" value="${esc(entry.employee)}" placeholder="Ej. Josué Zúñiga"></label>
         <label class="field"><span>Entrada</span><input type="time" data-hours-field="timeIn" data-index="${index}" value="${esc(entry.timeIn)}"></label>
         <label class="field"><span>Salida</span><input type="time" data-hours-field="timeOut" data-index="${index}" value="${esc(entry.timeOut)}"></label>
         <label class="field"><span>Almuerzo (min)</span><input type="number" min="0" step="5" data-hours-field="lunch" data-index="${index}" value="${esc(entry.lunch)}"></label>
@@ -356,7 +356,7 @@
 
   function hoursReady(record) {
     return Boolean(record?.jobAddress && record?.reportDate && record.entries?.length && record.entries.every(entry =>
-      entry.employee && entry.date && entry.timeIn && entry.timeOut && HoursPDF.calcHours(entry) > 0 && Number(entry.rate) > 0
+      entry.employee && entry.date && HoursPDF.calcHours(entry) > 0 && Number(entry.rate) > 0
     ));
   }
 
@@ -417,8 +417,27 @@
   async function save(downloadAfter = false) {
     if (saving) return;
     const jobAddress = $("#hoursJobAddress").value.trim(), reportDate = $("#hoursReportDate").value, description = $("#hoursDescription").value.trim(), defaultRate = Number($("#hoursDefaultRate").value) || 0;
-    const invalid = !jobAddress || !reportDate || !entries.length || entries.some(entry => !entry.employee.trim() || !entry.date || !entry.timeIn || !entry.timeOut || HoursPDF.calcHours(entry) <= 0 || Number(entry.rate ?? defaultRate) <= 0);
-    if (invalid) { $("#hoursError").textContent = "Completa dirección, fecha, empleado, entrada, salida, almuerzo y una tarifa mayor que cero."; return; }
+    // Hours count from entrada/salida OR from "Horas totales" typed by hand; name what is missing.
+    const problems = [];
+    const markField = (el, message) => problems.push({ el, message });
+    if (!jobAddress) markField($("#hoursJobAddress"), "la dirección del trabajo");
+    if (!reportDate) markField($("#hoursReportDate"), "la fecha del reporte");
+    if (!entries.length) problems.push({ el: null, message: "al menos un empleado" });
+    entries.forEach((entry, index) => {
+      const input = field => document.querySelector(`[data-hours-field="${field}"][data-index="${index}"]`);
+      const n = index + 1;
+      if (!String(entry.employee || "").trim()) markField(input("employee"), `el empleado del registro ${n}`);
+      if (!entry.date) markField(input("date"), `la fecha del registro ${n}`);
+      if (!(HoursPDF.calcHours(entry) > 0)) markField(entry.timeIn ? input("timeOut") : input("timeIn"), `entrada y salida (o las horas) del registro ${n}`);
+      if (!(Number(entry.rate ?? defaultRate) > 0)) markField(input("rate"), `la tarifa del registro ${n}`);
+    });
+    document.querySelectorAll("#hoursView .field.is-invalid").forEach(field => field.classList.remove("is-invalid"));
+    problems.forEach(problem => problem.el?.closest(".field")?.classList.add("is-invalid"));
+    if (problems.length) {
+      $("#hoursError").textContent = `Falta ${problems.slice(0, 4).map(problem => problem.message).join(", ")}${problems.length > 4 ? "…" : ""}.`;
+      problems.find(problem => problem.el)?.el.focus();
+      return;
+    }
     saving = true; $("#saveHoursButton").disabled = true; $("#downloadHoursButton").disabled = true; $("#hoursError").textContent = "Generando PDF…";
     const record = {id: makeId(), jobAddress, reportDate, description, defaultRate, stage: "created", received: 0, due: 0, note: "", checkPhotos: [], entries: entries.map(entry => ({...entry, rate: Number(entry.rate ?? defaultRate) || 0, hours: HoursPDF.calcHours(entry)})), updatedAt: new Date().toISOString()};
     try {
@@ -1022,7 +1041,8 @@ Cancelar: no se mueve.`)) return;
     }
   }
   function render() { renderHistory(); renderHoursBoard(); renderPreview(); }
-  $("#hoursEntries").addEventListener("input", event => { const field = event.target.dataset.hoursField; if (field) updateEntry(Number(event.target.dataset.index), field, event.target.value); });
+  $("#hoursEntries").addEventListener("input", event => { const field = event.target.dataset.hoursField; if (field) { event.target.closest(".field")?.classList.remove("is-invalid"); updateEntry(Number(event.target.dataset.index), field, event.target.value); } });
+  ["#hoursJobAddress", "#hoursReportDate"].forEach(id => $(id)?.addEventListener("input", () => $(id).closest(".field")?.classList.remove("is-invalid")));
   $("#hoursEntries").addEventListener("click", event => { const button = event.target.closest("[data-hours-action=remove]"); if (!button || entries.length === 1) return; entries.splice(Number(button.dataset.index), 1); renderEntries(); renderPreview(); persistHoursDraft(); });
   $("#addHoursEntryButton").addEventListener("click", () => { entries.push({date: $("#hoursReportDate").value || today(), employee: "", timeIn: "07:00", timeOut: "15:30", lunch: 30, rate: Number($("#hoursDefaultRate").value) || 30, scheduleAuto: true}); renderEntries(); renderPreview(); persistHoursDraft(); });
   ["hoursJobAddress", "hoursReportDate", "hoursDefaultRate", "hoursDescription"].forEach(id => $("#" + id).addEventListener("input", () => { if (id === "hoursDefaultRate") renderEntries(); renderPreview(); window.growTextareas?.(); persistHoursDraft(); }));
