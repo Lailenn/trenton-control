@@ -7569,3 +7569,14 @@ html.boot-session .boot-screen {
 #invoiceView .b-card .field textarea#builderNote { min-height: 40px !important; }
 #invoiceView .builder-extra-row { gap: 0; }
 @media (max-width: 640px) { #invoiceView .line-amount { display: flex; justify-content: flex-end; align-items: center; gap: 6px; } }
+
+/* Translator: folded until opened */
+.translator-panel.is-collapsed > :not(.translator-heading) { display: none !important; }
+.translator-panel .translator-heading { cursor: pointer; user-select: none; align-items: center; }
+.translator-panel.is-collapsed { padding-top: 14px; padding-bottom: 14px; }
+.translator-panel.is-collapsed .translator-heading { margin-bottom: 0; }
+.translator-toggle { display: inline-flex; align-items: center; gap: 4px; margin-left: 10px; padding: 6px 12px; border-radius: 10px; background: #eef1ff; color: #3d4fd6; font: 700 13px "Plus Jakarta Sans", sans-serif; white-space: nowrap; }
+.translator-toggle svg { transition: transform .2s ease; }
+.translator-panel:not(.is-collapsed) .translator-toggle svg { transform: rotate(180deg); }
+.translator-heading:focus-visible { outline: 2px solid #4f46e5; outline-offset: 4px; border-radius: 8px; }
+.translator-panel .translator-heading > [data-translator-badge] { margin-left: auto; }

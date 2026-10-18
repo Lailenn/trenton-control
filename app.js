@@ -1589,6 +1589,24 @@
   document.addEventListener("visibilitychange", () => { if (document.hidden) persistInvoiceDraft(true); });
   window.addEventListener("pagehide", () => persistInvoiceDraft(true));
   window.TranslatorApp?.bindAll();
+  // Translators start folded: only the title shows until someone opens them.
+  document.querySelectorAll(".translator-panel").forEach(panel => {
+    const heading = panel.querySelector(".translator-heading");
+    if (!heading) return;
+    panel.classList.add("is-collapsed");
+    heading.setAttribute("role", "button");
+    heading.setAttribute("tabindex", "0");
+    heading.setAttribute("aria-expanded", "false");
+    heading.insertAdjacentHTML("beforeend", '<span class="translator-toggle" aria-hidden="true"><span class="translator-toggle-text">Abrir</span><svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M7.4 8.6 12 13.2l4.6-4.6L18 10l-6 6-6-6z"/></svg></span>');
+    const toggle = () => {
+      const open = panel.classList.toggle("is-collapsed") === false;
+      heading.setAttribute("aria-expanded", String(open));
+      heading.querySelector(".translator-toggle-text").textContent = open ? "Cerrar" : "Abrir";
+      if (open) panel.querySelector("[data-translator-source]")?.focus();
+    };
+    heading.addEventListener("click", toggle);
+    heading.addEventListener("keydown", event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggle(); } });
+  });
 
   async function boot() {
     try {
