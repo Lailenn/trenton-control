@@ -7439,3 +7439,10 @@ html.boot-session body::after {
 /* Smaller document title (ESTIMATE / INVOICE) */
 #invoicePaper.paper-v2 .paper-title { margin-bottom: 26px; font-size: 30px; }
 #invoicePaper.paper-v2 .paper-title::after { width: 40px; bottom: -11px; }
+/* Estimate without an amount */
+#invoicePaper.paper-v2.no-amount .paper-total,
+#invoicePaper.paper-v2.no-amount .paper-note { display: none; }
+/* Smaller logo, pulled to the left edge */
+#invoicePaper.paper-v2 .invoice-brand { padding-left: 0; margin-left: -14px; }
+#invoicePaper.paper-v2 .invoice-logo { width: 170px; height: 68px; }
+#invoicePaper.paper-v2 .invoice-logo img { object-position: left center; }

@@ -44,7 +44,7 @@
   const DEFAULT_FROM_ADDRESS = "11804 Birchview Ct. Clinton MD 20735";
   const DEFAULT_APPROVAL = "ESTIMATED AND APPROVED BY DIEGO";
   const defaultApproval = () => (window.CompanyApp?.isOtras?.() ? "" : DEFAULT_APPROVAL);
-  const INVOICE_DRAFT_FIELDS = ["builderInvoiceNumber", "builderIssuedDate", "builderDocTitle", "builderApproval", "builderFromName", "builderBillName", "builderFromPhone", "builderBillAddress", "builderWorkAddress", "builderFromEmail", "builderFromAddress", "builderDescription", "builderQty", "builderPrice", "builderShowLines", "builderExtraLines", "builderDeposit", "builderNote"];
+  const INVOICE_DRAFT_FIELDS = ["builderInvoiceNumber", "builderIssuedDate", "builderDocTitle", "builderApproval", "builderShowApproval", "builderFromName", "builderBillName", "builderFromPhone", "builderBillAddress", "builderWorkAddress", "builderFromEmail", "builderFromAddress", "builderDescription", "builderQty", "builderPrice", "builderShowLines", "builderExtraLines", "builderDeposit", "builderNote"];
   // Checkboxes travel through the draft as "1" / "".
   const fieldValue = el => (el?.type === "checkbox" ? (el.checked ? "1" : "") : (el?.value || ""));
   const setFieldValue = (el, value) => { if (!el) return; if (el.type === "checkbox") el.checked = value === "1" || value === true; else el.value = value; };
@@ -585,8 +585,9 @@
       invoiceNumber: $("#builderInvoiceNumber").value.trim(),
       issuedDate: $("#builderIssuedDate").value,
       docTitle: $("#builderDocTitle")?.value || "ESTIMATE",
+      isEstimate: ($("#builderDocTitle")?.value || "ESTIMATE") === "ESTIMATE",
       // Diego approves Trenton's work only; another company's invoice can leave this line empty.
-      approval: $("#builderApproval").value.trim() || (window.CompanyApp?.isOtras?.() ? "" : DEFAULT_APPROVAL),
+      approval: $("#builderShowApproval")?.checked === false ? "" : ($("#builderApproval").value.trim() || (window.CompanyApp?.isOtras?.() ? "" : DEFAULT_APPROVAL)),
       fromName: $("#builderFromName").value.trim() || "Ruben Perla",
       billName: $("#builderBillName").value.trim(),
       fromPhone: $("#builderFromPhone").value.trim(),
@@ -619,6 +620,7 @@
     return {
       builderIssuedDate: WhatsAppInvoiceParser.dateValue(),
       builderDocTitle: "ESTIMATE",
+      builderShowApproval: "1",
       builderApproval: defaultApproval(),
       builderFromName: "Ruben Perla",
       builderBillName: defaultBill().name,
@@ -774,6 +776,8 @@
       "#previewNote": String(note).replace(/^\s*note\s*:\s*/i, "")
     };
     Object.entries(values).forEach(([selector, value]) => { const element = $(selector); if (element) element.textContent = value; });
+    // An estimate without an amount shows no TOTAL box and no payment note (same as its PDF).
+    $("#invoicePaper")?.classList.toggle("no-amount", data.isEstimate && !(data.total > 0) && !data.note);
     // QTY / Price / Amount columns: optional with one concept, always shown with several.
     const showLines = (data.showLines || data.extraItems.length > 0) && data.total > 0;
     ["#previewQty", "#previewPrice", "#previewAmount"].forEach(selector => { const cell = $(selector); if (cell) cell.hidden = !showLines || !(data.price > 0); });
@@ -969,6 +973,7 @@
     $("#builderInvoiceNumber").value = await Cloud.nextInvoiceNumber(records);
     $("#builderIssuedDate").value = WhatsAppInvoiceParser.dateValue();
     $("#builderDocTitle").value = "ESTIMATE";
+    $("#builderShowApproval").checked = true;
     $("#builderApproval").value = defaultApproval();
     $("#builderFromName").value = "Ruben Perla";
     $("#builderBillName").value = defaultBill().name;
@@ -1027,14 +1032,15 @@
     if (!data.billName) mark("builderBillName", "la empresa que paga");
     if (!data.description) mark("builderDescription", "la descripción del trabajo");
     if (!(Number($("#builderQty").value) > 0)) mark("builderQty", "una cantidad mayor que cero");
-    if (!(data.price > 0)) mark("builderPrice", "un precio mayor que cero");
+    // An ESTIMATE can be saved without an amount; an INVOICE always needs one.
+    if (!(data.price > 0) && !data.isEstimate) mark("builderPrice", "un precio mayor que cero");
     // Extra concepts need both a description and a price (or be removed).
     document.querySelectorAll("#builderExtraList .builder-extra-row").forEach((row, i) => {
       const item = readExtraLines()[i] || {};
       const started = String(item.description || "").trim() || Number(item.price) > 0;
       if (!started) return;
       if (!String(item.description || "").trim()) { problems.push({ id: "", el: row.querySelector('[data-key="description"]'), message: `la descripción del concepto ${i + 2}` }); }
-      if (!(Number(item.price) > 0)) { problems.push({ id: "", el: row.querySelector('[data-key="price"]'), message: `el precio del concepto ${i + 2}` }); }
+      if (!(Number(item.price) > 0) && !data.isEstimate) { problems.push({ id: "", el: row.querySelector('[data-key="price"]'), message: `el precio del concepto ${i + 2}` }); }
     });
     const deposit = Number($("#builderDeposit").value);
     if ($("#builderDeposit").value !== "" && (!(deposit >= 0) || deposit > 100)) mark("builderDeposit", "un anticipo entre 0% y 100%");
@@ -1102,7 +1108,7 @@
     const data = invoiceData();
     const amount = data.total;
     const problems = builderProblems(data);
-    if (problems.length || amount == null || amount <= 0) {
+    if (problems.length || amount == null || (amount <= 0 && !data.isEstimate)) {
       const list = problems.map(problem => problem.message);
       showToast(list.length ? `Falta ${list.join(", ")}.` : "El total debe ser mayor que cero.");
       (problems[0]?.el || $("#" + (problems[0]?.id || "builderPrice")))?.focus();
@@ -1196,6 +1202,7 @@
     const map = {invoiceNumber: "InvoiceNumber", issuedDate: "IssuedDate", docTitle: "DocTitle", approval: "Approval", fromName: "FromName", billName: "BillName", fromPhone: "FromPhone", billAddress: "BillAddress", workAddress: "WorkAddress", fromEmail: "FromEmail", fromAddress: "FromAddress", description: "Description", qty: "Qty", price: "Price", deposit: "Deposit", note: "Note"};
     Object.entries(map).forEach(([key, id]) => { if (data[key] != null) $("#builder" + id).value = data[key]; });
     $("#builderShowLines").checked = Boolean(data.showLines);
+    $("#builderShowApproval").checked = Boolean(data.approval);
     writeExtraLines((data.extraItems || []).map(item => ({ description: item.description, qty: String(item.qty), price: String(item.price) })));
     renderExtraLines();
     $("#builderWorkAddress").value = record.address;
@@ -1413,6 +1420,7 @@
   $("#whatsappText").addEventListener("paste", () => setTimeout(fillInvoiceFromText, 0));
   INVOICE_DRAFT_FIELDS.forEach((id) => $("#" + id).addEventListener("input", () => { updateInvoicePreview(); persistInvoiceDraft(); }));
   $("#builderShowLines").addEventListener("change", () => { updateInvoicePreview(); persistInvoiceDraft(); });
+  ["#builderShowApproval", "#builderDocTitle"].forEach(id => $(id)?.addEventListener("change", () => { updateInvoicePreview(); persistInvoiceDraft(); }));
   // Extra concepts: add, type (kept in the hidden JSON field) and remove.
   $("#addInvoiceLineButton")?.addEventListener("click", () => {
     const list = readExtraLines();

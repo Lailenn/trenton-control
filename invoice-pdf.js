@@ -144,10 +144,10 @@
       page = doc.addPage([612, 792]);
       box(0, 0, 816, height, rgb(1, 1, 1));
       if (logo && Number(logo.width) > 1 && Number(logo.height) > 1) {
-        const factor = Math.min(240 / logo.width, 96 / logo.height);
+        const factor = Math.min(170 / logo.width, 68 / logo.height);
         const logoH = logo.height * factor;
         if (Number.isFinite(factor) && Number.isFinite(logoH) && logoH > 0) {
-          page.drawImage(logo, {x: left * s, y: (height - 52 - logoH) * s, width: logo.width * factor * s, height: logoH * s});
+          page.drawImage(logo, {x: (left - 14) * s, y: (height - 56 - logoH) * s, width: logo.width * factor * s, height: logoH * s});
         }
       }
       // ESTIMATE / INVOICE title with an accent underline, number, date and approval line.
@@ -217,7 +217,8 @@
           draw(text, (columns[col] + columns[col + 1] - measure(regular, text, size)) / 2, y, size, regular, ink);
         });
       });
-      if (index === description.length) {
+      // An estimate without an amount has no TOTAL box.
+      if (index === description.length && total > 0) {
         // TOTAL (Materials and Labor) | $ amount
         const boxTop = tableBottom + 12, boxH = 66;
         box(columns[2] - 120, boxTop, columns[3] - (columns[2] - 120), boxH, greyFill);
@@ -235,6 +236,8 @@
         tableBottom = boxTop + boxH;
       }
     }
+    // No amount and no custom note: nothing to say about payments.
+    if (total > 0 || data.note) {
     let noteY = tableBottom + 48;
     if (noteY + 90 > height - 48) noteY = header(false);
     spaced("NOTE", left + 16, noteY, 12, bold, ink);
@@ -243,6 +246,7 @@
     for (const l of wrap(note, regular, 15, width * .72)) {
       if (noteY + 22 > height - 30) noteY = header(false);
       draw(l, left + 16, noteY, 15, regular, muted); noteY += 24;
+    }
     }
     doc.setTitle(pdfSafe((data.workAddress || data.billAddress || "Invoice") + " - " + data.invoiceNumber));
     doc.setAuthor(pdfSafe(data.fromName || "Ruben Perla"));
