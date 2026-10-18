@@ -759,7 +759,6 @@
                   <label class="field full"><span>Dirección del cliente</span><input id="builderBillAddress" type="text" value="1117 C St SE, Washington, DC 20003" placeholder="Ej. 1117 C St SE, Washington, DC 20003" /></label>
 
                   <div class="field-group full"><p class="field-group-title">4 · Trabajo</p></div>
-                  <label class="field full"><span>Dirección del trabajo <em>*</em></span><input id="builderWorkAddress" type="text" list="addressHistory" value="" placeholder="Ej. 2501 Naylor Rd SE, Washington, DC 20020" /><small class="field-hint">Con esta dirección se guarda en el tablero.</small></label>
                   <label class="field full"><span>Descripción <em>*</em></span><textarea id="builderDescription" class="js-grow" rows="5" placeholder="Ej. Preparation and installation of stucco"></textarea></label>
                   <label class="field"><span>Cantidad</span><input id="builderQty" type="number" min="0" step="0.01" value="1" inputmode="decimal" /></label>
                   <label class="field"><span>Precio (USD) <em>*</em></span><div class="money-input"><b>$</b><input id="builderPrice" type="number" min="0" step="0.01" value="" placeholder="Ej. 9200.00" inputmode="decimal" /></div></label>
@@ -768,6 +767,9 @@
                   <label class="field"><span>Anticipo requerido (%)</span><input id="builderDeposit" type="number" min="0" max="100" step="1" value="50" inputmode="numeric" /></label>
                   <div class="field builder-totals" aria-live="polite"><span>Resumen</span><p id="builderTotals">Total $0.00</p></div>
                   <label class="field full"><span>Nota de pago</span><textarea id="builderNote" class="js-grow" rows="3" placeholder="Se genera automáticamente con el anticipo. Escribe aquí solo si quieres otra nota."></textarea></label>
+
+                  <div class="field-group full"><p class="field-group-title">6 · Tablero</p></div>
+                  <label class="field full"><span>Nombre en el tablero <em>*</em></span><input id="builderWorkAddress" type="text" list="addressHistory" value="" placeholder="Ej. 2501 Naylor Rd SE, Washington, DC 20020" /><small class="field-hint">Así se llama la tarjeta en el tablero y en Invoices / PDFs (y el nombre del archivo). No sale en la factura.</small></label>
                   <label class="field full logo-field"><span>Logo (opcional)</span><input id="builderLogo" type="file" accept="image/*" /><small>Se usa el logo de Rubén. Puedes cargar otro si lo necesitas.</small></label>
                 </div>
                 <div class="builder-save-row"><button class="button button-primary" id="saveGeneratedInvoiceButton" type="button">Guardar invoice y PDF</button><a id="generatedPdfLink" class="hidden" href="#" target="_blank" rel="noopener">Si no se bajó, toca aquí para abrir el PDF</a><p>Se genera el PDF a color, se descarga y queda en el tablero y en Todos los PDFs.</p></div>
@@ -1099,7 +1101,7 @@
     <script src="check-viewer.js?v=1" defer></script>
     <script src="balance-ui.js?v=1" defer></script>
     <script src="dash-stats.js?v=2" defer></script>
-    <script src="app.js?v=builder-4" defer></script>
+    <script src="app.js?v=builder-5" defer></script>
     <script src="ux-motion.js?v=4" defer></script>
   </body>
 </html>

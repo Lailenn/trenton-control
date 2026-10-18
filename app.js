@@ -556,6 +556,7 @@
       billName: $("#builderBillName").value.trim(),
       fromPhone: $("#builderFromPhone").value.trim(),
       billAddress: $("#builderBillAddress").value.trim(),
+      // Name of the card on the board and of the PDF file; it is not printed on the invoice.
       workAddress: $("#builderWorkAddress").value.trim(),
       fromEmail: $("#builderFromEmail").value.trim(),
       fromAddress: canonicalFromAddress($("#builderFromAddress")?.value),
@@ -870,7 +871,7 @@
       if (key === "billAddress") $("#builderWorkAddress").value = String(value);
       const display = key === "price" ? money(value) : key === "deposit" ? value + "%" :
         key === "issuedDate" ? invoiceDateLabel(value) : String(value);
-      applied.push({ label: key === "billAddress" ? "Dirección del cliente y del trabajo" : label, display });
+      applied.push({ label: key === "billAddress" ? "Dirección del cliente y nombre en el tablero" : label, display });
     }
     const split = WhatsAppInvoiceParser.splitPrice($("#builderDescription").value);
     $("#builderDescription").value = split.text;
@@ -955,7 +956,7 @@
   function builderProblems(data) {
     const problems = [];
     const mark = (id, message) => { problems.push({ id, message }); };
-    if (!data.workAddress) mark("builderWorkAddress", "la dirección del trabajo");
+    if (!data.workAddress) mark("builderWorkAddress", "el nombre para el tablero");
     if (!data.invoiceNumber) mark("builderInvoiceNumber", "el número de invoice");
     if (!Core.isoDate(data.issuedDate)) mark("builderIssuedDate", "la fecha de emisión");
     if (!data.billName) mark("builderBillName", "la empresa que paga");
