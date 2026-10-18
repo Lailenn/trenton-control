@@ -7618,3 +7618,11 @@ html.boot-session .boot-screen {
   .b-step-row { flex-wrap: wrap; }
   .b-step-row .button { width: 100%; }
 }
+
+/* Panel de control: wider text area in the hero (computer) */
+@media (min-width: 951px) {
+  #boardView .dash-hero { grid-template-columns: minmax(0, 1.4fr) minmax(420px, .6fr); }
+  #boardView .dash-hero-copy h1 { max-width: 32ch; }
+  #boardView .dash-hero-copy .hero-copy { max-width: 680px; }
+}
+@media (max-width: 950px) { .hero-br { display: none; } }

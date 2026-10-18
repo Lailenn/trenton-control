@@ -8,7 +8,7 @@
       id: "trenton",
       title: "Trenton",
       crumb: "Trenton Builders LLC",
-      hero: "Todo el trabajo de <span>Ruben Perla</span>, en un solo lugar.",
+      hero: "Todo el trabajo de <span>Ruben Perla</span>,<br class='hero-br'> en un solo lugar.",
       hint: "Invoices, horas, cheques y PDFs de siempre."
     },
     otras: {
