@@ -477,6 +477,7 @@
   async function openStoredPdf(record) {
     await Cloud.ensureInvoicePdf(record);
     replaceInMemory(record);
+    if (record.pdfBlob && window.PdfPreview) return window.PdfPreview.open(record.pdfBlob, record.pdfName || `${record.invoiceNumber || "Invoice"}.pdf`);
     const url = pdfUrl(record);
     if (url) window.open(url, "_blank", "noopener");
   }

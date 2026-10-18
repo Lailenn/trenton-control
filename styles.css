@@ -7805,3 +7805,10 @@ html.boot-session .boot-screen {
   .df-more { width: 100%; justify-content: center; margin-top: 2px; }
 }
 @media (max-width: 640px) { .df-tabbar { display: grid; grid-template-columns: minmax(0, 1fr); } .df-tabbar > * { min-width: 0; } .df-filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+
+/* Archive PDF dialog: pages drawn with pdf.js (works on phones too) */
+.pdf-dialog iframe[hidden] { display: none; }
+.pdf-dialog-pages { flex: 1; min-height: 180px; overflow: auto; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 14px 12px 24px; background: #e9ecf2; -webkit-overflow-scrolling: touch; }
+.pdf-dialog-pages[hidden] { display: none; }
+.pdf-dialog-pages .pdf-viewer-page { box-shadow: 0 8px 22px rgba(15, 23, 42, .18); }
+.pdf-dialog-pages .pdf-viewer-msg { margin: auto; color: #5b6478; }

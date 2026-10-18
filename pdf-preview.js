@@ -193,5 +193,79 @@ window.PdfPreview = (function () {
     document.body.classList.remove("pdf-viewer-open");
   }
 
+  // ---- Archive dialog (#pdfDialog): the archives set the iframe's src to a blob URL.
+  // Draw those pages with pdf.js in place of the iframe so they show on phones too. ----
+  async function blobFromUrl(url) {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("No se pudo abrir el PDF.");
+    return response.blob();
+  }
+  let dialogRun = 0, dialogDoc = null;
+  async function paintDialog(pages) {
+    const run = dialogRun;
+    pages.innerHTML = "";
+    const width = Math.max(Math.min(pages.clientWidth - 24, 900), 200);
+    for (let number = 1; number <= dialogDoc.numPages; number++) {
+      if (run !== dialogRun) return;
+      const canvas = document.createElement("canvas");
+      canvas.className = "pdf-viewer-page";
+      pages.appendChild(canvas);
+      await drawPage(dialogDoc, number, canvas, width);
+    }
+  }
+  function watchDialog() {
+    const frame = document.getElementById("pdfDialogFrame");
+    if (!frame || frame.dataset.pdfjs) return;
+    frame.dataset.pdfjs = "1";
+    const pages = document.createElement("div");
+    pages.className = "pdf-dialog-pages";
+    pages.hidden = true;
+    frame.after(pages);
+    const sync = async () => {
+      const src = frame.getAttribute("src") || "";
+      const run = ++dialogRun;
+      dialogDoc = null;
+      if (!src.startsWith("blob:")) { pages.hidden = true; pages.innerHTML = ""; frame.hidden = false; return; }
+      frame.hidden = true;
+      pages.hidden = false;
+      pages.innerHTML = '<p class="pdf-viewer-msg">Cargando PDF…</p>';
+      try {
+        const doc = await openDoc(await blobFromUrl(src));
+        if (run !== dialogRun) return;
+        dialogDoc = doc;
+        await paintDialog(pages);
+      } catch (_) {
+        if (run !== dialogRun) return;
+        // pdf.js unavailable: show the browser's own viewer again.
+        pages.hidden = true;
+        frame.hidden = false;
+      }
+    };
+    new MutationObserver(sync).observe(frame, { attributes: true, attributeFilter: ["src"] });
+    let resizeTimer = 0;
+    window.addEventListener("resize", () => {
+      if (!dialogDoc || pages.hidden) return;
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => { dialogRun++; paintDialog(pages); }, 200);
+    });
+    if (frame.getAttribute("src")) sync();
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", watchDialog); else watchDialog();
+
+  // ---- Links that open a PDF blob in a new tab ("Ver original ↗") open in the viewer instead. ----
+  document.addEventListener("click", async event => {
+    const link = event.target.closest?.('a[href^="blob:"][target="_blank"]');
+    if (!link || link.hasAttribute("download")) return;
+    event.preventDefault();
+    try {
+      const blob = await blobFromUrl(link.href);
+      if (blob.type && !/pdf/i.test(blob.type)) return window.open(link.href, "_blank", "noopener");
+      const name = link.closest("[class*=import-row]")?.querySelector("label")?.textContent?.trim() || link.title || "Documento.pdf";
+      open(blob, name);
+    } catch (_) {
+      window.open(link.href, "_blank", "noopener");
+    }
+  });
+
   return { show, clear, open, close };
 })();
