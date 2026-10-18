@@ -97,8 +97,8 @@ window.DashFiles = (function () {
   function invoiceCard() {
     const all = invoices(), list = applyFilters(all, state.inv, i => `${i.number} ${i.client} ${i.address} ${i.record.pdfName || ""}`);
     const rows = list.slice(0, ROWS).map((i, n) => `<tr class="${n === 0 ? "is-latest" : ""}">
-      <td class="df-strong">${esc(i.number)}</td><td class="df-client-cell">${esc(i.client)}</td><td class="df-wrap">${esc(i.address)}</td><td>${dmy(i.date)}</td>
-      <td class="df-money">${money(i.total)}</td><td class="df-c">${pdfCell(i)}</td><td class="df-c">${menu("invoice", i.id)}</td></tr>`).join("");
+      <td class="df-strong c-num">${esc(i.number)}</td><td class="df-client-cell c-client">${esc(i.client)}</td><td class="df-wrap c-addr">${esc(i.address)}</td><td class="c-date">${dmy(i.date)}</td>
+      <td class="df-money c-total">${money(i.total)}</td><td class="df-c c-pdf">${pdfCell(i)}</td><td class="df-c c-menu">${menu("invoice", i.id)}</td></tr>`).join("");
     return `<article class="df-card" data-card="inv">
       <header class="df-head"><span class="df-badge is-orange">${ICON.invoice}</span><div><h2>Archivo de invoices</h2><p>Aquí se guarda el PDF de cada factura. También puedes subir facturas anteriores y ver cuánto facturaste cada año.</p></div>
         <button type="button" class="df-upload" data-upload="invoice">${ICON.upload} Subir invoice</button></header>
@@ -111,8 +111,8 @@ window.DashFiles = (function () {
   function hoursCard() {
     const all = hoursReports(), list = applyFilters(all, state.hrs, i => `${i.address} ${i.client} ${(i.record.entries || []).map(e => e.employee).join(" ")}`);
     const rows = list.slice(0, ROWS).map((i, n) => `<tr class="${n === 0 ? "is-latest" : ""}">
-      <td class="df-wrap"><span class="df-strong-soft">${range(i)}</span><small>${esc(i.address)}</small></td><td class="df-client-cell">${esc(i.client)}</td><td>${Number(i.hours.toFixed(2)).toLocaleString("en-US", { minimumFractionDigits: 1 })}</td>
-      <td class="df-money">${money(i.total)}</td><td class="df-c">${pdfCell(i)}</td><td class="df-c">${menu("hours", i.id)}</td></tr>`).join("");
+      <td class="df-wrap c-range"><span class="df-strong-soft">${range(i)}</span><small>${esc(i.address)}</small></td><td class="df-client-cell c-client">${esc(i.client)}</td><td class="c-hours">${Number(i.hours.toFixed(2)).toLocaleString("en-US", { minimumFractionDigits: 1 })}</td>
+      <td class="df-money c-total">${money(i.total)}</td><td class="df-c c-pdf">${pdfCell(i)}</td><td class="df-c c-menu">${menu("hours", i.id)}</td></tr>`).join("");
     const note = document.querySelector("#openHoursArchiveButton")?.closest("section")?.querySelector("p")?.textContent || "Aquí se guarda el PDF de cada reporte de horas.";
     return `<article class="df-card" data-card="hrs">
       <header class="df-head"><span class="df-badge is-green">${ICON.clock}</span><div><h2>Archivo de reportes de horas</h2><p>${esc(note)}</p></div>
@@ -143,8 +143,8 @@ window.DashFiles = (function () {
       const actions = i.photo
         ? `<button type="button" class="df-icon df-box" data-act="photo-download" data-kind="${i.kind}" data-id="${esc(i.id)}" aria-label="Descargar foto">${ICON.download}</button><button type="button" class="df-icon df-box is-danger" data-act="photo-delete" data-kind="${i.kind}" data-id="${esc(i.id)}" aria-label="Quitar foto">${ICON.trash}</button>`
         : `<button type="button" class="df-icon df-box" data-act="photo-add" data-kind="${i.kind}" data-id="${esc(i.id)}" aria-label="Subir foto del cheque">${ICON.camera}</button>`;
-      return `<tr><td>${dmy(i.date)}</td><td class="df-client-cell">${esc(i.client)}</td><td class="df-wrap">${concept(i)}</td><td class="df-money-soft">${money(i.total)}</td>
-        <td><span class="df-state is-${st.id}">${st.text}</span></td><td>${proof}</td><td class="df-actions">${actions}</td></tr>`;
+      return `<tr><td class="c-date">${dmy(i.date)}</td><td class="df-client-cell c-client">${esc(i.client)}</td><td class="df-wrap c-concept">${concept(i)}</td><td class="df-money-soft c-total">${money(i.total)}</td>
+        <td class="c-state"><span class="df-state is-${st.id}">${st.text}</span></td><td class="c-proof">${proof}</td><td class="df-actions c-actions">${actions}</td></tr>`;
     }).join("");
     return `<article class="df-card df-wide" data-card="chk">
       <header class="df-head"><span class="df-badge is-green">${ICON.check}</span><div><h2>Comprobantes de cheques y pagos</h2><p>Sube aquí la foto del cheque cuando una invoice esté en Esperando cheque o Pagado.</p></div>

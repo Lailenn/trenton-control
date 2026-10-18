@@ -7746,3 +7746,62 @@ html.boot-session .boot-screen {
 .df-tabs { flex-wrap: nowrap; }
 .df-tabbar .df-filters { flex: 1 1 560px; }
 @media (max-width: 1600px) { .df-grid { grid-template-columns: 1fr; } }
+
+/* ===== Inicio files area on phone: each row becomes a small card ===== */
+@media (max-width: 1280px) {
+  .df-tabbar .df-filters { flex: none; }
+}
+@media (max-width: 640px) {
+  .df-tabbar { gap: 10px; }
+  .df-tabs { margin: 0 -14px; padding: 0 14px 2px; scrollbar-width: none; }
+  .df-tabs::-webkit-scrollbar { display: none; }
+  .df-tab { min-height: 40px; flex: none; }
+  .df-select, .df-search { min-height: 42px; }
+  .df-select select, .df-search input { height: 40px; }
+
+  .df-table-wrap { overflow: visible; border: 0; border-radius: 0; }
+  .df-table, .df-table tbody { display: block; }
+  .df-table thead { display: none; }
+  .df-table tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 4px 6px; margin-bottom: 10px; padding: 12px 12px 10px 14px; border: 1px solid #edf0f5; border-radius: 14px; background: #fff; }
+  .df-table tbody tr.is-latest { border-color: #f8d9c2; background: #fff8f2; }
+  .df-table td, .df-table th + th, .df-table td + td { display: block; min-width: 0; padding: 0; border: 0; white-space: normal; }
+  .df-table td.df-client-cell { display: none; }
+  .df-table .df-wrap { min-width: 0; }
+
+  /* Invoices: number + total / address / date + PDF + menu */
+  .df-table td.c-num { grid-area: 1 / 1; font-size: 15px; }
+  .df-table td.c-total { grid-area: 1 / 2 / 2 / 4; justify-self: end; font-size: 15px; }
+  .df-table td.c-addr { grid-area: 2 / 1 / 3 / 4; color: #4a5470; font-size: 13.5px; line-height: 1.4; }
+  .df-table td.c-date { grid-area: 3 / 1; color: #8a93a6; font-size: 13px; }
+  .df-table td.c-pdf { grid-area: 3 / 2; }
+  .df-table td.c-menu { grid-area: 3 / 3; }
+
+  /* Hours: dates + total / hours + PDF + menu */
+  .df-table td.c-range { grid-area: 1 / 1 / 3 / 2; }
+  .df-table td.c-range .df-strong-soft { font-weight: 700; color: #1b2440; font-size: 14.5px; }
+  .df-table td.c-hours { grid-area: 3 / 1; color: #8a93a6; font-size: 13px; }
+  .df-table td.c-hours::after { content: " horas"; }
+  .df-table [data-card] td.c-total, .df-table td.c-range ~ td.c-total { grid-area: 1 / 2 / 2 / 4; }
+  .df-table td.c-range ~ td.c-pdf { grid-area: 3 / 2; }
+  .df-table td.c-range ~ td.c-menu { grid-area: 3 / 3; }
+
+  /* Cheques: concept + status / date + amount / receipt + actions */
+  .df-checks tbody tr { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 10px; }
+  .df-checks td.c-concept { grid-area: 1 / 1; font-weight: 700; color: #1b2440; font-size: 14.5px; }
+  .df-checks td.c-state { grid-area: 1 / 2; justify-self: end; }
+  .df-checks td.c-date { grid-area: 2 / 1; }
+  .df-checks td.c-total { grid-area: 2 / 2; justify-self: end; font-weight: 700; font-size: 14.5px; }
+  .df-checks td.c-proof { grid-area: 3 / 1; min-width: 0; }
+  .df-checks td.c-actions { grid-area: 3 / 2; display: flex; gap: 8px; justify-content: flex-end; }
+  .df-checks .df-actions .df-box + .df-box { margin-left: 0; }
+  .df-state { padding: 4px 10px; font-size: 12.5px; }
+  .df-proof { gap: 10px; max-width: 100%; font-size: 13px; }
+  .df-proof-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .df-thumb { width: 52px; height: 34px; }
+  .df-box { width: 38px; height: 36px; }
+
+  .df-empty td { padding: 18px 8px; }
+  .df-table tbody tr.df-empty { display: block; }
+  .df-more { width: 100%; justify-content: center; margin-top: 2px; }
+}
+@media (max-width: 640px) { .df-tabbar { display: grid; grid-template-columns: minmax(0, 1fr); } .df-tabbar > * { min-width: 0; } .df-filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
