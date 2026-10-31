@@ -17,12 +17,20 @@ window.ShareLink = (function () {
     return { title: `${kind === "job" ? "Reporte" : "Horas"} · ${record.jobAddress || "Sin dirección"}`, meta: date };
   }
 
-  async function link(kind, record) {
-    if (!record?.pdfPath) throw new Error(record?.pdfBlob ? "Este PDF todavía no se subió a la nube. Espera un momento con internet y vuelve a intentar." : "Este registro no tiene PDF.");
-    const signed = await window.CloudDB.signedUrl(BUCKETS[kind], record.pdfPath, DAYS * 24 * 3600);
-    const { title, meta } = describe(kind, record);
+  // Preview page link for any stored PDF.
+  async function fromPath(bucket, path, title, meta = "") {
+    const signed = await window.CloudDB.signedUrl(bucket, path, DAYS * 24 * 3600);
     const page = location.origin + location.pathname.replace(/[^/]*$/, "") + "ver.html";
     return `${page}#u=${encodeURIComponent(signed)}&t=${encodeURIComponent(title)}&m=${encodeURIComponent(meta)}`;
+  }
+  async function link(kind, record) {
+    if (!record?.pdfPath) throw new Error(record?.pdfBlob ? "Este PDF todavía no se subió a la nube. Espera un momento con internet y vuelve a intentar." : "Este registro no tiene PDF.");
+    const { title, meta } = describe(kind, record);
+    return fromPath(BUCKETS[kind], record.pdfPath, title, meta);
+  }
+  async function copyText(url, message) {
+    if (await writeClipboard(url)) toast(message || `Link copiado. Sirve ${DAYS} días.`);
+    else window.prompt("Copia este link:", url);
   }
 
   async function writeClipboard(text) {
@@ -64,5 +72,5 @@ window.ShareLink = (function () {
     if (record) copy(kind, record); else toast("No se encontró el registro.");
   });
 
-  return { copy, link };
+  return { copy, link, fromPath, copyText, days: DAYS };
 })();

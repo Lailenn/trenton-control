@@ -27,7 +27,10 @@
     .zoom-group { display: contents; }
     .zoom { min-width: 48px; color: var(--muted); font-size: 13px; font-weight: 600; text-align: center; }
     main { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 18px 12px 40px; }
-    canvas { max-width: none; border-radius: 6px; background: #fff; box-shadow: 0 10px 28px rgba(15, 23, 42, .16); }
+    .sheet { position: relative; }
+    .pdf-link { position: absolute; display: block; border-radius: 3px; }
+    .pdf-link:hover { background: rgba(61, 79, 214, .12); }
+    canvas { display: block; max-width: none; border-radius: 6px; background: #fff; box-shadow: 0 10px 28px rgba(15, 23, 42, .16); }
     .msg { max-width: 420px; margin: 60px auto; padding: 22px; border-radius: 16px; background: #fff; color: var(--muted); font-weight: 500; text-align: center; line-height: 1.5; }
     .msg strong { display: block; margin-bottom: 6px; color: var(--ink); font-size: 17px; }
     @media (max-width: 560px) {
@@ -84,8 +87,22 @@
           const canvas = document.createElement("canvas");
           canvas.width = Math.round(viewport.width); canvas.height = Math.round(viewport.height);
           canvas.style.width = width + "px"; canvas.style.height = Math.round(viewport.height / ratio) + "px";
-          pages.append(canvas);
+          const sheet = document.createElement("div");
+          sheet.className = "sheet";
+          sheet.append(canvas);
+          pages.append(sheet);
           await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+          // Links inside the PDF (e.g. each address in a report) stay clickable over the drawn page.
+          const cssView = page.getViewport({ scale: width / base.width });
+          for (const annot of await page.getAnnotations()) {
+            if (annot.subtype !== "Link" || !/^https?:\/\//i.test(annot.url || "")) continue;
+            const [x1, y1, x2, y2] = cssView.convertToViewportRectangle(annot.rect);
+            const a = document.createElement("a");
+            a.className = "pdf-link";
+            a.href = annot.url; a.target = "_blank"; a.rel = "noopener";
+            a.style.cssText = `left:${Math.min(x1, x2)}px;top:${Math.min(y1, y2)}px;width:${Math.abs(x2 - x1)}px;height:${Math.abs(y2 - y1)}px`;
+            sheet.append(a);
+          }
         }
       }
       (async () => {
@@ -98,7 +115,10 @@
           link.href = blobUrl;
           link.download = /\.pdf$/i.test(title) ? title : title + ".pdf";
           if (!window.pdfjsLib) { pages.innerHTML = '<iframe title="PDF" style="width:100%;height:85vh;border:0;background:#fff"></iframe>'; pages.firstChild.src = blobUrl; return; }
-          pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+          // A worker from another site is refused; run it from a same-origin blob copy (much faster than the fallback).
+          const WORKER = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+          try { pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([await (await fetch(WORKER)).text()], { type: "text/javascript" })); }
+          catch (_) { pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER; }
           doc = await pdfjsLib.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise;
           await paint();
         } catch (error) {

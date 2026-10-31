@@ -7812,3 +7812,75 @@ html.boot-session .boot-screen {
 .pdf-dialog-pages[hidden] { display: none; }
 .pdf-dialog-pages .pdf-viewer-page { box-shadow: 0 8px 22px rgba(15, 23, 42, .18); }
 .pdf-dialog-pages .pdf-viewer-msg { margin: auto; color: #5b6478; }
+
+/* ===== Reporte de pendientes (pending-report.js) ===== */
+.toast { z-index: 500; }
+.pr-open-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border: 1.5px solid #f3a774; border-radius: 12px; background: #fff3ea; color: #d9561f; font: 700 14px "Plus Jakarta Sans", sans-serif; white-space: nowrap; cursor: pointer; }
+.pr-open-btn:hover { background: #ffe8d8; }
+.pr-open-btn svg { width: 18px; height: 18px; flex: none; }
+.pr-open-btn .pr-count { display: grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: #e2602a; color: #fff; font-size: 12px; }
+.pr-open-btn .pr-count[hidden] { display: none; }
+body.pr-open { overflow: hidden; }
+.pending-report { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 18px; background: rgba(15, 22, 42, .55); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.pending-report[hidden] { display: none; }
+.pr-card { display: flex; flex-direction: column; width: min(1180px, 100%); max-height: calc(100vh - 36px); overflow: hidden; border-radius: 22px; background: #fff; box-shadow: 0 30px 70px rgba(15, 22, 42, .3); color: #241f3a; font-family: "Plus Jakarta Sans", sans-serif; }
+.pr-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 26px 30px 10px; }
+.pr-head h2 { margin: 0; font: 800 clamp(22px, 3vw, 32px)/1.1 "Plus Jakarta Sans", sans-serif; letter-spacing: -.01em; }
+.pr-sub { margin: 8px 0 0; color: #6b6680; font-size: 14px; font-weight: 500; }
+.pr-close { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border: 0; border-radius: 12px; background: #f2f3f8; color: #4a5470; font-size: 24px; cursor: pointer; }
+.pr-close:hover { background: #e7e9f1; }
+.pr-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 30px 14px; border-bottom: 1px solid #f0eef4; }
+.pr-tabs { display: flex; gap: 8px; }
+.pr-tabs button { min-height: 40px; padding: 0 18px; border: 1px solid #e6e3ee; border-radius: 10px; background: #f8f7fb; color: #3a3550; font: 700 14px "Plus Jakarta Sans", sans-serif; cursor: pointer; }
+.pr-tabs button.is-active { border-color: #f3a774; background: #fff3ea; color: #d9561f; }
+.pr-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.pr-btn { min-height: 40px; padding: 0 16px; border: 1px solid #dfe3ec; border-radius: 10px; background: #fff; color: #241f3a; font: 700 14px "Plus Jakarta Sans", sans-serif; cursor: pointer; }
+.pr-btn:hover { background: #f3f5fa; }
+.pr-btn.is-primary { border-color: transparent; background: #3d4fd6; color: #fff; }
+.pr-btn.is-primary:hover { background: #3243c4; }
+.pr-btn:disabled { opacity: .6; cursor: progress; }
+.pr-body { overflow: auto; padding: 20px 30px 26px; }
+.pr-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; padding: 18px 8px; background: #fbe8da; }
+.pr-summary div { display: grid; gap: 18px; padding: 0 12px; }
+.pr-summary span { color: #5f5a72; font-size: 13px; font-weight: 800; letter-spacing: .02em; text-transform: uppercase; }
+.pr-summary strong { font-size: clamp(22px, 2.6vw, 30px); font-weight: 800; }
+.pr-summary .is-due { color: #b83a3a; }
+.pr-summary .is-paid { color: #2b8a5c; }
+.pr-h3 { margin: 26px 0 12px; font-size: 18px; font-weight: 800; letter-spacing: .01em; }
+.pr-table-wrap { overflow-x: auto; }
+.pr-table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+.pr-table th { padding: 13px 12px; background: #f8bf90; color: #241f3a; font-size: 12.5px; font-weight: 800; text-align: left; text-transform: uppercase; vertical-align: top; }
+.pr-table td { padding: 14px 12px; vertical-align: middle; }
+.pr-table tbody tr:nth-child(even) { background: #fbe8da; }
+.pr-strong { font-weight: 800; }
+.pr-due { color: #b83a3a; font-weight: 800; }
+.pr-muted { color: #5f5a72; }
+.pr-link { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none; color: #3d4fd6; font: 600 14.5px "Plus Jakarta Sans", sans-serif; text-align: left; text-decoration: underline; text-decoration-color: rgba(61, 79, 214, .35); text-underline-offset: 3px; cursor: pointer; }
+.pr-link:hover { text-decoration-color: currentColor; }
+.pr-link svg { width: 14px; height: 14px; flex: none; }
+.pr-checks { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px 4px 4px; border: 1px solid #e6e3ee; border-radius: 10px; background: #fff; color: #241f3a; font: 700 13px "Plus Jakarta Sans", sans-serif; cursor: pointer; }
+.pr-checks:hover { border-color: #b8c3f3; background: #f6f7ff; }
+.pr-thumb { width: 44px; height: 30px; flex: none; border-radius: 5px; background: #e9ebf1 center / cover no-repeat; }
+.pr-thumb + .pr-thumb { margin-left: -18px; box-shadow: -2px 0 0 #fff; }
+.pr-empty { padding: 26px; border-radius: 14px; background: #f8f7fb; color: #6b6680; font-weight: 600; text-align: center; }
+.pr-note { margin: 26px 0 6px; color: #5f5a72; font-size: 14px; }
+.pr-note strong { color: #241f3a; }
+.pr-date { margin: 0; color: #5f5a72; font-size: 13.5px; }
+@media (max-width: 760px) {
+  .toolbar-controls .pr-open-btn { width: 100%; justify-content: center; }
+  .pending-report { padding: 0; place-items: stretch; }
+  .pr-card { max-height: 100vh; height: 100%; border-radius: 0; }
+  .pr-head { padding: 18px 16px 6px; }
+  .pr-bar { padding: 8px 16px 12px; }
+  .pr-actions, .pr-actions .pr-btn { flex: 1 1 auto; }
+  .pr-body { padding: 14px 16px 30px; }
+  .pr-summary { grid-template-columns: 1fr 1fr; gap: 16px 0; }
+  .pr-summary div { gap: 6px; }
+  .pr-table thead { display: none; }
+  .pr-table, .pr-table tbody { display: block; }
+  .pr-table tbody tr { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin-bottom: 10px; padding: 12px 14px; border: 1px solid #f3dccb; border-radius: 14px; background: #fff; }
+  .pr-table tbody tr:nth-child(even) { background: #fff8f2; }
+  .pr-table td { display: block; padding: 0; }
+  .pr-table td::before { content: attr(data-l); display: block; margin-bottom: 2px; color: #8a8599; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+  .pr-table td.pr-addr { grid-column: 1 / -1; }
+}

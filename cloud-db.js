@@ -1236,6 +1236,13 @@
     return response.blob();
   }
 
+  // Report PDFs (pending invoices, etc.) live next to the invoice PDFs, under the owner's folder.
+  async function uploadReportPdf(blob, name) {
+    const path = `${ownerId()}/reports/${String(name || "report").replace(/[^a-zA-Z0-9._-]+/g, "-")}`;
+    await upload("invoice-pdfs", path, asPdfBlob(blob), "application/pdf");
+    return { bucket: "invoice-pdfs", path };
+  }
+
   // Temporary public link to a stored file (anyone with the link can open it until it expires).
   async function signedUrl(bucket, path, seconds = 30 * 24 * 3600) {
     if (!bucket || !path) throw new Error("Este PDF todavía no está guardado en la nube.");
@@ -1499,6 +1506,7 @@
     softDeleteInvoice,
     ensureInvoicePdf,
     signedUrl,
+    uploadReportPdf,
     nextInvoiceNumber,
     listHours,
     saveHours,
