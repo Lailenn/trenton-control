@@ -7884,3 +7884,5 @@ body.pr-open { overflow: hidden; }
   .pr-table td::before { content: attr(data-l); display: block; margin-bottom: 2px; color: #8a8599; font-size: 11px; font-weight: 700; text-transform: uppercase; }
   .pr-table td.pr-addr { grid-column: 1 / -1; }
 }
+.pr-logo { display: block; height: 46px; width: auto; margin: 0 0 10px -4px; }
+@media (max-width: 760px) { .pr-logo { height: 36px; } }

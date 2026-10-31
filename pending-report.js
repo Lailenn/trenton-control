@@ -57,7 +57,7 @@
     panel.setAttribute("aria-labelledby", "pendingReportTitle");
     panel.innerHTML = `<section class="pr-card">
       <header class="pr-head">
-        <div><h2 id="pendingReportTitle">PENDING INVOICES REPORT</h2><p class="pr-sub">Summary of invoices awaiting payment by check · All amounts in USD</p></div>
+        <div><img class="pr-logo" src="assets/logo-ruben-clear.png" alt="Ruben Perla"><h2 id="pendingReportTitle">PENDING INVOICES REPORT</h2><p class="pr-sub">Summary of invoices awaiting payment by check · All amounts in USD</p></div>
         <button type="button" class="pr-close" aria-label="Cerrar">×</button>
       </header>
       <div class="pr-bar">
@@ -149,6 +149,29 @@
 
   /* ---------- PDF ---------- */
   const safe = text => String(text ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[–—]/g, "-").replace(/[^\x20-\x7E]/g, " ");
+  // Logo bytes for the PDF header (same file the invoices use).
+  let logoBytes = null;
+  function loadLogo() {
+    if (logoBytes) return Promise.resolve(logoBytes);
+    return new Promise(resolve => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("GET", "assets/logo-ruben-clear.png");
+      xhr.responseType = "arraybuffer";
+      xhr.onload = () => { logoBytes = xhr.status === 200 || (xhr.status === 0 && xhr.response) ? new Uint8Array(xhr.response) : null; resolve(logoBytes); };
+      xhr.onerror = () => resolve(null);
+      xhr.send();
+    });
+  }
+  // Who sends the report: the "De" fields of the invoice builder, with Ruben's defaults.
+  function sender() {
+    const val = (id, fallback) => (document.getElementById(id)?.value || "").trim() || fallback;
+    return {
+      name: val("builderFromName", "Ruben Perla"),
+      phone: val("builderFromPhone", "+1 (469) 650-4958"),
+      email: val("builderFromEmail", "pr391665@gmail.com"),
+      client: window.CompanyApp?.isOtras?.() ? "" : "Trenton Builders LLC"
+    };
+  }
   async function makePdf(rows, which, withLinks) {
     const L = window.PDFLib;
     if (!L) throw new Error("Falta la librería de PDF. Recarga la página.");
@@ -156,10 +179,16 @@
     const doc = await L.PDFDocument.create();
     const font = await doc.embedFont(L.StandardFonts.Helvetica), bold = await doc.embedFont(L.StandardFonts.HelveticaBold);
     const rgb = hex => L.rgb(parseInt(hex.slice(1, 3), 16) / 255, parseInt(hex.slice(3, 5), 16) / 255, parseInt(hex.slice(5, 7), 16) / 255);
-    const INK = rgb("#241f3a"), MUTED = rgb("#5f5a72"), PEACH = rgb("#fbe8da"), ORANGE = rgb("#f8bf90"), RED = rgb("#b83a3a"), GREEN = rgb("#2b8a5c"), BLUE = rgb("#3d4fd6");
-    const W = 792, H = 612, M = 44;
-    const s = summary(rows);
-    // Links (best effort): each address opens its invoice preview, each payment record its first check photo.
+    const INK = rgb("#1f2340"), MUTED = rgb("#6b6f85"), SOFT = rgb("#9a9db0"), LINE = rgb("#ece6df"), ZEBRA = rgb("#fcf7f2"),
+      HEAD = rgb("#f6e6d6"), ACCENT = rgb("#e2602a"), RED = rgb("#c0392b"), GREEN = rgb("#23874a"), BLUE = rgb("#3d4fd6"), WHITE = rgb("#ffffff");
+    const W = 792, H = 612, M = 40, RIGHT = W - M;
+    const s = summary(rows), from = sender();
+    const title = isInv ? "PENDING INVOICES REPORT" : which === "job" ? "PENDING REPORTS" : "PENDING HOURS REPORT";
+
+    let logo = null;
+    try { const bytes = await loadLogo(); if (bytes) logo = await doc.embedPng(bytes); } catch (_) { logo = null; }
+
+    // Links (best effort): each address opens its PDF preview, each payment record its first check photo.
     const links = new Map();
     if (withLinks) await Promise.all(rows.map(async (row, i) => {
       const item = {};
@@ -172,57 +201,129 @@
       const annot = doc.context.obj({ Type: "Annot", Subtype: "Link", Rect: [x, y, x + w, y + h], Border: [0, 0, 0], A: { Type: "Action", S: "URI", URI: L.PDFString.of(url) } });
       page.node.addAnnot(doc.context.register(annot));
     };
-    const fit = (text, f, size, max) => { let t = safe(text); if (f.widthOfTextAtSize(t, size) <= max) return t; while (t.length > 1 && f.widthOfTextAtSize(t + "...", size) > max) t = t.slice(0, -1); return t + "..."; };
-    const cols = [{ x: M, w: 60 }, { x: M + 60, w: isInv ? 92 : 150 }, { x: M + (isInv ? 152 : 210), w: isInv ? 262 : 204 }, { x: 458, w: 88 }, { x: 546, w: 86 }, { x: 632, w: W - M - 632 }];
+    const width = (t, f, size) => f.widthOfTextAtSize(t, size);
+    const fit = (text, f, size, max) => { let t = safe(text); if (width(t, f, size) <= max) return t; while (t.length > 1 && width(t + "...", f, size) > max) t = t.slice(0, -1); return t + "..."; };
+    // Up to two lines; the second one ends in "..." if it still does not fit.
+    const wrap2 = (text, f, size, max) => {
+      const words = safe(text).split(/\s+/).filter(Boolean), lines = [""];
+      for (const word of words) {
+        const next = lines[lines.length - 1] ? lines[lines.length - 1] + " " + word : word;
+        if (width(next, f, size) <= max || !lines[lines.length - 1]) lines[lines.length - 1] = next;
+        else if (lines.length < 2) lines.push(word);
+        else { lines[1] = fit(lines[1] + " " + word, f, size, max); break; }
+      }
+      return lines.map(line => fit(line, f, size, max));
+    };
+    const rightText = (page, text, xRight, y, size, f, color) => page.drawText(text, { x: xRight - width(text, f, size), y, size, font: f, color });
+    const roundRect = (page, x, top, w, h, r, opts) => page.drawSvgPath(`M${r},0 H${w - r} Q${w},0 ${w},${r} V${h - r} Q${w},${h} ${w - r},${h} H${r} Q0,${h} 0,${h - r} V${r} Q0,0 ${r},0 Z`, { x, y: top, ...opts });
+
+    // Columns: [x, width, align]
+    const cols = isInv
+      ? [[M, 64, "l"], [M + 64, 96, "l"], [M + 160, 270, "l"], [M + 430, 96, "r"], [M + 526, 96, "r"], [M + 622, RIGHT - (M + 622), "l"]]
+      : [[M, 60, "l"], [M + 60, 118, "l"], [M + 178, 262, "l"], [M + 440, 92, "r"], [M + 532, 92, "r"], [M + 624, RIGHT - (M + 624), "l"]];
     const heads = [isInv ? "INVOICE" : "REPORT", "DATE", "JOB ADDRESS", isInv ? "INVOICE TOTAL" : "TOTAL", "BALANCE DUE", "PAYMENT RECORD"];
+    const PAD = 10;
+    const cellX = (i, text, f, size) => cols[i][2] === "r" ? cols[i][0] + cols[i][1] - PAD - width(text, f, size) : cols[i][0] + PAD;
+
     let page, y;
-    const header = first => {
+    const tableHead = () => {
+      roundRect(page, M, y, RIGHT - M, 26, 6, { color: HEAD });
+      heads.forEach((h, i) => page.drawText(h, { x: cellX(i, h, bold, 7.5), y: y - 16.5, size: 7.5, font: bold, color: INK }));
+      y -= 26;
+    };
+    const newPage = first => {
       page = doc.addPage([W, H]);
       y = H - M;
       if (first) {
-        page.drawText(isInv ? "PENDING INVOICES REPORT" : "PENDING HOURS REPORT", { x: M, y: y - 22, size: 24, font: bold, color: INK });
-        page.drawText(`Summary of ${isInv ? "invoices" : "hours reports"} awaiting payment by check - All amounts in USD`, { x: M, y: y - 42, size: 10.5, font, color: MUTED });
-        y -= 66;
-        const boxW = (W - 2 * M) / 4;
-        page.drawRectangle({ x: M, y: y - 74, width: W - 2 * M, height: 74, color: PEACH });
-        [[isInv ? "PENDING INVOICES" : "PENDING REPORTS", String(s.count), INK], ["TOTAL INVOICED", money(s.total), INK], ["OUTSTANDING BALANCE", money(s.due), RED], ["AMOUNT PAID", money(s.paid), GREEN]].forEach(([label, value, color], i) => {
-          page.drawText(label, { x: M + 12 + i * boxW, y: y - 20, size: 8.5, font: bold, color: MUTED });
-          page.drawText(value, { x: M + 12 + i * boxW, y: y - 56, size: 20, font: bold, color });
-        });
-        y -= 100;
-        page.drawText(isInv ? "INVOICE DETAILS" : "REPORT DETAILS", { x: M, y, size: 13, font: bold, color: INK });
-        y -= 14;
+        // Header: logo + sender on the left, title + date on the right.
+        let logoH = 0;
+        if (logo) {
+          const factor = Math.min(150 / logo.width, 54 / logo.height);
+          logoH = logo.height * factor;
+          page.drawImage(logo, { x: M - 6, y: y - logoH, width: logo.width * factor, height: logoH });
+        }
+        const infoY = y - Math.max(logoH, 40) - 14;
+        page.drawText(safe(from.name), { x: M, y: infoY, size: 10, font: bold, color: INK });
+        page.drawText(safe(`${from.phone}   |   ${from.email}`), { x: M, y: infoY - 13, size: 8.5, font, color: MUTED });
+        rightText(page, title, RIGHT, y - 22, 22, bold, INK);
+        rightText(page, `Summary of ${isInv ? "invoices" : "reports"} awaiting payment by check - All amounts in USD`, RIGHT, y - 38, 9, font, MUTED);
+        rightText(page, `Report date: ${usDate(today())}`, RIGHT, y - 56, 9, bold, INK);
+        if (from.client) rightText(page, `Bill to: ${from.client}`, RIGHT, y - 69, 9, font, MUTED);
+        y = infoY - 26;
+        page.drawRectangle({ x: M, y, width: RIGHT - M, height: 2.5, color: ACCENT });
+        y -= 22;
+
+        // Summary cards with a colored bar.
+        const gap = 12, cardW = (RIGHT - M - gap * 3) / 4, cardH = 62;
+        [[isInv ? "PENDING INVOICES" : "PENDING REPORTS", String(s.count), INK, INK], ["TOTAL INVOICED", money(s.total), INK, BLUE], ["OUTSTANDING BALANCE", money(s.due), RED, RED], ["AMOUNT PAID", money(s.paid), GREEN, GREEN]]
+          .forEach(([label, value, color, bar], i) => {
+            const x = M + i * (cardW + gap);
+            roundRect(page, x, y, cardW, cardH, 8, { color: WHITE, borderColor: LINE, borderWidth: 1 });
+            page.drawRectangle({ x: x + 1, y: y - cardH + 10, width: 3, height: cardH - 20, color: bar });
+            page.drawText(label, { x: x + 16, y: y - 22, size: 7.5, font: bold, color: MUTED });
+            page.drawText(value, { x: x + 16, y: y - 50, size: 19, font: bold, color });
+          });
+        y -= cardH + 24;
+        page.drawText(isInv ? "INVOICE DETAILS" : "REPORT DETAILS", { x: M, y, size: 12, font: bold, color: INK });
+        y -= 12;
       }
-      page.drawRectangle({ x: M, y: y - 26, width: W - 2 * M, height: 26, color: ORANGE });
-      heads.forEach((h, i) => page.drawText(h, { x: cols[i].x + 8, y: y - 17, size: 8, font: bold, color: INK }));
-      y -= 26;
+      tableHead();
     };
-    header(true);
+
+    newPage(true);
+    const SIZE = 9.5;
     rows.forEach((row, i) => {
-      if (y - 26 < M + 40) header(false);
-      if (i % 2 === 1) page.drawRectangle({ x: M, y: y - 26, width: W - 2 * M, height: 26, color: PEACH });
-      const ty = y - 17, link = links.get(i) || {};
-      page.drawText(fit(row.label, bold, 9.5, cols[0].w - 12), { x: cols[0].x + 8, y: ty, size: 9.5, font: bold, color: INK });
-      page.drawText(fit(dateText(row), font, 9.5, cols[1].w - 12), { x: cols[1].x + 8, y: ty, size: 9.5, font, color: INK });
-      const addr = fit(row.address || "No address", font, 9.5, cols[2].w - 12);
-      page.drawText(addr, { x: cols[2].x + 8, y: ty, size: 9.5, font, color: link.pdf ? BLUE : INK });
-      if (link.pdf) {
-        const w = font.widthOfTextAtSize(addr, 9.5);
-        page.drawLine({ start: { x: cols[2].x + 8, y: ty - 2 }, end: { x: cols[2].x + 8 + w, y: ty - 2 }, thickness: .6, color: BLUE });
-        addLink(page, cols[2].x + 8, ty - 4, w, 14, link.pdf);
-      }
-      page.drawText(money(row.total), { x: cols[3].x + 8, y: ty, size: 9.5, font, color: INK });
-      page.drawText(money(row.due), { x: cols[4].x + 8, y: ty, size: 9.5, font: bold, color: RED });
+      const link = links.get(i) || {};
+      const addrLines = wrap2(row.address || "No address", font, SIZE, cols[2][1] - PAD * 2);
+      const rowH = addrLines.length > 1 ? 34 : 25;
+      if (y - rowH < M + 40) { newPage(false); }
+      if (i % 2 === 1) page.drawRectangle({ x: M, y: y - rowH, width: RIGHT - M, height: rowH, color: ZEBRA });
+      page.drawLine({ start: { x: M, y: y - rowH }, end: { x: RIGHT, y: y - rowH }, thickness: .6, color: LINE });
+      const ty = y - (rowH === 25 ? 16 : 14.5);
+      const mid = y - rowH / 2 - 3.5;
+      page.drawText(fit(row.label, bold, SIZE, cols[0][1] - PAD * 2), { x: cellX(0, "", bold, SIZE), y: mid, size: SIZE, font: bold, color: INK });
+      page.drawText(fit(dateText(row), font, SIZE, cols[1][1] - PAD * 2), { x: cellX(1, "", font, SIZE), y: mid, size: SIZE, font, color: INK });
+      addrLines.forEach((line, n) => {
+        const ly = ty - n * 12.5, lx = cols[2][0] + PAD;
+        page.drawText(line, { x: lx, y: ly, size: SIZE, font, color: link.pdf ? BLUE : INK });
+        if (link.pdf) {
+          const w = width(line, font, SIZE);
+          page.drawLine({ start: { x: lx, y: ly - 2 }, end: { x: lx + w, y: ly - 2 }, thickness: .5, color: BLUE });
+          addLink(page, lx, ly - 4, w, 14, link.pdf);
+        }
+      });
+      const total = money(row.total), due = money(row.due);
+      page.drawText(total, { x: cellX(3, total, font, SIZE), y: mid, size: SIZE, font, color: INK });
+      page.drawText(due, { x: cellX(4, due, bold, SIZE), y: mid, size: SIZE, font: bold, color: RED });
       const rec = photoText(row.photos.length);
-      page.drawText(rec, { x: cols[5].x + 8, y: ty, size: 9.5, font, color: link.photo ? BLUE : INK });
-      if (link.photo) addLink(page, cols[5].x + 8, ty - 4, font.widthOfTextAtSize(rec, 9.5), 14, link.photo);
-      y -= 26;
+      page.drawText(rec, { x: cellX(5, rec, font, SIZE), y: mid, size: SIZE, font, color: link.photo ? BLUE : SOFT });
+      if (link.photo) addLink(page, cellX(5, rec, font, SIZE), mid - 4, width(rec, font, SIZE), 14, link.photo);
+      y -= rowH;
     });
-    if (!rows.length) { page.drawText("No pending items.", { x: M + 8, y: y - 20, size: 10, font, color: MUTED }); y -= 30; }
-    if (y < M + 46) { page = doc.addPage([W, H]); y = H - M; }
-    page.drawText("Note:", { x: M, y: y - 30, size: 10, font: bold, color: INK });
-    page.drawText(safe(`Only ${isInv ? "invoices" : "reports"} waiting for a check with an outstanding balance are included.${withLinks ? " Click an address to open its PDF." : ""}`), { x: M + 32, y: y - 30, size: 9.5, font, color: MUTED });
-    page.drawText(`Report date: ${usDate(today())}`, { x: M, y: y - 46, size: 9, font, color: MUTED });
+    if (!rows.length) { page.drawText("No pending items.", { x: M + PAD, y: y - 18, size: 10, font, color: MUTED }); y -= 28; }
+    else {
+      // Totals row.
+      // Keep room for the totals row, the note and the footer.
+      if (y - 30 < 72) newPage(false);
+      roundRect(page, M, y - 4, RIGHT - M, 26, 6, { color: HEAD });
+      page.drawText("TOTAL", { x: cols[0][0] + PAD, y: y - 21, size: 9.5, font: bold, color: INK });
+      const t = money(s.total), d = money(s.due);
+      page.drawText(t, { x: cellX(3, t, bold, 9.5), y: y - 21, size: 9.5, font: bold, color: INK });
+      page.drawText(d, { x: cellX(4, d, bold, 9.5), y: y - 21, size: 9.5, font: bold, color: RED });
+      y -= 30;
+    }
+    if (y - 24 < 44) newPage(false);
+    page.drawText("Note:", { x: M, y: y - 24, size: 9, font: bold, color: INK });
+    page.drawText(safe(`Only ${isInv ? "invoices" : "reports"} waiting for a check with an outstanding balance are included.${withLinks ? " Click an address to open its PDF." : ""}`), { x: M + 30, y: y - 24, size: 9, font, color: MUTED });
+
+    // Footer on every page.
+    const pages = doc.getPages();
+    pages.forEach((p, n) => {
+      p.drawLine({ start: { x: M, y: 30 }, end: { x: RIGHT, y: 30 }, thickness: .6, color: LINE });
+      p.drawText(safe(`${from.name} - ${title.toLowerCase().replace(/^\w|\s\w/g, c => c.toUpperCase())}`), { x: M, y: 18, size: 8, font, color: SOFT });
+      const label = `Page ${n + 1} of ${pages.length}`;
+      p.drawText(label, { x: RIGHT - width(label, font, 8), y: 18, size: 8, font, color: SOFT });
+    });
     return new Blob([await doc.save()], { type: "application/pdf" });
   }
   const fileName = which => `pending-${which === "invoice" ? "invoices" : "hours"}-${today()}.pdf`;
