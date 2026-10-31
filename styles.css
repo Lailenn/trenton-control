@@ -7886,3 +7886,17 @@ body.pr-open { overflow: hidden; }
 }
 .pr-logo { display: block; height: 46px; width: auto; margin: 0 0 10px -4px; }
 @media (max-width: 760px) { .pr-logo { height: 36px; } }
+
+/* Pending report summary: tinted cards with an icon (same colors as the PDF) */
+.pr-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; padding: 0; background: none; }
+.pr-summary .pr-card-sum { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 12px 10px; padding: 16px 18px 18px; border: 1px solid var(--pr-border); border-radius: 16px; background: var(--pr-bg); }
+.pr-card-sum .pr-ico { display: grid; place-items: center; width: 38px; height: 38px; border: 1px solid var(--pr-border); border-radius: 50%; background: #fff; color: var(--pr-fg); }
+.pr-card-sum .pr-ico svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.pr-card-sum .pr-lbl { color: var(--pr-label); font-size: 12px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; }
+.pr-card-sum strong { grid-column: 1 / -1; color: var(--pr-fg); font-size: clamp(22px, 2.4vw, 28px); font-weight: 800; }
+.pr-card-sum.is-orange { --pr-bg: #fff4ec; --pr-border: #f7d3b8; --pr-fg: #d9561f; --pr-label: #9a5a33; }
+.pr-card-sum.is-blue { --pr-bg: #eef1ff; --pr-border: #cfd6fb; --pr-fg: #3d4fd6; --pr-label: #4b5487; }
+.pr-card-sum.is-red { --pr-bg: #fdf0ef; --pr-border: #f4cdca; --pr-fg: #c0392b; --pr-label: #8f4a44; }
+.pr-card-sum.is-green { --pr-bg: #ecf8f1; --pr-border: #c3e8d2; --pr-fg: #1f8a52; --pr-label: #3f7357; }
+@media (max-width: 900px) { .pr-summary { grid-template-columns: 1fr 1fr; gap: 10px; } }
+@media (max-width: 760px) { .pr-summary .pr-card-sum { padding: 12px 12px 14px; gap: 8px; } .pr-card-sum .pr-ico { width: 32px; height: 32px; } .pr-card-sum .pr-lbl { font-size: 10.5px; } }

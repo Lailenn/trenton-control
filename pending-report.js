@@ -106,12 +106,7 @@
           : `<span class="pr-muted">No photo</span>`}</td>
       </tr>`).join("");
     panel.querySelector(".pr-body").innerHTML = `
-      <div class="pr-summary">
-        <div><span>${isInv ? "Pending invoices" : "Pending reports"}</span><strong>${s.count}</strong></div>
-        <div><span>Total invoiced</span><strong>${money(s.total)}</strong></div>
-        <div><span>Outstanding balance</span><strong class="is-due">${money(s.due)}</strong></div>
-        <div><span>Amount paid</span><strong class="is-paid">${money(s.paid)}</strong></div>
-      </div>
+      <div class="pr-summary">${SUMMARY_CARDS(isInv, s).map(c => `<div class="pr-card-sum is-${c.tone}"><span class="pr-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS[c.icon]}"/></svg></span><span class="pr-lbl">${c.label}</span><strong>${c.value}</strong></div>`).join("")}</div>
       <h3 class="pr-h3">${isInv ? "INVOICE DETAILS" : "REPORT DETAILS"}</h3>
       ${rows.length ? `<div class="pr-table-wrap"><table class="pr-table"><thead><tr><th>${isInv ? "Invoice" : "Report"}</th><th>Date</th><th>Job address</th><th>${isInv ? "Invoice total" : "Total"}</th><th>Balance due</th><th>Payment record</th></tr></thead><tbody>${body}</tbody></table></div>`
         : `<p class="pr-empty">No hay ${isInv ? "invoices" : "reportes de horas"} en Esperando cheque con saldo pendiente.</p>`}
@@ -146,6 +141,27 @@
       finally { act.disabled = false; }
     }
   }
+
+  /* ---------- summary cards (window + PDF) ---------- */
+  const TONES = {
+    orange: { bg: "#fff4ec", border: "#f7d3b8", fg: "#d9561f", label: "#9a5a33" },
+    blue: { bg: "#eef1ff", border: "#cfd6fb", fg: "#3d4fd6", label: "#4b5487" },
+    red: { bg: "#fdf0ef", border: "#f4cdca", fg: "#c0392b", label: "#8f4a44" },
+    green: { bg: "#ecf8f1", border: "#c3e8d2", fg: "#1f8a52", label: "#3f7357" }
+  };
+  // 24 x 24 stroke icons: document, dollar coin, clock, check circle.
+  const ICONS = {
+    doc: "M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h4",
+    dollar: "M12 3a9 9 0 1 1 0 18a9 9 0 1 1 0-18zM15 9.3c-.4-1.1-1.6-1.8-3-1.8-1.7 0-3 .9-3 2.2 0 2.9 6 1.6 6 4.6 0 1.3-1.3 2.2-3 2.2-1.4 0-2.6-.7-3-1.8M12 6v1.5M12 16.5V18",
+    clock: "M12 3a9 9 0 1 1 0 18a9 9 0 1 1 0-18zM12 7v5l3.2 2",
+    check: "M12 3a9 9 0 1 1 0 18a9 9 0 1 1 0-18zM8 12.4l2.7 2.7L16.2 9.6"
+  };
+  const SUMMARY_CARDS = (isInv, s) => [
+    { label: isInv ? "PENDING INVOICES" : "PENDING REPORTS", value: String(s.count), tone: "orange", icon: "doc" },
+    { label: "TOTAL INVOICED", value: money(s.total), tone: "blue", icon: "dollar" },
+    { label: "OUTSTANDING BALANCE", value: money(s.due), tone: "red", icon: "clock" },
+    { label: "AMOUNT PAID", value: money(s.paid), tone: "green", icon: "check" }
+  ];
 
   /* ---------- PDF ---------- */
   const safe = text => String(text ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[–—]/g, "-").replace(/[^\x20-\x7E]/g, " ");
@@ -253,16 +269,18 @@
         page.drawRectangle({ x: M, y, width: RIGHT - M, height: 2.5, color: ACCENT });
         y -= 22;
 
-        // Summary cards with a colored bar.
-        const gap = 12, cardW = (RIGHT - M - gap * 3) / 4, cardH = 62;
-        [[isInv ? "PENDING INVOICES" : "PENDING REPORTS", String(s.count), INK, INK], ["TOTAL INVOICED", money(s.total), INK, BLUE], ["OUTSTANDING BALANCE", money(s.due), RED, RED], ["AMOUNT PAID", money(s.paid), GREEN, GREEN]]
-          .forEach(([label, value, color, bar], i) => {
-            const x = M + i * (cardW + gap);
-            roundRect(page, x, y, cardW, cardH, 8, { color: WHITE, borderColor: LINE, borderWidth: 1 });
-            page.drawRectangle({ x: x + 1, y: y - cardH + 10, width: 3, height: cardH - 20, color: bar });
-            page.drawText(label, { x: x + 16, y: y - 22, size: 7.5, font: bold, color: MUTED });
-            page.drawText(value, { x: x + 16, y: y - 50, size: 19, font: bold, color });
-          });
+        // Summary cards: soft tinted card, white icon badge, colored value.
+        const gap = 12, cardW = (RIGHT - M - gap * 3) / 4, cardH = 64;
+        SUMMARY_CARDS(isInv, s).forEach((card, i) => {
+          const x = M + i * (cardW + gap), tone = TONES[card.tone];
+          roundRect(page, x, y, cardW, cardH, 10, { color: rgb(tone.bg), borderColor: rgb(tone.border), borderWidth: 0.8 });
+          // Icon badge: white circle with the icon drawn as strokes (24 x 24 icon scaled to 14 pt).
+          const cx = x + 25, cy = y - 24;
+          page.drawCircle({ x: cx, y: cy, size: 13, color: WHITE, borderColor: rgb(tone.border), borderWidth: 0.6 });
+          page.drawSvgPath(ICONS[card.icon], { x: cx - 7, y: cy + 7, scale: 14 / 24, borderColor: rgb(tone.fg), borderWidth: 1.6 });
+          page.drawText(card.label, { x: x + 46, y: cy - 2.8, size: 7.5, font: bold, color: rgb(tone.label) });
+          page.drawText(card.value, { x: x + 14, y: y - cardH + 11, size: 18, font: bold, color: rgb(tone.fg) });
+        });
         y -= cardH + 24;
         page.drawText(isInv ? "INVOICE DETAILS" : "REPORT DETAILS", { x: M, y, size: 12, font: bold, color: INK });
         y -= 12;
