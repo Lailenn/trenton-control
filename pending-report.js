@@ -32,12 +32,16 @@
     const dates = [r.startDate, r.reportDate, ...(r.entries || []).map(e => e.date), r.endDate].map(isoDate).filter(Boolean).sort();
     return { kind, record: r, label: kind === "job" ? "Report" : "Hours", date: dates[dates.length - 1] || "", first: dates[0] || "", address: r.jobAddress || "", total, due: cents(total - received), paid: received, photos: r.checkPhotos || [] };
   }
+  const byDate = (a, b) => (b.date || "").localeCompare(a.date || "");
   function hoursRows() {
-    const hours = (window.HoursApp?.reports?.() || []).filter(r => r.stage === "waiting" && r.hoursFormat !== "a3" && !String(r.id || "").startsWith("job-")).map(r => reportRow(r, "hours"));
-    const jobs = (window.JobApp?.reports?.() || []).filter(r => r.stage === "sent").map(r => reportRow(r, "job"));
-    return [...hours, ...jobs].filter(row => row.due > 0.004).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    return (window.HoursApp?.reports?.() || []).filter(r => r.stage === "waiting" && r.hoursFormat !== "a3" && !String(r.id || "").startsWith("job-"))
+      .map(r => reportRow(r, "hours")).filter(row => row.due > 0.004).sort(byDate);
   }
-  const rowsFor = which => which === "invoice" ? invoiceRows() : hoursRows();
+  function jobRows() {
+    return (window.JobApp?.reports?.() || []).filter(r => r.stage === "sent").map(r => reportRow(r, "job")).filter(row => row.due > 0.004).sort(byDate);
+  }
+  const rowsFor = which => which === "invoice" ? invoiceRows() : which === "job" ? jobRows() : hoursRows();
+  const toClient = () => window.CompanyApp?.toClient?.() || "a Trenton";
   const summary = rows => ({ count: rows.length, total: rows.reduce((s, r) => s + r.total, 0), due: rows.reduce((s, r) => s + r.due, 0), paid: rows.reduce((s, r) => s + r.paid, 0) });
   const dateText = row => row.first && row.first !== row.date ? `${usDate(row.first)} – ${usDate(row.date)}` : usDate(row.date);
   const photoText = n => n ? `${n} check${n === 1 ? "" : "s"}` : "No photo";
@@ -57,7 +61,7 @@
         <button type="button" class="pr-close" aria-label="Cerrar">×</button>
       </header>
       <div class="pr-bar">
-        <div class="pr-tabs" role="tablist"><button type="button" role="tab" data-pr-tab="invoice">Invoices</button><button type="button" role="tab" data-pr-tab="hours">Horas</button></div>
+        <div class="pr-tabs" role="tablist"><button type="button" role="tab" data-pr-tab="invoice">Invoices</button><button type="button" role="tab" data-pr-tab="hours">Horas</button><button type="button" role="tab" data-pr-tab="job">Enviados a Trenton</button></div>
         <div class="pr-actions"><button type="button" class="pr-btn" data-pr-act="pdf">Descargar PDF</button><button type="button" class="pr-btn is-primary" data-pr-act="link">Copiar link del reporte</button></div>
       </div>
       <div class="pr-body"></div>
@@ -87,6 +91,7 @@
     const rows = rowsFor(tab), s = summary(rows), isInv = tab === "invoice";
     panel.querySelector("#pendingReportTitle").textContent = isInv ? "PENDING INVOICES REPORT" : "PENDING HOURS REPORT";
     panel.querySelector(".pr-sub").textContent = `Summary of ${isInv ? "invoices" : "hours reports"} awaiting payment by check · All amounts in USD`;
+    const jobTab = panel.querySelector('[data-pr-tab="job"]'); if (jobTab) jobTab.textContent = `Enviados ${toClient()}`;
     panel.querySelectorAll("[data-pr-tab]").forEach(b => { b.classList.toggle("is-active", b.dataset.prTab === tab); b.setAttribute("aria-selected", String(b.dataset.prTab === tab)); });
     const body = rows.map((r, i) => `<tr>
         <td class="pr-strong" data-l="${isInv ? "Invoice" : "Report"}">${esc(r.label)}</td>
@@ -242,20 +247,27 @@
   }
 
   /* ---------- button next to the search ---------- */
+  // One button per board: invoices, hours and the reports sent to Trenton.
+  const BOARDS = [["#board", "invoice"], ["#hoursHomeBoard", "hours"], ["#jobHomeBoard", "job"]];
   function mountButton() {
-    const controls = $("#boardView .toolbar-controls");
-    if (!controls || controls.querySelector(".pr-open-btn")) return;
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "pr-open-btn";
-    button.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h4"/></svg><span>Reporte de pendientes</span><b class="pr-count"></b>`;
-    button.addEventListener("click", () => open("invoice"));
-    controls.prepend(button);
+    BOARDS.forEach(([boardSel, which]) => {
+      const controls = $(boardSel)?.closest(".board-section")?.querySelector(".toolbar-controls");
+      if (!controls || controls.querySelector(".pr-open-btn")) return;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "pr-open-btn";
+      button.dataset.prWhich = which;
+      button.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h4"/></svg><span>Reporte de pendientes</span><b class="pr-count"></b>`;
+      button.addEventListener("click", () => open(which));
+      controls.prepend(button);
+    });
     updateCount();
   }
   function updateCount() {
-    const badge = $(".pr-open-btn .pr-count");
-    if (badge) { const n = invoiceRows().length; badge.textContent = n ? String(n) : ""; badge.hidden = !n; }
+    document.querySelectorAll(".pr-open-btn[data-pr-which]").forEach(button => {
+      const badge = button.querySelector(".pr-count"), n = rowsFor(button.dataset.prWhich).length;
+      badge.textContent = n ? String(n) : ""; badge.hidden = !n;
+    });
   }
   function boot() {
     mountButton();
