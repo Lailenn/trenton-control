@@ -53,7 +53,7 @@ window.PdfPreview = (function () {
   const slots = new WeakMap(); // slot element -> { token, blob, title }
   function show(slot, options) {
     if (!slot) return;
-    const { name = "Documento.pdf", status = "", load, onReplace, title } = options || {};
+    const { name = "Documento.pdf", status = "", load, onReplace, onShare, title } = options || {};
     const token = {};
     slots.set(slot, { token, blob: null, title: title || name });
     slot.hidden = false;
@@ -66,10 +66,12 @@ window.PdfPreview = (function () {
         <div class="pdf-slot-actions">
           <button type="button" class="button button-primary pdf-slot-view" data-pdf-view>Ver PDF</button>
           ${onReplace ? '<button type="button" class="button button-ghost pdf-slot-replace">Cambiar PDF</button>' : ""}
+          ${onShare ? '<button type="button" class="button button-ghost pdf-slot-share">Copiar link</button>' : ""}
         </div>
       </div>`;
     slot.querySelectorAll("[data-pdf-view]").forEach(button => button.addEventListener("click", () => view(slot)));
     slot.querySelector(".pdf-slot-replace")?.addEventListener("click", () => onReplace());
+    slot.querySelector(".pdf-slot-share")?.addEventListener("click", () => onShare());
     const thumb = slot.querySelector(".pdf-slot-thumb");
     (async () => {
       try {

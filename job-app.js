@@ -701,7 +701,7 @@ Cancelar: no se mueve.`)) return;
       root.PdfPreview.show(slot, file
         ? { name: file.name, status: "Nuevo · se guarda al tocar Guardar", load: async () => file, onReplace: replace }
         // Built from a copy so previewing never changes the saved report.
-        : { name: saved.pdfName || existingName || fileName(saved), status: "Guardado en la nube", load: () => rebuildPdf({ ...saved }), onReplace: replace });
+        : { name: saved.pdfName || existingName || fileName(saved), status: "Guardado en la nube", load: () => rebuildPdf({ ...saved }), onReplace: replace, onShare: saved.pdfPath ? () => root.ShareLink?.copy("job", saved) : null });
       current?.classList.add("hidden");
       return;
     }

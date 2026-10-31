@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>Vista previa del PDF</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root { color-scheme: light only; --ink: #1b2440; --muted: #6b7590; --blue: #3d4fd6; --bg: #e9ecf2; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--ink); font-family: "Plus Jakarta Sans", system-ui, sans-serif; }
+    .bar { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: #fff; box-shadow: 0 4px 18px rgba(27, 36, 64, .08); }
+    .badge { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 12px; background: #fdebe1; color: #e2603a; font-weight: 800; font-size: 12px; }
+    .info { min-width: 0; flex: 1; }
+    .info h1 { margin: 0; overflow: hidden; font-size: 16px; line-height: 1.3; white-space: nowrap; text-overflow: ellipsis; }
+    .info p { margin: 2px 0 0; color: var(--muted); font-size: 12.5px; font-weight: 500; }
+    .tools { display: flex; align-items: center; gap: 8px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-width: 40px; height: 40px; padding: 0 14px; border: 1px solid #dfe3ec; border-radius: 10px; background: #fff; color: var(--ink); font: 700 14px "Plus Jakarta Sans", sans-serif; text-decoration: none; cursor: pointer; }
+    .btn:hover { background: #f3f5fa; }
+    .btn.primary { border-color: transparent; background: var(--blue); color: #fff; }
+    .btn.primary:hover { background: #3243c4; }
+    .btn[hidden] { display: none; }
+    .btn svg { width: 18px; height: 18px; }
+    .zoom-group { display: contents; }
+    .zoom { min-width: 48px; color: var(--muted); font-size: 13px; font-weight: 600; text-align: center; }
+    main { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 18px 12px 40px; }
+    canvas { max-width: none; border-radius: 6px; background: #fff; box-shadow: 0 10px 28px rgba(15, 23, 42, .16); }
+    .msg { max-width: 420px; margin: 60px auto; padding: 22px; border-radius: 16px; background: #fff; color: var(--muted); font-weight: 500; text-align: center; line-height: 1.5; }
+    .msg strong { display: block; margin-bottom: 6px; color: var(--ink); font-size: 17px; }
+    @media (max-width: 560px) {
+      .bar { flex-wrap: wrap; gap: 10px; padding: 10px 12px; }
+      .tools { width: 100%; }
+      .tools .primary { flex: 1; }
+      .zoom-group { display: none; }
+      main { padding: 12px 8px 30px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="bar">
+    <span class="badge" aria-hidden="true">PDF</span>
+    <div class="info"><h1 id="title">Documento</h1><p id="meta">Vista previa</p></div>
+    <div class="tools">
+      <span class="zoom-group">
+        <button class="btn" type="button" data-zoom="-1" aria-label="Alejar">−</button>
+        <span class="zoom" id="zoom">100%</span>
+        <button class="btn" type="button" data-zoom="1" aria-label="Acercar">+</button>
+      </span>
+      <a class="btn primary" id="download" href="#" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg> Descargar PDF</a>
+    </div>
+  </header>
+  <main id="pages"><p class="msg">Cargando PDF…</p></main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    (function () {
+      "use strict";
+      // Link format: ver.html#u=<signed PDF URL>&t=<title>&m=<details>
+      const params = new URLSearchParams(location.hash.slice(1));
+      const url = params.get("u") || "";
+      const title = params.get("t") || "Documento";
+      const pages = document.getElementById("pages");
+      document.getElementById("title").textContent = title;
+      document.getElementById("meta").textContent = params.get("m") || "Vista previa";
+      document.title = title;
+      const fail = (head, text) => { document.getElementById("download").hidden = true; pages.innerHTML = ""; const p = document.createElement("p"); p.className = "msg"; p.innerHTML = "<strong></strong><span></span>"; p.firstChild.textContent = head; p.lastChild.textContent = text; pages.append(p); };
+      if (!/^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/sign\//i.test(url)) return fail("Link no válido", "Pide que te envíen el link otra vez.");
+
+      let doc = null, zoom = 1, run = 0, blobUrl = "";
+      const ratio = Math.min(window.devicePixelRatio || 1, 2);
+      async function paint() {
+        const mine = ++run;
+        const width = Math.max(Math.min(pages.clientWidth - 24, 900) * zoom, 220);
+        document.getElementById("zoom").textContent = Math.round(zoom * 100) + "%";
+        pages.innerHTML = "";
+        for (let n = 1; n <= doc.numPages; n++) {
+          if (mine !== run) return;
+          const page = await doc.getPage(n);
+          const base = page.getViewport({ scale: 1 });
+          const viewport = page.getViewport({ scale: width / base.width * ratio });
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(viewport.width); canvas.height = Math.round(viewport.height);
+          canvas.style.width = width + "px"; canvas.style.height = Math.round(viewport.height / ratio) + "px";
+          pages.append(canvas);
+          await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+        }
+      }
+      (async () => {
+        try {
+          const response = await fetch(url);
+          if (!response.ok) throw new Error(response.status === 400 || response.status === 403 ? "expired" : "missing");
+          const blob = await response.blob();
+          blobUrl = URL.createObjectURL(new Blob([blob], { type: "application/pdf" }));
+          const link = document.getElementById("download");
+          link.href = blobUrl;
+          link.download = /\.pdf$/i.test(title) ? title : title + ".pdf";
+          if (!window.pdfjsLib) { pages.innerHTML = '<iframe title="PDF" style="width:100%;height:85vh;border:0;background:#fff"></iframe>'; pages.firstChild.src = blobUrl; return; }
+          pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+          doc = await pdfjsLib.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise;
+          await paint();
+        } catch (error) {
+          if (error.message === "expired") fail("Este link ya venció", "Pide un link nuevo para ver el PDF.");
+          else fail("No se pudo abrir el PDF", "Revisa tu conexión o pide un link nuevo.");
+        }
+      })();
+      document.querySelectorAll("[data-zoom]").forEach(button => button.addEventListener("click", () => {
+        if (!doc) return;
+        const steps = [0.6, 0.8, 1, 1.25, 1.5, 2];
+        const i = steps.indexOf(zoom);
+        zoom = steps[Math.min(steps.length - 1, Math.max(0, (i < 0 ? 2 : i) + Number(button.dataset.zoom)))];
+        paint();
+      }));
+      let timer = 0;
+      window.addEventListener("resize", () => { if (!doc) return; clearTimeout(timer); timer = setTimeout(paint, 200); });
+    })();
+  </script>
+</body>
+</html>

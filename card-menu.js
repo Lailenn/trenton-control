@@ -24,7 +24,7 @@
     menu.className = "df-menu card-menu-pop";
     menu.dataset.for = record.id;
     menu.setAttribute("role", "menu");
-    menu.innerHTML = [["edit", "Ver / editar detalles"], hasPdf && ["pdf", "Ver PDF"], ["delete", "Eliminar"]].filter(Boolean)
+    menu.innerHTML = [["edit", "Ver / editar detalles"], hasPdf && ["pdf", "Ver PDF"], hasPdf && ["link", "Copiar link de vista previa"], ["delete", "Eliminar"]].filter(Boolean)
       .map(([task, label]) => `<button type="button" role="menuitem" data-task="${task}" class="${task === "delete" ? "is-danger" : ""}">${label}</button>`).join("");
     document.body.append(menu);
     const box = button.getBoundingClientRect();
@@ -36,6 +36,7 @@
       close();
       if (item.dataset.task === "edit") { button.dataset.menuPass = "1"; button.click(); return; }
       if (item.dataset.task === "pdf") return info.archive()?.view?.(record);
+      if (item.dataset.task === "link") return window.ShareLink?.copy(info.kind, record);
       if (item.dataset.task === "delete") return info.archive()?.remove?.(record);
     });
     return true;

@@ -748,7 +748,7 @@ Cancelar: no se mueve.`)) return;
     if (root.PdfPreview && (file || saved?.pdfBlob || saved?.pdfPath)) {
       root.PdfPreview.show(slot, file
         ? { name: file.name, status: "Nuevo · se guarda al tocar Guardar", load: async () => file, onReplace: replace }
-        : { name: saved.pdfName || existingName || "Reporte de horas.pdf", status: "Guardado en la nube", load: () => root.CloudDB.ensureHoursPdf(saved), onReplace: replace });
+        : { name: saved.pdfName || existingName || "Reporte de horas.pdf", status: "Guardado en la nube", load: () => root.CloudDB.ensureHoursPdf(saved), onReplace: replace, onShare: () => root.ShareLink?.copy("hours", saved) });
       current?.classList.add("hidden");
       return;
     }

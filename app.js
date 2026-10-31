@@ -357,7 +357,8 @@
         name: record.pdfName || Core.fileName(record),
         status: "Guardado en la nube",
         load: () => Cloud.ensureInvoicePdf(record),
-        onReplace: () => $("#pdfFile").click()
+        onReplace: () => $("#pdfFile").click(),
+        onShare: () => window.ShareLink?.copy("invoice", record)
       });
     } else window.PdfPreview?.clear($("#invoicePdfSlot"));
     $("#recordIssuedDate").value = record ? Core.issuedDate(record) : "";

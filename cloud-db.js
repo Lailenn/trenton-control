@@ -1236,6 +1236,23 @@
     return response.blob();
   }
 
+  // Temporary public link to a stored file (anyone with the link can open it until it expires).
+  async function signedUrl(bucket, path, seconds = 30 * 24 * 3600) {
+    if (!bucket || !path) throw new Error("Este PDF todavía no está guardado en la nube.");
+    const response = await storageFetch(`sign/${bucket}/${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ expiresIn: seconds }),
+      timeoutMessage: "No se pudo crear el link."
+    });
+    if (!response.ok) throw new Error(response.status === 400 || response.status === 404 ? "Este PDF todavía no está en la nube. Ábrelo una vez con internet y vuelve a intentar." : "No se pudo crear el link.");
+    const data = await response.json();
+    const signed = data.signedURL || data.signedUrl;
+    if (!signed) throw new Error("No se pudo crear el link.");
+    const base = root.TrentonConfig.get().url.replace(/\/$/, "");
+    return /^https?:/i.test(signed) ? signed : `${base}/storage/v1${signed.startsWith("/") ? "" : "/"}${signed}`;
+  }
+
   async function storageFetch(path, options = {}) {
     const session = await requireSession();
     const config = root.TrentonConfig.get();
@@ -1481,6 +1498,7 @@
     saveMany,
     softDeleteInvoice,
     ensureInvoicePdf,
+    signedUrl,
     nextInvoiceNumber,
     listHours,
     saveHours,
