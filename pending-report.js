@@ -106,7 +106,7 @@
           : `<span class="pr-muted">No photo</span>`}</td>
       </tr>`).join("");
     panel.querySelector(".pr-body").innerHTML = `
-      <div class="pr-summary">${SUMMARY_CARDS(isInv, s).map(c => `<div class="pr-card-sum is-${c.tone}"><span class="pr-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS[c.icon]}"/></svg></span><span class="pr-lbl">${c.label}</span><strong>${c.value}</strong></div>`).join("")}</div>
+      <div class="pr-summary">${summaryHtml(isInv, s)}</div>
       <h3 class="pr-h3">${isInv ? "INVOICE DETAILS" : "REPORT DETAILS"}</h3>
       ${rows.length ? `<div class="pr-table-wrap"><table class="pr-table"><thead><tr><th>${isInv ? "Invoice" : "Report"}</th><th>Date</th><th>Job address</th><th>${isInv ? "Invoice total" : "Total"}</th><th>Balance due</th><th>Payment record</th></tr></thead><tbody>${body}</tbody></table></div>`
         : `<p class="pr-empty">No hay ${isInv ? "invoices" : "reportes de horas"} en Esperando cheque con saldo pendiente.</p>`}
@@ -143,25 +143,42 @@
   }
 
   /* ---------- summary cards (window + PDF) ---------- */
+  // tile: icon square, fg: icon/chart color, border: card edge, wash: soft corner glow.
   const TONES = {
-    orange: { bg: "#fff4ec", border: "#f7d3b8", fg: "#d9561f", label: "#9a5a33" },
-    blue: { bg: "#eef1ff", border: "#cfd6fb", fg: "#3d4fd6", label: "#4b5487" },
-    red: { bg: "#fdf0ef", border: "#f4cdca", fg: "#c0392b", label: "#8f4a44" },
-    green: { bg: "#ecf8f1", border: "#c3e8d2", fg: "#1f8a52", label: "#3f7357" }
+    orange: { tile: "#fdecdd", fg: "#d9741f", border: "#f8e3d2", wash: "#fde3cc", chart: "#f7c08a" },
+    purple: { tile: "#eeecfd", fg: "#6c5ce7", border: "#e6e3fb", wash: "#e4e0fb", chart: "#7c6cf0" },
+    plum: { tile: "#fbe9f1", fg: "#a8467e", border: "#f5dde8", wash: "#f9dbe8", chart: "#b05088" },
+    green: { tile: "#e2f6ec", fg: "#1f9d61", border: "#d8f0e3", wash: "#d4f1e2", chart: "#8fd8b2" }
   };
-  // 24 x 24 stroke icons: document, dollar coin, clock, check circle.
+  // 24 x 24 stroke icons: document, dollar sign, clock, check circle.
   const ICONS = {
-    doc: "M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h4",
-    dollar: "M12 3a9 9 0 1 1 0 18a9 9 0 1 1 0-18zM15 9.3c-.4-1.1-1.6-1.8-3-1.8-1.7 0-3 .9-3 2.2 0 2.9 6 1.6 6 4.6 0 1.3-1.3 2.2-3 2.2-1.4 0-2.6-.7-3-1.8M12 6v1.5M12 16.5V18",
+    doc: "M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 12h3M9 15.5h6M9 19h4",
+    dollar: "M16.5 7.5C15.8 6 14.1 5 12 5c-2.8 0-4.5 1.4-4.5 3.3 0 4.3 9 2.4 9 7 0 1.9-1.9 3.4-4.5 3.4-2.3 0-4.1-1-4.8-2.6M12 2.5v19",
     clock: "M12 3a9 9 0 1 1 0 18a9 9 0 1 1 0-18zM12 7v5l3.2 2",
     check: "M12 3a9 9 0 1 1 0 18a9 9 0 1 1 0-18zM8 12.4l2.7 2.7L16.2 9.6"
   };
   const SUMMARY_CARDS = (isInv, s) => [
-    { label: isInv ? "PENDING INVOICES" : "PENDING REPORTS", value: String(s.count), tone: "orange", icon: "doc" },
-    { label: "TOTAL INVOICED", value: money(s.total), tone: "blue", icon: "dollar" },
-    { label: "OUTSTANDING BALANCE", value: money(s.due), tone: "red", icon: "clock" },
-    { label: "AMOUNT PAID", value: money(s.paid), tone: "green", icon: "check" }
+    { label: isInv ? "PENDING INVOICES" : "PENDING REPORTS", value: String(s.count), caption: isInv ? "Invoices waiting for payment" : "Reports waiting for payment", tone: "orange", icon: "doc", chart: "bars" },
+    { label: "TOTAL INVOICED", value: money(s.total), caption: "Total amount invoiced", tone: "purple", icon: "dollar", chart: "line" },
+    { label: "OUTSTANDING BALANCE", value: money(s.due), caption: "Amount pending to be paid", tone: "plum", icon: "clock", chart: "line" },
+    { label: "AMOUNT PAID", value: money(s.paid), caption: "Confirmed payments", tone: "green", icon: "check", chart: "bars" }
   ];
+  // Small decorative charts, drawn in a 64 x 40 box.
+  const CHART_LINE = "M2 36C10 22 18 18 26 24S40 32 48 22 58 8 62 4";
+  const CHART_BARS = [[4, 26, 10, 14], [20, 16, 10, 24], [36, 4, 10, 36]];
+  function summaryHtml(isInv, s) {
+    return SUMMARY_CARDS(isInv, s).map(c => {
+      const t = TONES[c.tone];
+      const chart = c.chart === "bars"
+        ? CHART_BARS.map(([x, y, w, h]) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3"/>`).join("")
+        : `<path d="${CHART_LINE}" fill="none"/><circle cx="62" cy="4" r="3.2"/>`;
+      return `<div class="pr-card-sum is-${c.chart}" style="--t-tile:${t.tile};--t-fg:${t.fg};--t-border:${t.border};--t-wash:${t.wash};--t-chart:${t.chart}">
+        <span class="pr-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS[c.icon]}"/></svg></span>
+        <div class="pr-sum-text"><span class="pr-lbl">${c.label}</span><strong>${c.value}</strong><small>${c.caption}</small></div>
+        <svg class="pr-chart" viewBox="0 0 66 42" aria-hidden="true">${chart}</svg>
+      </div>`;
+    }).join("");
+  }
 
   /* ---------- PDF ---------- */
   const safe = text => String(text ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[–—]/g, "-").replace(/[^\x20-\x7E]/g, " ");
@@ -269,19 +286,28 @@
         page.drawRectangle({ x: M, y, width: RIGHT - M, height: 2.5, color: ACCENT });
         y -= 22;
 
-        // Summary cards: soft tinted card, white icon badge, colored value.
-        const gap = 12, cardW = (RIGHT - M - gap * 3) / 4, cardH = 64;
+        // Summary cards: white card, soft corner wash, tinted icon tile, small decorative chart.
+        const gap = 12, cardW = (RIGHT - M - gap * 3) / 4, cardH = 84;
         SUMMARY_CARDS(isInv, s).forEach((card, i) => {
-          const x = M + i * (cardW + gap), tone = TONES[card.tone];
-          roundRect(page, x, y, cardW, cardH, 10, { color: rgb(tone.bg), borderColor: rgb(tone.border), borderWidth: 0.8 });
-          // Icon badge: white circle with the icon drawn as strokes (24 x 24 icon scaled to 14 pt).
-          const cx = x + 25, cy = y - 24;
-          page.drawCircle({ x: cx, y: cy, size: 13, color: WHITE, borderColor: rgb(tone.border), borderWidth: 0.6 });
-          page.drawSvgPath(ICONS[card.icon], { x: cx - 7, y: cy + 7, scale: 14 / 24, borderColor: rgb(tone.fg), borderWidth: 1.6 });
-          page.drawText(card.label, { x: x + 46, y: cy - 2.8, size: 7.5, font: bold, color: rgb(tone.label) });
-          page.drawText(card.value, { x: x + 14, y: y - cardH + 11, size: 18, font: bold, color: rgb(tone.fg) });
+          const x = M + i * (cardW + gap), tone = TONES[card.tone], fg = rgb(tone.fg);
+          roundRect(page, x, y, cardW, cardH, 12, { color: WHITE, borderColor: rgb(tone.border), borderWidth: 0.8 });
+          const w = cardW, h = cardH;
+          page.drawSvgPath(`M${w * .38},${h} C${w * .62},${h - 2} ${w * .78},${h * .62} ${w},${h * .3} V${h - 12} Q${w},${h} ${w - 12},${h} Z`, { x, y, color: rgb(tone.wash), opacity: 0.55 });
+          roundRect(page, x + 12, y - 12, 30, 30, 8, { color: rgb(tone.tile) });
+          page.drawSvgPath(ICONS[card.icon], { x: x + 19, y: y - 19, scale: 16 / 24, borderColor: fg, borderWidth: 1.5 });
+          const tx = x + 52;
+          page.drawText(card.label, { x: tx, y: y - 23, size: 7, font, color: MUTED });
+          page.drawText(card.value, { x: tx, y: y - 43, size: 16, font: bold, color: INK });
+          page.drawText(card.caption, { x: tx, y: y - 58, size: 6.8, font, color: SOFT });
+          // Chart box: 30 x 19 pt in the bottom-right corner (from a 64 x 40 drawing).
+          const k = 30 / 64, cx = x + w - 40, ctop = y - 60;
+          if (card.chart === "bars") CHART_BARS.forEach(([bx, by, bw, bh]) => page.drawRectangle({ x: cx + bx * k, y: ctop - (by + bh) * k, width: bw * k, height: bh * k, color: rgb(tone.chart), opacity: 0.75 }));
+          else {
+            page.drawSvgPath(CHART_LINE, { x: cx, y: ctop, scale: k, borderColor: rgb(tone.chart), borderWidth: 1.2 });
+            page.drawCircle({ x: cx + 62 * k, y: ctop - 4 * k, size: 2, color: rgb(tone.chart) });
+          }
         });
-        y -= cardH + 24;
+        y -= cardH + 22;
         page.drawText(isInv ? "INVOICE DETAILS" : "REPORT DETAILS", { x: M, y, size: 12, font: bold, color: INK });
         y -= 12;
       }

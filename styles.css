@@ -7900,3 +7900,28 @@ body.pr-open { overflow: hidden; }
 .pr-card-sum.is-green { --pr-bg: #ecf8f1; --pr-border: #c3e8d2; --pr-fg: #1f8a52; --pr-label: #3f7357; }
 @media (max-width: 900px) { .pr-summary { grid-template-columns: 1fr 1fr; gap: 10px; } }
 @media (max-width: 760px) { .pr-summary .pr-card-sum { padding: 12px 12px 14px; gap: 8px; } .pr-card-sum .pr-ico { width: 32px; height: 32px; } .pr-card-sum .pr-lbl { font-size: 10.5px; } }
+
+/* Pending report summary v2: white card, soft corner wash, tinted icon tile, mini chart */
+.pr-summary .pr-card-sum { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 16px; min-height: 128px; padding: 20px 20px 22px; overflow: hidden; border: 1px solid var(--t-border); border-radius: 18px; background: #fff; box-shadow: 0 10px 26px rgba(40, 44, 80, .06); isolation: isolate; }
+.pr-summary .pr-card-sum::after { content: ""; position: absolute; right: -30%; bottom: -55%; z-index: -1; width: 90%; height: 120%; border-radius: 50%; background: radial-gradient(closest-side, var(--t-wash), transparent); opacity: .75; }
+.pr-summary .pr-card-sum .pr-ico { display: grid; place-items: center; width: 52px; height: 52px; border: 0; border-radius: 14px; background: var(--t-tile); color: var(--t-fg); }
+.pr-summary .pr-card-sum .pr-ico svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.pr-sum-text { display: grid; gap: 6px; min-width: 0; padding-top: 4px; }
+.pr-summary .pr-card-sum .pr-lbl { color: #6b6f85; font-size: 12.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.pr-summary .pr-card-sum strong { grid-column: auto; color: #1b2440; font-size: clamp(21px, 2.2vw, 27px); font-weight: 800; letter-spacing: -.01em; }
+.pr-sum-text small { color: #8a8ea3; font-size: 12.5px; font-weight: 500; }
+.pr-chart { position: absolute; right: 18px; bottom: 16px; width: 62px; height: 40px; overflow: visible; }
+.is-bars .pr-chart rect { fill: var(--t-chart); opacity: .7; }
+.is-line .pr-chart path { stroke: var(--t-chart); stroke-width: 2.2; stroke-linecap: round; }
+.is-line .pr-chart circle { fill: var(--t-chart); stroke: #fff; stroke-width: 1.5; }
+.pr-sum-text small { padding-right: 64px; }
+@media (max-width: 1100px) { .pr-summary .pr-card-sum { grid-template-columns: 1fr; gap: 10px; } .pr-sum-text small { padding-right: 0; } .pr-chart { width: 48px; height: 30px; right: 14px; bottom: 14px; } }
+@media (max-width: 760px) { .pr-summary .pr-card-sum { min-height: 0; padding: 14px 14px 16px; } .pr-summary .pr-card-sum .pr-ico { width: 40px; height: 40px; border-radius: 12px; } .pr-summary .pr-card-sum .pr-ico svg { width: 21px; height: 21px; } .pr-summary .pr-card-sum .pr-lbl { font-size: 10.5px; } .pr-sum-text small { font-size: 11px; padding-right: 40px; } .pr-chart { width: 36px; height: 24px; right: 10px; top: 14px; bottom: auto; } }
+/* Summary v2 spacing: narrower icon, caption stops before the chart */
+.pr-summary .pr-card-sum { gap: 14px; padding: 18px 16px 18px 18px; }
+.pr-summary .pr-card-sum .pr-ico { width: 44px; height: 44px; border-radius: 13px; }
+.pr-summary .pr-card-sum .pr-ico svg { width: 23px; height: 23px; }
+.pr-sum-text small { max-width: calc(100% - 52px); padding-right: 0; line-height: 1.35; }
+.pr-chart { width: 46px; height: 30px; right: 14px; bottom: 16px; }
+@media (max-width: 1100px) { .pr-sum-text small { max-width: none; } }
+@media (max-width: 760px) { .pr-sum-text small { max-width: none; } .pr-chart { width: 36px; height: 24px; right: 10px; top: 14px; bottom: auto; } }
