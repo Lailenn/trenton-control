@@ -275,3 +275,31 @@ body .sidebar { background: rgba(255, 255, 255, .92) !important; }
 body .mobile-dock.dock-pills .dock-track { background: rgba(255, 255, 255, .92) !important; }
 body .sidebar .nav-icon svg { width: 20px !important; height: 20px !important; stroke-width: 1.7; }
 body .sidebar .nav-icon { color: #7d859c !important; }
+
+/* Sidebar in the "Nueva invoice" blue-violet, white icons and text */
+body .sidebar {
+  background: linear-gradient(170deg, #6c7ce9 0%, #6470e2 55%, #5f62d9 100%) !important;
+  border-color: rgba(255, 255, 255, .18) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .25) inset, 0 18px 44px rgba(83, 90, 210, .32) !important;
+  color: #fff;
+}
+body .sidebar .sidebar-profile-copy strong, body .sidebar .nav-title { color: #fff !important; }
+body .sidebar .sidebar-profile-copy small, body .sidebar .nav-sub { color: rgba(255, 255, 255, .72) !important; }
+body .sidebar .nav-kicker, body .sidebar .nav-label, body .sidebar .sidebar-footer-label, body .sidebar .nav-kicker-icon, body .sidebar .nav-kicker small, body .sidebar .sidebar-motto { color: rgba(255, 255, 255, .62) !important; }
+body .sidebar .nav-kicker > i, body .sidebar .sidebar-footer { background: transparent !important; border-color: rgba(255, 255, 255, .18) !important; }
+body .sidebar .nav-kicker > i { background: rgba(255, 255, 255, .18) !important; }
+body .sidebar .nav-icon, body .sidebar .sidebar-logout svg, body .sidebar .nav-chevron { color: rgba(255, 255, 255, .78) !important; }
+body .sidebar .nav-item:hover .nav-icon, body .sidebar .sidebar-logout:hover svg { color: #fff !important; }
+body .sidebar .nav-item:hover:not(.active), body .sidebar .sidebar-logout:hover, body .sidebar .nav-item.sidebar-passkey:hover { background: rgba(255, 255, 255, .12) !important; }
+body .sidebar .nav-item.active .nav-icon, body .sidebar .nav-item.active .nav-title { color: var(--blue) !important; }
+body .sidebar .nav-item.active .nav-sub { color: #7f8de6 !important; }
+body .sidebar .nav-indicator { background: #fff; box-shadow: 0 6px 18px rgba(40, 40, 140, .25); }
+body .sidebar .nav-indicator::before { display: none; }
+body .sidebar .sidebar-sync { border-color: rgba(255, 255, 255, .2) !important; background: rgba(255, 255, 255, .12) !important; color: #fff !important; }
+body .sidebar .sidebar-sync strong { color: #fff !important; }
+body .sidebar .sidebar-sync small { color: rgba(255, 255, 255, .72) !important; }
+body .sidebar .sidebar-sync > i { border-color: #6872e3 !important; }
+body .sidebar .sidebar-avatar { border-color: rgba(255, 255, 255, .9) !important; box-shadow: 0 0 0 3px rgba(255, 255, 255, .22) !important; }
+body .sidebar .sidebar-logout, body .sidebar .nav-item.sidebar-passkey { color: #fff !important; }
+body .sidebar .sidebar-logout.js-logout, body .sidebar .sidebar-logout.js-logout svg { color: #ffd0d0 !important; }
+body .sidebar .sidebar-toggle { color: var(--blue) !important; }
