@@ -275,3 +275,148 @@ body .sidebar { background: rgba(255, 255, 255, .92) !important; }
 body .mobile-dock.dock-pills .dock-track { background: rgba(255, 255, 255, .92) !important; }
 body .sidebar .nav-icon svg { width: 20px !important; height: 20px !important; stroke-width: 1.7; }
 body .sidebar .nav-icon { color: #7d859c !important; }
+
+/* =====================================================================
+   Phase 2b: macOS-style sidebar (computer and tablet, >= 600px)
+   Attached to the window edge, icon + name always visible, translucent,
+   collapsible to icons only (body.rp-collapsed, set by nav-motion.js).
+   ===================================================================== */
+@media (min-width: 600px) {
+  body.rp-mac { --sb-w: 244px; }
+  body.rp-mac.rp-collapsed { --sb-w: 72px; }
+
+  /* Page shifts next to the sidebar */
+  body.rp-mac .app-shell .main-shell { margin-left: var(--sb-w) !important; width: calc(100% - var(--sb-w)) !important; transition: margin-left .32s var(--ease), width .32s var(--ease); }
+  body.rp-mac .main-content { padding-left: 28px !important; padding-right: 24px !important; }
+
+  /* Panel */
+  body.rp-mac .sidebar,
+  body.rp-mac.sidebar-lock .sidebar,
+  body.rp-mac .sidebar.open {
+    top: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: var(--sb-w) !important;
+    height: 100vh !important;
+    border: 0 !important;
+    border-right: 1px solid rgba(36, 42, 64, .08) !important;
+    border-radius: 0 !important;
+    background: rgba(243, 244, 249, .82) !important;
+    -webkit-backdrop-filter: blur(30px) saturate(1.8);
+    backdrop-filter: blur(30px) saturate(1.8);
+    box-shadow: none !important;
+    transition: width .32s var(--ease) !important;
+  }
+  body.rp-mac .sidebar-scrim { display: none !important; }
+
+  /* Header: avatar + name + role, toggle on the right */
+  body.rp-mac .sidebar .sidebar-head { position: relative !important; display: flex !important; justify-content: flex-start !important; padding: 20px 14px 10px 16px !important; border: 0 !important; }
+  body.rp-mac .sidebar .sidebar-profile { display: flex !important; justify-content: flex-start !important; gap: 10px !important; flex-direction: row-reverse; width: auto; padding: 0 !important; background: none !important; }
+  body.rp-mac .sidebar .sidebar-avatar { width: 34px !important; height: 34px !important; flex: none; border-width: 0 !important; box-shadow: 0 2px 6px rgba(var(--blue-rgb), .3) !important; font-size: 12px !important; }
+  body.rp-mac .sidebar .sidebar-profile-copy { display: grid !important; text-align: left; }
+  body.rp-mac .sidebar .sidebar-profile-copy strong { font-size: 13.5px !important; font-weight: 700; line-height: 1.2; }
+  body.rp-mac .sidebar .sidebar-profile-copy small { font-size: 11.5px !important; }
+  body.rp-mac .sidebar .sidebar-close { display: none !important; }
+  body.rp-mac .sidebar .sidebar-toggle {
+    position: absolute !important;
+    top: 22px !important;
+    right: 12px !important;
+    display: grid !important;
+    place-items: center;
+    width: 28px !important;
+    height: 28px !important;
+    border: 0 !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    color: #8991a8 !important;
+    box-shadow: none !important;
+    transform: rotate(180deg);
+    transition: background .18s, color .18s, transform .32s var(--ease) !important;
+  }
+  body.rp-mac .sidebar .sidebar-toggle:hover { background: rgba(36, 42, 64, .07) !important; color: var(--ink) !important; }
+
+  /* Sync status: one quiet line */
+  body.rp-mac .sidebar .sidebar-sync { margin: 2px 12px 6px !important; padding: 7px 10px !important; gap: 8px !important; justify-content: flex-start !important; border: 0 !important; border-radius: 8px !important; background: rgba(36, 42, 64, .04) !important; }
+  body.rp-mac .sidebar .sidebar-sync svg { width: 15px; height: 15px; }
+  body.rp-mac .sidebar .sidebar-sync > i { top: 6px !important; left: 20px !important; width: 7px; height: 7px; border-color: #f3f4f9 !important; }
+  body.rp-mac .sidebar .sidebar-sync-copy { display: grid !important; }
+  body.rp-mac .sidebar .sidebar-sync-copy strong { font-size: 12px !important; font-weight: 600 !important; }
+  body.rp-mac .sidebar .sidebar-sync-copy small { display: none !important; }
+
+  /* Sections */
+  body.rp-mac .sidebar .sidebar-scroll { padding: 4px 10px 8px !important; overflow-x: hidden; }
+  body.rp-mac .sidebar .nav-kicker { display: flex !important; justify-content: flex-start !important; margin: 14px 0 4px !important; padding: 0 10px !important; min-height: 0 !important; background: none !important; }
+  body.rp-mac .sidebar .nav-kicker-icon, body.rp-mac .sidebar .nav-kicker > i, body.rp-mac .sidebar .nav-kicker small { display: none !important; }
+  body.rp-mac .sidebar .nav-label, body.rp-mac .sidebar .nav-kicker .nav-label, body.rp-mac .sidebar .sidebar-footer-label {
+    width: auto !important;
+    padding: 0 !important;
+    color: #9aa0b4 !important;
+    font: 700 11px/1.2 "Plus Jakarta Sans", system-ui, sans-serif !important;
+    letter-spacing: .02em !important;
+    text-align: left !important;
+    text-transform: none !important;
+  }
+  body.rp-mac .sidebar .main-nav { gap: 1px !important; }
+
+  /* Items: icon + name, compact rows */
+  body.rp-mac .sidebar .nav-item,
+  body.rp-mac .sidebar .nav-item.active,
+  body.rp-mac .sidebar .nav-item.active:hover,
+  body.rp-mac .sidebar .nav-item.sidebar-passkey.js-register-passkey,
+  body.rp-mac .sidebar .sidebar-logout {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+    width: 100% !important;
+    min-height: 34px !important;
+    margin: 0 !important;
+    padding: 0 10px !important;
+    border-radius: 8px !important;
+    font-size: 13.5px !important;
+  }
+  body.rp-mac .sidebar .nav-icon { display: grid !important; place-items: center; width: 20px !important; height: 20px !important; min-width: 20px !important; padding: 0 !important; border-radius: 0 !important; }
+  body.rp-mac .sidebar .nav-icon svg { width: 18px !important; height: 18px !important; }
+  body.rp-mac .sidebar .nav-copy { display: flex !important; min-width: 0; }
+  body.rp-mac .sidebar .nav-title { overflow: hidden; color: #343a52 !important; font: 500 13.5px/1.2 "Plus Jakarta Sans", system-ui, sans-serif !important; white-space: nowrap; text-overflow: ellipsis; }
+  body.rp-mac .sidebar .nav-sub, body.rp-mac .sidebar .nav-chevron, body.rp-mac .sidebar .sidebar-motto { display: none !important; }
+  body.rp-mac .sidebar .nav-item:hover:not(.active), body.rp-mac .sidebar .sidebar-logout:hover { background: rgba(36, 42, 64, .05) !important; }
+  body.rp-mac .sidebar .nav-item:hover .nav-icon { transform: none; }
+  body.rp-mac .sidebar .nav-item.active .nav-title { color: var(--blue) !important; font-weight: 600 !important; }
+  body.rp-mac .sidebar .nav-item.active .nav-icon { color: var(--blue) !important; }
+
+  /* Selection pill: macOS-style soft tinted rectangle */
+  body.rp-mac .nav-indicator { border-radius: 8px; background: rgba(var(--blue-rgb), .12); box-shadow: none; }
+  body.rp-mac .nav-indicator::before { display: none; }
+
+  /* Footer */
+  body.rp-mac .sidebar .sidebar-footer { margin: 0 10px !important; padding: 8px 0 14px !important; border-top: 1px solid rgba(36, 42, 64, .07) !important; }
+  body.rp-mac .sidebar .sidebar-footer-label { display: block; margin: 6px 10px 4px; }
+
+  /* Collapsed: icons only, centered */
+  body.rp-mac.rp-collapsed .sidebar .sidebar-toggle { position: static !important; margin: 10px auto 0; transform: none; }
+  body.rp-mac.rp-collapsed .sidebar .sidebar-head { flex-direction: column; align-items: center; padding: 18px 0 6px !important; }
+  body.rp-mac.rp-collapsed .sidebar .sidebar-profile-copy,
+  body.rp-mac.rp-collapsed .sidebar .nav-copy,
+  body.rp-mac.rp-collapsed .sidebar .sidebar-sync-copy,
+  body.rp-mac.rp-collapsed .sidebar .nav-label,
+  body.rp-mac.rp-collapsed .sidebar .sidebar-footer-label { display: none !important; }
+  body.rp-mac.rp-collapsed .sidebar .nav-kicker { justify-content: center !important; margin: 10px 0 6px !important; padding: 0 !important; }
+  body.rp-mac.rp-collapsed .sidebar .nav-kicker::after { content: ""; width: 24px; height: 1px; background: rgba(36, 42, 64, .1); }
+  body.rp-mac.rp-collapsed .sidebar .sidebar-sync { justify-content: center !important; margin-inline: 12px !important; padding: 7px 0 !important; }
+  body.rp-mac.rp-collapsed .sidebar .sidebar-sync > i { left: calc(50% + 2px) !important; }
+  body.rp-mac.rp-collapsed .sidebar .nav-item,
+  body.rp-mac.rp-collapsed .sidebar .nav-item.active,
+  body.rp-mac.rp-collapsed .sidebar .sidebar-logout { justify-content: center !important; min-height: 40px !important; padding: 0 !important; }
+}
+@media (min-width: 600px) and (prefers-reduced-motion: reduce) {
+  body.rp-mac .sidebar, body.rp-mac .app-shell .main-shell { transition: none !important; }
+}
+@media (min-width: 600px) {
+  body.rp-mac .sidebar .sidebar-footer { padding-inline: 0 !important; }
+  body.rp-mac .sidebar .sidebar-logout { color: #343a52 !important; font: 500 13.5px/1.2 "Plus Jakarta Sans", system-ui, sans-serif !important; }
+  body.rp-mac .sidebar .sidebar-logout svg { width: 18px !important; height: 18px !important; padding: 0 !important; margin: 0 1px !important; border-radius: 0 !important; }
+  body.rp-mac .sidebar .sidebar-logout.js-logout { color: #d0605c !important; }
+  body.rp-mac.rp-collapsed .sidebar .sidebar-logout { font-size: 0 !important; }
+  body.rp-mac.rp-collapsed .sidebar .sidebar-footer { margin: 0 10px !important; }
+}
