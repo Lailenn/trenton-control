@@ -514,3 +514,33 @@ html.boot-leaving .boot-screen { pointer-events: none; animation: bootOut .5s va
   .pr-summary.is-animating .pr-card-sum, .pr-card-sum.is-redraw .pr-chart * { animation: none !important; }
   .pending-report .pr-summary .pr-card-sum:hover .pr-ico { transform: none !important; }
 }
+
+/* Pending report summary: lighter colors and real indicators (dots, bars) */
+.pending-report .pr-summary .pr-card-sum { background: linear-gradient(160deg, #fff 45%, color-mix(in srgb, var(--t-tile) 55%, #fff) 100%) !important; }
+.pending-report .pr-summary .pr-card-sum .pr-ico { background: var(--t-tile) !important; color: var(--t-fg) !important; }
+.pending-report .pr-summary .pr-card-sum strong { color: #2c3350 !important; }
+.pending-report .pr-summary .pr-card-sum .pr-lbl { color: #5d6580 !important; }
+.pending-report .pr-sum-text small { padding-right: 0 !important; color: #9aa1b5 !important; }
+.pr-meter { grid-column: 1 / -1; grid-row: 4; margin-top: 12px; }
+.pr-meter .pr-track { display: flex; height: 6px; overflow: hidden; border-radius: 999px; background: var(--t-track); }
+.pr-meter .pr-track i { display: block; width: var(--w); height: 100%; border-radius: 999px; background: var(--t-bar); transform-origin: left; }
+.pr-meter.is-split .pr-track { gap: 2px; background: transparent; }
+.pr-meter.is-split .pr-paid { background: #7cd3a2; }
+.pr-meter.is-split .pr-due { background: #f6b3c0; }
+.pr-meter span { display: block; margin-top: 6px; color: #9aa1b5; font-size: 11.5px; font-weight: 600; }
+.pr-meter.is-dots { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 26px; }
+.pr-meter.is-dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--t-bar); }
+.pr-meter.is-dots em { color: #9aa1b5; font-size: 11.5px; font-style: normal; font-weight: 700; }
+/* Indicators fill in when the cards appear and again on hover */
+.pr-summary.is-animating .pr-meter .pr-track i, .pr-card-sum.is-redraw .pr-meter .pr-track i { animation: prFill .9s .3s cubic-bezier(.2, .8, .2, 1) both; }
+.pr-summary.is-animating .pr-meter.is-dots i, .pr-card-sum.is-redraw .pr-meter.is-dots i { animation: prDot .4s calc(.25s + var(--i) * .05s) var(--ease-spring) both; }
+@keyframes prFill { from { transform: scaleX(0); } }
+@keyframes prDot { from { transform: scale(0); opacity: 0; } }
+@media (max-width: 760px) { .pr-meter span { font-size: 10.5px; } }
+@media (prefers-reduced-motion: reduce) { .pr-meter i { animation: none !important; } }
+.pending-report .pr-summary .pr-meter { display: block; padding: 0; gap: 0; }
+.pending-report .pr-summary .pr-meter.is-dots { display: flex; }
+.pending-report .pr-summary .pr-meter .pr-track { display: flex; gap: 0; padding: 0; }
+.pending-report .pr-summary .pr-meter.is-split .pr-track { gap: 2px; }
+.pending-report .pr-summary .pr-meter span { padding: 0; color: #9aa1b5; font-size: 11.5px; font-weight: 600; letter-spacing: 0; text-transform: none; }
+.pending-report .pr-summary .pr-meter.is-dots { gap: 6px; }

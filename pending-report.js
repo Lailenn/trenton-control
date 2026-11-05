@@ -339,11 +339,12 @@
 
   /* ---------- summary cards (window + PDF) ---------- */
   // tile: icon square, fg: icon/chart color, border: card edge, wash: soft corner glow.
+  // tile: icon square, fg: icon color, bar: meter fill, track: meter background.
   const TONES = {
-    orange: { tile: "#fdecdd", fg: "#d9741f", border: "#f8e3d2", wash: "#fde3cc", chart: "#f7c08a" },
-    purple: { tile: "#e5f1ff", fg: "#007aff", border: "#d6e8ff", wash: "#d9eaff", chart: "#3d97ff" },
-    plum: { tile: "#fbe9f1", fg: "#a8467e", border: "#f5dde8", wash: "#f9dbe8", chart: "#b05088" },
-    green: { tile: "#e2f6ec", fg: "#1f9d61", border: "#d8f0e3", wash: "#d4f1e2", chart: "#8fd8b2" }
+    orange: { tile: "#fff3e6", fg: "#f0a04b", border: "#fbe9d6", wash: "#fff0e0", bar: "#f7b76f", track: "#fdeedd" },
+    purple: { tile: "#eaf4ff", fg: "#3d97ff", border: "#dcebff", wash: "#e3f0ff", bar: "#62b581", track: "#fbe1e7" },
+    plum: { tile: "#fdecf0", fg: "#ea7a92", border: "#fadde4", wash: "#fde6eb", bar: "#f29aac", track: "#fdecef" },
+    green: { tile: "#e8f8ef", fg: "#4cbf7f", border: "#d9f1e3", wash: "#e1f5ea", bar: "#7cd3a2", track: "#e6f6ed" }
   };
   // 24 x 24 stroke icons: document, dollar sign, clock, check circle.
   const ICONS = {
@@ -352,25 +353,38 @@
     clock: "M12 3a9 9 0 1 1 0 18a9 9 0 1 1 0-18zM12 7v5l3.2 2",
     check: "M12 3a9 9 0 1 1 0 18a9 9 0 1 1 0-18zM8 12.4l2.7 2.7L16.2 9.6"
   };
-  const SUMMARY_CARDS = (isInv, s) => [
-    { label: isInv ? "PENDING INVOICES" : "PENDING REPORTS", value: String(s.count), caption: isInv ? "Invoices waiting for payment" : "Reports waiting for payment", tone: "orange", icon: "doc", chart: "bars" },
-    { label: "TOTAL INVOICED", value: money(s.total), caption: "Total amount invoiced", tone: "purple", icon: "dollar", chart: "line" },
-    { label: "OUTSTANDING BALANCE", value: money(s.due), caption: "Amount pending to be paid", tone: "plum", icon: "clock", chart: "line" },
-    { label: "AMOUNT PAID", value: money(s.paid), caption: s.paid > 0 ? "Confirmed payments" : "No payments yet", tone: "green", icon: "check", chart: "bars", empty: !(s.paid > 0) }
-  ];
-  // Small decorative charts, drawn in a 64 x 40 box.
-  const CHART_LINE = "M2 36C10 22 18 18 26 24S40 32 48 22 58 8 62 4";
-  const CHART_BARS = [[4, 26, 10, 14], [20, 16, 10, 24], [36, 4, 10, 36]];
+  const pct = (part, whole) => whole > 0 ? Math.round(part / whole * 100) : 0;
+  // Each card carries a small indicator built from the real numbers.
+  const SUMMARY_CARDS = (isInv, s) => {
+    const paidShare = s.total > 0 ? s.paid / s.total : 0, dueShare = s.total > 0 ? s.due / s.total : 0;
+    return [
+      { label: isInv ? "PENDING INVOICES" : "PENDING REPORTS", value: String(s.count), caption: isInv ? "Invoices waiting for payment" : "Reports waiting for payment", tone: "orange", icon: "doc",
+        meter: { kind: "dots", count: s.count } },
+      { label: "TOTAL INVOICED", value: money(s.total), caption: "Total amount invoiced", tone: "purple", icon: "dollar",
+        meter: { kind: "split", paid: paidShare, text: `${pct(s.paid, s.total)}% collected · ${pct(s.due, s.total)}% due` } },
+      { label: "OUTSTANDING BALANCE", value: money(s.due), caption: "Amount pending to be paid", tone: "plum", icon: "clock",
+        meter: { kind: "bar", value: dueShare, text: `${pct(s.due, s.total)}% still due` } },
+      { label: "AMOUNT PAID", value: money(s.paid), caption: s.paid > 0 ? "Confirmed payments" : "No payments yet", tone: "green", icon: "check", empty: !(s.paid > 0),
+        meter: { kind: "bar", value: paidShare, text: `${pct(s.paid, s.total)}% collected` } }
+    ];
+  };
+  function meterHtml(m) {
+    if (m.kind === "dots") {
+      const shown = Math.min(m.count, 10);
+      return `<div class="pr-meter is-dots" aria-hidden="true">${Array.from({ length: shown }, (_, i) => `<i style="--i:${i}"></i>`).join("")}${m.count > shown ? `<em>+${m.count - shown}</em>` : ""}</div>`;
+    }
+    if (m.kind === "split") {
+      return `<div class="pr-meter is-split" aria-hidden="true"><div class="pr-track"><i class="pr-paid" style="--w:${(m.paid * 100).toFixed(1)}%"></i><i class="pr-due" style="--w:${(100 - m.paid * 100).toFixed(1)}%"></i></div><span>${m.text}</span></div>`;
+    }
+    return `<div class="pr-meter is-bar" aria-hidden="true"><div class="pr-track"><i style="--w:${(m.value * 100).toFixed(1)}%"></i></div><span>${m.text}</span></div>`;
+  }
   function summaryHtml(isInv, s) {
     return SUMMARY_CARDS(isInv, s).map(c => {
       const t = TONES[c.tone];
-      const chart = c.chart === "bars"
-        ? CHART_BARS.map(([x, y, w, h]) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3"/>`).join("")
-        : `<path d="${CHART_LINE}" fill="none"/><circle cx="62" cy="4" r="3.2"/>`;
-      return `<div class="pr-card-sum is-${c.chart}${c.empty ? " is-empty" : ""}" style="--t-tile:${t.tile};--t-fg:${t.fg};--t-border:${t.border};--t-wash:${t.wash};--t-chart:${t.chart}">
+      return `<div class="pr-card-sum${c.empty ? " is-empty" : ""}" style="--t-tile:${t.tile};--t-fg:${t.fg};--t-border:${t.border};--t-wash:${t.wash};--t-bar:${t.bar};--t-track:${t.track}">
         <span class="pr-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS[c.icon]}"/></svg></span>
         <div class="pr-sum-text"><span class="pr-lbl">${c.label.toLowerCase().replace(/(^|\s)\w/g, m => m.toUpperCase())}</span><strong>${c.value}</strong><small>${c.caption}</small></div>
-        <svg class="pr-chart" viewBox="0 0 66 42" aria-hidden="true">${chart}</svg>
+        ${meterHtml(c.meter)}
       </div>`;
     }).join("");
   }
@@ -481,8 +495,8 @@
         page.drawRectangle({ x: M, y, width: RIGHT - M, height: 2.5, color: ACCENT });
         y -= 22;
 
-        // Summary cards: white card, soft corner wash, tinted icon tile, small decorative chart.
-        const gap = 12, cardW = (RIGHT - M - gap * 3) / 4, cardH = 84;
+        // Summary cards: white card, soft corner wash, tinted icon tile, indicator from the real numbers.
+        const gap = 12, cardW = (RIGHT - M - gap * 3) / 4, cardH = 90;
         SUMMARY_CARDS(isInv, s).forEach((card, i) => {
           const x = M + i * (cardW + gap), tone = TONES[card.tone], fg = rgb(tone.fg);
           roundRect(page, x, y, cardW, cardH, 12, { color: WHITE, borderColor: rgb(tone.border), borderWidth: 0.8 });
@@ -494,12 +508,15 @@
           page.drawText(card.label, { x: tx, y: y - 23, size: 7, font, color: MUTED });
           page.drawText(card.value, { x: tx, y: y - 43, size: 16, font: bold, color: INK });
           page.drawText(card.caption, { x: tx, y: y - 58, size: 6.8, font, color: SOFT });
-          // Chart box: 30 x 19 pt in the bottom-right corner (from a 64 x 40 drawing).
-          const k = 30 / 64, cx = x + w - 40, ctop = y - 60;
-          if (card.chart === "bars") CHART_BARS.forEach(([bx, by, bw, bh]) => page.drawRectangle({ x: cx + bx * k, y: ctop - (by + bh) * k, width: bw * k, height: bh * k, color: rgb(tone.chart), opacity: 0.75 }));
-          else {
-            page.drawSvgPath(CHART_LINE, { x: cx, y: ctop, scale: k, borderColor: rgb(tone.chart), borderWidth: 1.2 });
-            page.drawCircle({ x: cx + 62 * k, y: ctop - 4 * k, size: 2, color: rgb(tone.chart) });
+          // Indicator from the real numbers along the bottom of the card.
+          const m = card.meter, bx = tx, by = y - 72, bw = w - (tx - x) - 14;
+          if (m.kind === "dots") {
+            for (let d = 0; d < Math.min(m.count, 10); d++) page.drawCircle({ x: bx + 3 + d * 9, y: by + 2, size: 2.8, color: rgb(tone.bar) });
+          } else {
+            roundRect(page, bx, by + 4, bw, 4, 2, { color: rgb(tone.track) });
+            const share = m.kind === "split" ? m.paid : m.value;
+            if (share > 0) roundRect(page, bx, by + 4, Math.max(4, bw * share), 4, 2, { color: rgb(tone.bar) });
+            page.drawText(safe(m.text), { x: bx, y: by - 6, size: 6, font, color: SOFT });
           }
         });
         y -= cardH + 22;
