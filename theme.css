@@ -135,3 +135,143 @@ input[aria-invalid="true"], textarea[aria-invalid="true"], select[aria-invalid="
   .button, .toast, .field input, .field textarea, .field select { transition: none !important; }
   .field.is-invalid, .form-error:not(:empty) { animation: none !important; }
 }
+
+/* =====================================================================
+   Phase 2: sidebar and phone dock — light glass, animated active indicator
+   ===================================================================== */
+body .sidebar {
+  --sb-bg: rgba(255, 255, 255, .82);
+  --sb-text: var(--ink);
+  --sb-dim: var(--muted);
+  --sb-line: rgba(36, 42, 64, .07);
+  --sb-chip: transparent;
+  --sb-active: var(--blue-soft);
+  background: rgba(255, 255, 255, .82) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.6);
+  backdrop-filter: blur(22px) saturate(1.6);
+  border: 1px solid rgba(255, 255, 255, .9) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .9) inset, 0 2px 8px rgba(36, 42, 64, .04), 0 18px 48px rgba(36, 42, 64, .10) !important;
+  color: var(--ink);
+}
+body .sidebar::before, body .sidebar::after { display: none !important; }
+
+/* Profile + sync */
+body .sidebar .sidebar-avatar { border: 2px solid #fff !important; background: linear-gradient(135deg, #6a7ef0, var(--blue)) !important; box-shadow: 0 0 0 3px rgba(var(--blue-rgb), .16), 0 6px 14px rgba(var(--blue-rgb), .25) !important; color: #fff; }
+body .sidebar .sidebar-profile-copy strong { color: var(--ink) !important; }
+body .sidebar .sidebar-profile-copy small { color: var(--muted) !important; }
+body .sidebar .sidebar-sync { border: 1px solid var(--line) !important; background: #f7f8fc !important; color: #4a5270 !important; }
+body .sidebar .sidebar-sync strong { color: var(--ink) !important; }
+body .sidebar .sidebar-sync small { color: var(--muted) !important; }
+body .sidebar .sidebar-toggle { background: #fff !important; color: var(--ink) !important; border: 1px solid var(--line) !important; box-shadow: 0 4px 14px rgba(36, 42, 64, .14) !important; transition: transform var(--dur) var(--ease-spring), box-shadow var(--dur) var(--ease) !important; }
+body .sidebar .sidebar-toggle:hover { box-shadow: 0 6px 18px rgba(var(--blue-rgb), .25) !important; color: var(--blue) !important; }
+
+/* Section labels */
+body .sidebar .nav-kicker, body .sidebar .nav-label, body .sidebar .sidebar-footer-label { color: #a3a9bd !important; }
+body .sidebar .nav-kicker > i { background: var(--line) !important; }
+body .sidebar .nav-kicker small { color: #b3b8c9 !important; }
+body .sidebar .nav-kicker-icon { color: #a3a9bd !important; background: transparent !important; }
+
+/* Items */
+body .sidebar .sidebar-scroll { position: relative; }
+body .sidebar .nav-item,
+body .sidebar .nav-item.active,
+body .sidebar .nav-item.active:hover {
+  position: relative;
+  z-index: 1;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 14px !important;
+  color: #4a5270;
+  transition: color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+}
+body .sidebar .nav-item:hover:not(.active) { background: rgba(36, 42, 64, .04) !important; }
+body .sidebar .nav-icon,
+body .sidebar .sidebar-logout svg {
+  background: transparent !important;
+  color: #8991a8 !important;
+  box-shadow: none !important;
+  transition: color var(--dur-fast) var(--ease), transform var(--dur) var(--ease-spring) !important;
+}
+body .sidebar .nav-item:hover .nav-icon,
+body .sidebar .sidebar-logout:hover svg { color: var(--ink) !important; transform: scale(1.08); }
+body .sidebar .nav-item.active .nav-icon { background: transparent !important; color: var(--blue) !important; }
+body .sidebar .nav-title { color: var(--ink) !important; font-weight: 600; }
+body .sidebar .nav-sub { color: var(--muted) !important; }
+body .sidebar .nav-item.active .nav-title { color: var(--blue) !important; font-weight: 700; }
+body .sidebar .nav-item.active .nav-sub { color: #7f8de6 !important; }
+body .sidebar .nav-chevron, body .sidebar .nav-item.active .nav-chevron { color: #c3c8d8 !important; }
+body .sidebar .nav-item::before, body .sidebar .nav-item::after, body .sidebar .nav-item.active::before, body .sidebar .nav-item.active::after { display: none !important; }
+body .sidebar .sidebar-logout, body .sidebar .nav-item.sidebar-passkey { color: #4a5270 !important; background: transparent !important; }
+body .sidebar .sidebar-logout:hover, body .sidebar .nav-item.sidebar-passkey:hover { background: rgba(36, 42, 64, .04) !important; }
+body .sidebar .sidebar-logout.js-logout, body .sidebar .sidebar-logout.js-logout svg { color: #d0605c !important; }
+body .sidebar .sidebar-footer { border-color: var(--line) !important; background: transparent !important; }
+body .sidebar .sidebar-motto { color: #b3b8c9 !important; }
+
+/* Animated active indicator (positioned by nav-motion.js) */
+.nav-indicator {
+  position: absolute;
+  z-index: 0;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #eef1ff, var(--blue-soft));
+  box-shadow: inset 0 0 0 1px rgba(var(--blue-rgb), .14), 0 6px 16px rgba(var(--blue-rgb), .12);
+  pointer-events: none;
+  opacity: 0;
+  transition: transform .42s var(--ease-spring), width .3s var(--ease), height .3s var(--ease), opacity .2s ease;
+}
+.nav-indicator.is-ready { opacity: 1; }
+.nav-indicator::before { content: ""; position: absolute; left: -1px; top: 50%; width: 3px; height: 18px; margin-top: -9px; border-radius: 3px; background: var(--blue); }
+
+/* Rail width animation (expand / collapse) */
+@media (min-width: 600px) {
+  body .sidebar { transition: width .34s var(--ease) !important; }
+  body .sidebar .nav-copy, body .sidebar .sidebar-profile-copy, body .sidebar .sidebar-sync-copy { animation: rpFadeIn .26s var(--ease) both; }
+}
+@keyframes rpFadeIn { from { opacity: 0; transform: translateX(-4px); } }
+.sidebar-scrim.visible { background: rgba(36, 42, 64, .18) !important; -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+
+/* Phone dock: light glass bar, sliding pill */
+body .mobile-dock.dock-pills .dock-track {
+  position: relative;
+  background: rgba(255, 255, 255, .86) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.6);
+  backdrop-filter: blur(22px) saturate(1.6);
+  border: 1px solid rgba(255, 255, 255, .95) !important;
+  box-shadow: 0 2px 8px rgba(36, 42, 64, .06), 0 14px 34px rgba(36, 42, 64, .14) !important;
+}
+body .mobile-dock.dock-pills .dock-item { position: relative; z-index: 1; color: #8991a8 !important; background: transparent !important; box-shadow: none !important; transition: color var(--dur-fast) var(--ease); }
+body .mobile-dock.dock-pills .dock-item svg { transition: transform var(--dur) var(--ease-spring); }
+body .mobile-dock.dock-pills .dock-item:active svg { transform: scale(.88); }
+body .mobile-dock.dock-pills .dock-item.is-active { color: #fff !important; background: transparent !important; }
+body .mobile-dock.dock-pills .dock-item.is-active svg { transform: translateY(-1px); }
+body .mobile-dock.dock-pills .dock-item::before, body .mobile-dock.dock-pills .dock-item::after { display: none !important; }
+.dock-indicator {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #6a7ef0, var(--blue));
+  box-shadow: 0 8px 18px rgba(var(--blue-rgb), .35);
+  pointer-events: none;
+  opacity: 0;
+  transition: transform .42s var(--ease-spring), width .3s var(--ease), opacity .2s ease;
+}
+.dock-indicator.is-ready { opacity: 1; }
+body .mobile-dock .dock-avatar { background: linear-gradient(135deg, #6a7ef0, var(--blue)) !important; border: 3px solid #fff !important; box-shadow: 0 8px 20px rgba(var(--blue-rgb), .32) !important; color: #fff !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-indicator, .dock-indicator, body .sidebar, body .sidebar .nav-icon { transition: none !important; }
+  body .sidebar .nav-copy, body .sidebar .sidebar-profile-copy, body .sidebar .sidebar-sync-copy { animation: none !important; }
+}
+
+/* Phase 2 tweaks: denser glass, clearer icons */
+body .sidebar { background: rgba(255, 255, 255, .92) !important; }
+body .mobile-dock.dock-pills .dock-track { background: rgba(255, 255, 255, .92) !important; }
+body .sidebar .nav-icon svg { width: 20px !important; height: 20px !important; stroke-width: 1.7; }
+body .sidebar .nav-icon { color: #7d859c !important; }
