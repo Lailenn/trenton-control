@@ -123,6 +123,17 @@
     </section>`;
     document.body.append(panel);
     panel.addEventListener("click", onClick);
+    // Hovering a summary card redraws its little chart.
+    let hovered = null;
+    panel.addEventListener("pointerover", event => {
+      const card = event.target.closest(".pr-card-sum");
+      if (card === hovered) return;
+      hovered = card;
+      if (!card || event.pointerType === "touch") return;
+      card.classList.remove("is-redraw");
+      void card.offsetWidth;
+      card.classList.add("is-redraw");
+    });
     panel.addEventListener("input", event => {
       if (!event.target.matches(".pr-search input")) return;
       view.q = event.target.value;
