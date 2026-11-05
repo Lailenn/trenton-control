@@ -47,6 +47,34 @@
   const photoText = n => n ? `${n} check${n === 1 ? "" : "s"}` : "No photo";
 
   /* ---------- window ---------- */
+  const UI = {
+    doc: "M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 12h3M9 15.5h6M9 19h4",
+    clock: "M12 3a9 9 0 1 1 0 18a9 9 0 1 1 0-18zM12 7v5l3.2 2",
+    send: "M21 3 10 14M21 3l-7 18-4-7-7-4z",
+    download: "M12 4v11M7 10l5 5 5-5M5 20h14",
+    link: "M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.1 1.1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.1-1.1",
+    clipboard: "M9 3h6v4H9zM9 5H6.5A1.5 1.5 0 0 0 5 6.5v13A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-13A1.5 1.5 0 0 0 17.5 5H15M8.5 11.5h7M8.5 15h5",
+    search: "M11 4a7 7 0 1 1 0 14 7 7 0 0 1 0-14zM20 20l-4-4",
+    filter: "M3.5 5h17l-6.5 7.5V19l-4 2v-8.5z",
+    chevron: "M6 9l6 6 6-6",
+    sort: "M8 9.5l4-4 4 4M8 14.5l4 4 4-4",
+    calendar: "M4.5 6h15v14h-15zM4.5 10h15M8.5 3.5v4M15.5 3.5v4",
+    pin: "M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",
+    image: "M4.5 5h15v14h-15zM4.5 16l4.5-4.5 4 4 2.5-2.5 4 4M15.2 9.3h.01",
+    eye: "M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
+    external: "M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5",
+    close: "M6 6l12 12M18 6 6 18"
+  };
+  const icon = (name, cls = "") => `<svg class="pr-i ${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${UI[name]}"/></svg>`;
+  const DOTS = `<svg class="pr-i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>`;
+  // Search, filter and sort of the details table (per open window).
+  const view = { q: "", filter: "all", sort: { key: "", dir: 1 } };
+  const FILTERS = [["all", "All"], ["photo", "With check photo"], ["nophoto", "No photo"]];
+  const SORTS = { label: r => String(r.label), date: r => r.date || "", total: r => r.total, due: r => r.due };
+  const tabTitle = which => which === "invoice" ? "Pending Invoices Report" : which === "job" ? "Pending Reports Report" : "Pending Hours Report";
+  const noun = which => which === "invoice" ? "invoices" : "reports";
+  const sentLabel = () => window.CompanyApp?.isOtras?.() ? "Sent to client" : "Sent to Trenton";
+
   let panel = null, thumbUrls = [];
   function build() {
     panel = document.createElement("div");
@@ -56,67 +84,139 @@
     panel.setAttribute("aria-modal", "true");
     panel.setAttribute("aria-labelledby", "pendingReportTitle");
     panel.innerHTML = `<section class="pr-card">
-      <header class="pr-head">
-        <div><img class="pr-logo" src="assets/logo-ruben-clear.png" alt="Ruben Perla"><h2 id="pendingReportTitle">PENDING INVOICES REPORT</h2><p class="pr-sub">Summary of invoices awaiting payment by check · All amounts in USD</p></div>
-        <button type="button" class="pr-close" aria-label="Cerrar">×</button>
-      </header>
-      <div class="pr-bar">
-        <div class="pr-tabs" role="tablist"><button type="button" role="tab" data-pr-tab="invoice">Invoices</button><button type="button" role="tab" data-pr-tab="hours">Horas</button><button type="button" role="tab" data-pr-tab="job">Enviados a Trenton</button></div>
-        <div class="pr-actions"><button type="button" class="pr-btn" data-pr-act="pdf">Descargar PDF</button><button type="button" class="pr-btn is-primary" data-pr-act="link">Copiar link del reporte</button></div>
+      <div class="pr-scroll">
+        <header class="pr-brand">
+          <img class="pr-logo" src="assets/logo-ruben-clear.png" alt="">
+          <div class="pr-brand-text"><strong>Ruben Perla</strong><span>Invoice Control</span></div>
+          <button type="button" class="pr-close" aria-label="Cerrar">${icon("close")}</button>
+        </header>
+        <div class="pr-titlebar">
+          <span class="pr-title-ico">${icon("doc")}</span>
+          <div><h2 id="pendingReportTitle">Pending Invoices Report</h2><p class="pr-sub">Summary of invoices awaiting payment by check · All amounts in USD</p></div>
+        </div>
+        <div class="pr-bar">
+          <div class="pr-tabs" role="tablist">
+            <button type="button" role="tab" data-pr-tab="invoice">${icon("doc")}<span>Invoices</span></button>
+            <button type="button" role="tab" data-pr-tab="hours">${icon("clock")}<span>Hours</span></button>
+            <button type="button" role="tab" data-pr-tab="job">${icon("send")}<span class="pr-sent">Sent to Trenton</span></button>
+          </div>
+          <div class="pr-actions">
+            <button type="button" class="pr-btn" data-pr-act="pdf">${icon("download")}<span>Download PDF</span></button>
+            <button type="button" class="pr-btn is-primary" data-pr-act="link">${icon("link")}<span>Copy report link</span></button>
+          </div>
+        </div>
+        <div class="pr-body"></div>
       </div>
-      <div class="pr-body"></div>
     </section>`;
     document.body.append(panel);
     panel.addEventListener("click", onClick);
+    panel.addEventListener("input", event => {
+      if (!event.target.matches(".pr-search input")) return;
+      view.q = event.target.value;
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => renderTable(true), 120);
+    });
+    document.addEventListener("click", event => { if (!event.target.closest?.(".pr-pop, [data-pr-filters], [data-pr-more]")) closePops(); });
     document.addEventListener("keydown", event => {
       // The PDF and check viewers sit above this window and close first.
-      if (event.key === "Escape" && !panel.hidden && !document.querySelector(".check-viewer:not([hidden]), .pdf-viewer:not([hidden]), dialog[open]")) close();
+      if (event.key !== "Escape" || panel.hidden) return;
+      if (document.querySelector(".pr-pop")) return closePops();
+      if (!document.querySelector(".check-viewer:not([hidden]), .pdf-viewer:not([hidden]), dialog[open]")) close();
     });
   }
+  let searchTimer = 0;
   function open(which) {
     if (!panel) build();
-    if (which) tab = which;
+    if (which && which !== tab) { tab = which; resetView(); }
     panel.hidden = false;
     document.body.classList.add("pr-open");
     render();
   }
   function close() {
     if (!panel) return;
+    closePops();
     panel.hidden = true;
     document.body.classList.remove("pr-open");
     thumbUrls.splice(0).forEach(url => URL.revokeObjectURL(url));
   }
+  function resetView() { view.q = ""; view.filter = "all"; view.sort = { key: "", dir: 1 }; }
+
+  // Rows of the table after search, filter and sort (the summary cards use all rows).
+  function visibleRows(rows) {
+    const q = view.q.trim().toLowerCase().replace(/[$,]/g, "");
+    let list = rows.filter(r => view.filter === "all" || (view.filter === "photo" ? r.photos.length : !r.photos.length));
+    if (q) list = list.filter(r => [r.label, r.address, dateText(r), r.total.toFixed(2), r.due.toFixed(2)].join(" ").toLowerCase().replace(/[$,]/g, "").includes(q));
+    if (view.sort.key) {
+      const get = SORTS[view.sort.key];
+      list = [...list].sort((a, b) => { const x = get(a), y = get(b); return (typeof x === "number" ? x - y : String(x).localeCompare(String(y), "en", { numeric: true })) * view.sort.dir; });
+    }
+    return list;
+  }
   function render() {
     if (!panel || panel.hidden) return;
     const rows = rowsFor(tab), s = summary(rows), isInv = tab === "invoice";
-    panel.querySelector("#pendingReportTitle").textContent = isInv ? "PENDING INVOICES REPORT" : "PENDING HOURS REPORT";
-    panel.querySelector(".pr-sub").textContent = `Summary of ${isInv ? "invoices" : "hours reports"} awaiting payment by check · All amounts in USD`;
-    const jobTab = panel.querySelector('[data-pr-tab="job"]'); if (jobTab) jobTab.textContent = `Enviados ${toClient()}`;
+    panel.querySelector("#pendingReportTitle").textContent = tabTitle(tab);
+    panel.querySelector(".pr-sub").textContent = `Summary of ${isInv ? "invoices" : tab === "job" ? "reports sent" : "hours reports"} awaiting payment by check · All amounts in USD`;
+    panel.querySelector(".pr-sent").textContent = sentLabel();
     panel.querySelectorAll("[data-pr-tab]").forEach(b => { b.classList.toggle("is-active", b.dataset.prTab === tab); b.setAttribute("aria-selected", String(b.dataset.prTab === tab)); });
-    const body = rows.map((r, i) => `<tr>
-        <td class="pr-strong" data-l="${isInv ? "Invoice" : "Report"}">${esc(r.label)}</td>
-        <td data-l="Date">${esc(dateText(r))}</td>
-        <td class="pr-addr" data-l="Job address">${r.record.pdfBlob || r.record.pdfPath
-          ? `<button type="button" class="pr-link" data-pr-view="${i}" title="Ver PDF">${esc(r.address || "Sin dirección")}<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></button>`
-          : esc(r.address || "Sin dirección")}</td>
-        <td data-l="${isInv ? "Invoice total" : "Total"}">${money(r.total)}</td>
-        <td class="pr-due" data-l="Balance due">${money(r.due)}</td>
-        <td data-l="Payment record">${r.photos.length
-          ? `<button type="button" class="pr-checks check-view" data-check-kind="${r.kind}" data-id="${esc(r.record.id)}" title="Ver cheques">${r.photos.slice(0, 3).map(p => `<span class="pr-thumb" data-photo="${esc(p.id)}"></span>`).join("")}<span>${photoText(r.photos.length)}</span></button>`
-          : `<span class="pr-muted">No photo</span>`}</td>
-      </tr>`).join("");
+    const filterLabel = FILTERS.find(([id]) => id === view.filter)?.[1] || "All";
     panel.querySelector(".pr-body").innerHTML = `
       <div class="pr-summary">${summaryHtml(isInv, s)}</div>
-      <h3 class="pr-h3">${isInv ? "INVOICE DETAILS" : "REPORT DETAILS"}</h3>
-      ${rows.length ? `<div class="pr-table-wrap"><table class="pr-table"><thead><tr><th>${isInv ? "Invoice" : "Report"}</th><th>Date</th><th>Job address</th><th>${isInv ? "Invoice total" : "Total"}</th><th>Balance due</th><th>Payment record</th></tr></thead><tbody>${body}</tbody></table></div>`
-        : `<p class="pr-empty">No hay ${isInv ? "invoices" : "reportes de horas"} en Esperando cheque con saldo pendiente.</p>`}
-      <p class="pr-note"><strong>Note:</strong> Only ${isInv ? "invoices" : "reports"} waiting for a check with an outstanding balance are included. Tap an address to see its PDF and the payment record to see the checks.</p>
-      <p class="pr-date">Report date: ${usDate(today())}</p>`;
+      <div class="pr-details-head">
+        <h3 class="pr-h3">${icon("clipboard")}<span>${isInv ? "Invoice Details" : "Report Details"}</span></h3>
+        <div class="pr-tools">
+          <label class="pr-search">${icon("search")}<input type="search" placeholder="Search ${isInv ? "invoice" : "report"}, address or amount…" value="${esc(view.q)}" aria-label="Buscar"></label>
+          <button type="button" class="pr-filter-btn${view.filter !== "all" ? " is-on" : ""}" data-pr-filters aria-haspopup="true">${icon("filter")}<span>${view.filter === "all" ? "Filters" : esc(filterLabel)}</span>${icon("chevron", "pr-chev")}</button>
+        </div>
+      </div>
+      <div class="pr-table-slot"></div>`;
+    renderTable(false);
+  }
+  // Redraws only the table, so typing in the search box keeps its focus.
+  function renderTable() {
+    const slot = panel.querySelector(".pr-table-slot");
+    if (!slot) return;
+    const all = rowsFor(tab), rows = visibleRows(all), isInv = tab === "invoice";
+    const sortHead = (key, label, cls = "") => {
+      const on = view.sort.key === key;
+      return `<th class="${cls}"><button type="button" class="pr-sort${on ? " is-on" : ""}" data-pr-sort="${key}">${label}${icon("sort", on ? (view.sort.dir > 0 ? "is-asc" : "is-desc") : "")}</button></th>`;
+    };
+    const body = rows.map(r => {
+      const hasPdf = Boolean(r.record.pdfBlob || r.record.pdfPath);
+      const id = esc(r.record.id);
+      return `<tr>
+        <td data-l="${isInv ? "Invoice" : "Report"}"><span class="pr-pill">${esc(r.label)}</span></td>
+        <td data-l="Date"><span class="pr-date-cell">${icon("calendar")}${esc(dateText(r))}</span></td>
+        <td class="pr-addr" data-l="Job address">${icon("pin", "pr-pin")}${hasPdf
+          ? `<button type="button" class="pr-link" data-pr-view="${id}" title="Ver PDF">${esc(r.address || "Sin dirección")}${icon("external")}</button>`
+          : `<span>${esc(r.address || "Sin dirección")}</span>`}</td>
+        <td class="pr-num" data-l="${isInv ? "Invoice total" : "Total"}">${money(r.total)}</td>
+        <td class="pr-num" data-l="Balance due"><span class="pr-due-pill">${money(r.due)}</span></td>
+        <td data-l="Payment record">${r.photos.length
+          ? `<button type="button" class="pr-checks check-view" data-check-kind="${r.kind}" data-id="${id}" title="Ver cheques"><span class="pr-thumb" data-photo="${esc(r.photos[0].id)}"></span><span>${photoText(r.photos.length)}</span></button>`
+          : `<span class="pr-nophoto">${icon("image")}No photo</span>`}</td>
+        <td class="pr-row-actions" data-l="Actions">
+          <button type="button" class="pr-icon-btn" data-pr-view="${id}" title="Ver PDF" aria-label="Ver PDF"${hasPdf ? "" : " disabled"}>${icon("eye")}</button>
+          <button type="button" class="pr-icon-btn" data-pr-more="${id}" title="Más opciones" aria-label="Más opciones" aria-haspopup="true">${DOTS}</button>
+        </td>
+      </tr>`;
+    }).join("");
+    const shownDue = rows.reduce((sum, r) => sum + r.due, 0);
+    slot.innerHTML = !all.length
+      ? `<p class="pr-empty">No hay ${isInv ? "invoices" : "reportes"} en Esperando cheque con saldo pendiente.</p>`
+      : `<div class="pr-table-wrap"><table class="pr-table"><thead><tr>
+          ${sortHead("label", isInv ? "Invoice" : "Report")}${sortHead("date", "Date")}<th>Job Address</th>${sortHead("total", isInv ? "Invoice Total" : "Total", "pr-num")}${sortHead("due", "Balance Due", "pr-num")}<th>Payment Record</th><th class="pr-actions-head">Actions</th>
+        </tr></thead><tbody>${body || `<tr class="pr-none"><td colspan="7">No ${noun(tab)} match this search.</td></tr>`}</tbody></table></div>
+        <div class="pr-foot">
+          <span>Showing ${rows.length ? `1–${rows.length}` : "0"} of ${all.length} ${noun(tab)}</span>
+          <span class="pr-total-pill">Total Pending: <strong>${money(shownDue)}</strong></span>
+        </div>
+        <p class="pr-note">Report date: ${usDate(today())} · Tap an address or 👁 to see its PDF, and a check to see the photos.</p>`;
     loadThumbs(rows);
   }
   async function loadThumbs(rows) {
     thumbUrls.splice(0).forEach(url => URL.revokeObjectURL(url));
-    for (const row of rows) for (const photo of row.photos.slice(0, 3)) {
+    for (const row of rows) for (const photo of row.photos.slice(0, 1)) {
       const slot = panel.querySelector(`.pr-thumb[data-photo="${CSS.escape(photo.id)}"]`);
       if (!slot) continue;
       try {
@@ -127,13 +227,62 @@
       } catch (_) { /* thumbnail is optional */ }
     }
   }
+
+  /* ---------- popups: filters and row options ---------- */
+  function closePops() { document.querySelectorAll(".pr-pop").forEach(pop => pop.remove()); }
+  function popAt(button, html, onPick) {
+    const already = document.querySelector(".pr-pop")?.dataset.for === (button.dataset.prMore || "filters");
+    closePops();
+    if (already) return;
+    const pop = document.createElement("div");
+    pop.className = "pr-pop";
+    pop.dataset.for = button.dataset.prMore || "filters";
+    pop.setAttribute("role", "menu");
+    pop.innerHTML = html;
+    document.body.append(pop);
+    const box = button.getBoundingClientRect();
+    const left = Math.max(8, Math.min(box.right - pop.offsetWidth, document.documentElement.clientWidth - pop.offsetWidth - 8));
+    const below = box.bottom + 6 + pop.offsetHeight < window.innerHeight;
+    pop.style.left = `${left}px`;
+    pop.style.top = `${below ? box.bottom + 6 : Math.max(8, box.top - pop.offsetHeight - 6)}px`;
+    pop.addEventListener("click", event => { const item = event.target.closest("[data-pick]"); if (!item) return; closePops(); onPick(item.dataset.pick); });
+  }
+  function openFilters(button) {
+    popAt(button, FILTERS.map(([id, label]) => `<button type="button" role="menuitemradio" aria-checked="${view.filter === id}" class="${view.filter === id ? "is-on" : ""}" data-pick="${id}">${label}</button>`).join(""), id => { view.filter = id; render(); });
+  }
+  function openMore(button) {
+    const row = rowsFor(tab).find(r => r.record.id === button.dataset.prMore);
+    if (!row) return;
+    const hasPdf = Boolean(row.record.pdfBlob || row.record.pdfPath);
+    const items = [hasPdf && ["pdf", "Ver PDF"], hasPdf && ["link", "Copiar link de vista previa"], row.photos.length && ["checks", "Ver cheques"], ["edit", "Editar datos"]].filter(Boolean);
+    popAt(button, items.map(([id, label]) => `<button type="button" role="menuitem" data-pick="${id}">${label}</button>`).join(""), id => {
+      if (id === "pdf") return archiveOf(row.kind)?.view?.(row.record);
+      if (id === "link") return window.ShareLink?.copy(row.kind, row.record);
+      if (id === "checks") return panel.querySelector(`.check-view[data-id="${CSS.escape(row.record.id)}"]`)?.click();
+      if (id === "edit") {
+        // The edit windows sit below this one.
+        close();
+        return row.kind === "invoice" ? tc()?.edit?.(row.record) : row.kind === "hours" ? window.HoursApp?.edit?.(row.record) : window.JobApp?.edit?.(row.record);
+      }
+    });
+  }
+
   const archiveOf = kind => kind === "invoice" ? tc()?.archive : kind === "hours" ? tc()?.hoursArchive : tc()?.jobArchive;
   async function onClick(event) {
     const t = event.target;
     if (t === panel || t.closest(".pr-close")) return close();
-    const tabBtn = t.closest("[data-pr-tab]"); if (tabBtn) { tab = tabBtn.dataset.prTab; return render(); }
-    const view = t.closest("[data-pr-view]");
-    if (view) { const row = rowsFor(tab)[Number(view.dataset.prView)]; return row && archiveOf(row.kind)?.view?.(row.record); }
+    const tabBtn = t.closest("[data-pr-tab]");
+    if (tabBtn) { if (tabBtn.dataset.prTab !== tab) { tab = tabBtn.dataset.prTab; resetView(); } return render(); }
+    const sortBtn = t.closest("[data-pr-sort]");
+    if (sortBtn) {
+      const key = sortBtn.dataset.prSort;
+      view.sort = view.sort.key === key ? (view.sort.dir > 0 ? { key, dir: -1 } : { key: "", dir: 1 }) : { key, dir: 1 };
+      return renderTable();
+    }
+    const filterBtn = t.closest("[data-pr-filters]"); if (filterBtn) return openFilters(filterBtn);
+    const more = t.closest("[data-pr-more]"); if (more) return openMore(more);
+    const viewBtn = t.closest("[data-pr-view]");
+    if (viewBtn) { const row = rowsFor(tab).find(r => r.record.id === viewBtn.dataset.prView); return row && archiveOf(row.kind)?.view?.(row.record); }
     const act = t.closest("[data-pr-act]");
     if (act) {
       act.disabled = true;
@@ -174,7 +323,7 @@
         : `<path d="${CHART_LINE}" fill="none"/><circle cx="62" cy="4" r="3.2"/>`;
       return `<div class="pr-card-sum is-${c.chart}" style="--t-tile:${t.tile};--t-fg:${t.fg};--t-border:${t.border};--t-wash:${t.wash};--t-chart:${t.chart}">
         <span class="pr-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS[c.icon]}"/></svg></span>
-        <div class="pr-sum-text"><span class="pr-lbl">${c.label}</span><strong>${c.value}</strong><small>${c.caption}</small></div>
+        <div class="pr-sum-text"><span class="pr-lbl">${c.label.toLowerCase().replace(/(^|\s)\w/g, m => m.toUpperCase())}</span><strong>${c.value}</strong><small>${c.caption}</small></div>
         <svg class="pr-chart" viewBox="0 0 66 42" aria-hidden="true">${chart}</svg>
       </div>`;
     }).join("");
