@@ -135,6 +135,7 @@
   function close() {
     if (!panel) return;
     closePops();
+    lastAnimated = "";
     panel.hidden = true;
     document.body.classList.remove("pr-open");
     thumbUrls.splice(0).forEach(url => URL.revokeObjectURL(url));
@@ -171,6 +172,27 @@
       </div>
       <div class="pr-table-slot"></div>`;
     renderTable(false);
+    animateSummary(`${tab}|${s.count}|${s.total}|${s.due}|${s.paid}`);
+  }
+  // Cards rise in and the amounts count up when the window opens or the numbers change
+  // (not on every quiet redraw of the boards).
+  let lastAnimated = "";
+  function animateSummary(key) {
+    const box = panel.querySelector(".pr-summary");
+    if (!box || key === lastAnimated) return;
+    lastAnimated = key;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    box.classList.add("is-animating");
+    box.querySelectorAll(".pr-card-sum strong").forEach(el => {
+      const text = el.textContent, target = Number(text.replace(/[^0-9.]/g, "")) || 0, isMoney = text.includes("$");
+      const start = performance.now(), duration = 900;
+      const step = now => {
+        const p = Math.min(1, (now - start) / duration), eased = 1 - Math.pow(1 - p, 3), value = target * eased;
+        el.textContent = isMoney ? money(value) : String(Math.round(value));
+        if (p < 1 && el.isConnected) requestAnimationFrame(step); else el.textContent = text;
+      };
+      requestAnimationFrame(step);
+    });
   }
   // Redraws only the table, so typing in the search box keeps its focus.
   function renderTable() {
