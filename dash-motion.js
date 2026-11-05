@@ -91,7 +91,7 @@
   }
   const drop = clone => clone._host?.remove();
   // Moves a floating clone onto `card` (or fades it out if the card is not on screen).
-  function land(clone, card, duration = 620) {
+  function land(clone, card, duration = 620, celebrate = false) {
     // A board redraw may have removed the copy: put it back where it was.
     if (!clone.isConnected && card) { card.closest(".board")?.append(clone._host); place(clone, clone._vx, clone._vy); }
     const to = card && card.offsetParent !== null ? card.getBoundingClientRect() : null;
@@ -108,13 +108,36 @@
     ], { duration, easing: SPRING, fill: "forwards" }).onfinish = () => {
       card.style.visibility = "";
       drop(clone);
+      if (celebrate) window.RPMotion?.celebrate?.(card);
       card.animate([{ boxShadow: "0 0 0 0 rgba(var(--blue-rgb), .4)" }, { boxShadow: "0 0 0 12px rgba(var(--blue-rgb), 0)" }], { duration: 700, easing: "ease-out" });
     };
   }
 
-  function onRender(board) {
+  // Records that still exist for a board (to tell a deleted card from a filtered one).
+  function recordIds(board) {
+    const list = board.id === "board" ? window.TrentonControl?.records?.() : board.id === "jobHomeBoard" ? window.JobApp?.reports?.() : window.HoursApp?.reports?.();
+    return list ? new Set(list.map(r => r.id)) : null;
+  }
+  // Deleted cards leave with a short shrink-and-fade from where they were.
+  function exitDeleted(board, old, removed) {
+    const ids = recordIds(board);
+    if (!ids) return;
+    removed.forEach(card => {
+      const key = keyOf(card), before = old.get(key);
+      if (!key || ids.has(key) || !before || !before.w) return;
+      const ghost = makeClone(card, board, before.x - scrollX, before.y - scrollY, before.w);
+      ghost.classList.add("rp-leaving");
+      ghost.animate([
+        { opacity: 1, transform: "none", filter: "none" },
+        { opacity: 0, transform: "scale(.86) translateY(8px)", filter: "blur(4px)" }
+      ], { duration: 380, easing: EASE, fill: "forwards" }).onfinish = () => drop(ghost);
+    });
+  }
+
+  function onRender(board, removed = []) {
     const old = positions.get(board) || new Map();
     if (!calm()) {
+      exitDeleted(board, old, removed);
       board.querySelectorAll(CARD).forEach(card => {
         if (card.offsetParent === null) return;
         const key = keyOf(card);
@@ -122,7 +145,7 @@
           // Still in its old column: the save has not finished yet, keep it floating.
           if (stageOf(card) === flying.origin) return;
           clearTimeout(flying.timer);
-          land(flying.clone, card);
+          land(flying.clone, card, 620, stageOf(card) === "paid");
           flying = null;
           return;
         }
@@ -132,7 +155,7 @@
         const fromLeft = before.x - scrollX, fromTop = before.y - scrollY;
         if (before.stage !== stageOf(card)) {
           // Moved to another column (menu or buttons): a copy travels across, not clipped by the columns.
-          land(makeClone(card, board, fromLeft, fromTop, before.w), card, 560);
+          land(makeClone(card, board, fromLeft, fromTop, before.w), card, 560, stageOf(card) === "paid");
           return;
         }
         const dx = fromLeft - now.left, dy = fromTop - now.top;
@@ -159,7 +182,9 @@
       const own = node => node.nodeType === 1 && node.classList.contains("rp-fly-host");
       new MutationObserver(records => {
         if (records.every(r => [...r.addedNodes, ...r.removedNodes].every(own))) return;
-        onRender(board);
+        const removed = records.flatMap(r => [...r.removedNodes]).filter(n => n.nodeType === 1 && !own(n))
+          .flatMap(n => n.matches(".invoice-card") ? [n] : [...n.querySelectorAll(".invoice-card")]);
+        onRender(board, removed);
       }).observe(board, { childList: true });
       snapshot(board);
     });

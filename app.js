@@ -1363,6 +1363,7 @@
   ["board", "hoursHomeBoard", "jobHomeBoard"].forEach(bindBoardTabs);
 
   window.TrentonControl = { toast: showToast, records: () => records, render, archive, hoursArchive, jobArchive, download, showView, navClick,
+    isReady: () => ready,
     edit: record => openModal(record.stage, record),
     openCheckPicker,
     async removeInvoiceCheck(recordId, photoId) {

@@ -380,3 +380,70 @@ dialog.pdf-dialog::backdrop { background: rgba(36, 42, 64, .3); -webkit-backdrop
   .modal-backdrop:not(.hidden), .modal-backdrop:not(.hidden) > .modal, dialog.pdf-dialog[open], .check-viewer:not([hidden]), .check-viewer:not([hidden]) .check-viewer-card, .pdf-viewer:not([hidden]), #boardView .hero-art2, .rp-fly.is-waiting { animation: none !important; }
   #boardView .ds-card, #boardView .stat-card, .df-card, .b-card, .archive-card, .board-section .invoice-card { transition: none !important; }
 }
+
+/* =====================================================================
+   Motion system (motion-system.js): progress, toasts, buttons, tooltips,
+   light, confetti, skeletons
+   ===================================================================== */
+
+/* Network progress bar */
+.rp-progress { position: fixed; top: 0; left: 0; right: 0; z-index: 700; height: 3px; background: linear-gradient(90deg, #5ac8fa, var(--blue)); box-shadow: 0 0 10px rgba(var(--blue-rgb), .5); transform-origin: left; transform: scaleX(0); opacity: 0; pointer-events: none; transition: transform .35s var(--ease), opacity .3s ease; }
+.rp-progress.is-on { opacity: 1; }
+.rp-progress.is-done { opacity: 0; transition: transform .2s var(--ease), opacity .3s ease .2s; }
+
+/* Toast kinds */
+.toast.rp-ok::before { background: #34c759 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center / 13px no-repeat; }
+.toast.rp-err::before { background: #ff3b30 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round'%3E%3Cpath d='M7 7l10 10M17 7 7 17'/%3E%3C/svg%3E") center / 12px no-repeat; }
+.toast.rp-err { border-color: rgba(255, 59, 48, .45); }
+.toast.show::before { animation: rpIconPop .42s .08s var(--ease-spring) both; }
+@keyframes rpIconPop { from { transform: scale(0) rotate(-30deg); } }
+
+/* Save buttons: loading, success, error */
+.button.is-loading { position: relative; cursor: progress; opacity: 1 !important; }
+.rp-spin { display: inline-block; width: 15px; height: 15px; flex: none; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: rpSpin .7s linear infinite; }
+@keyframes rpSpin { to { transform: rotate(360deg); } }
+.button.is-success { background: linear-gradient(180deg, #3ad16a, #2fb85b) !important; border-color: transparent !important; color: #fff !important; box-shadow: 0 8px 18px rgba(52, 199, 89, .3) !important; animation: rpOkPop .45s var(--ease-spring); }
+.button.is-success.button-ghost { background: #e8f8ee !important; color: #23874a !important; box-shadow: none !important; }
+.button.is-error { background: linear-gradient(180deg, #ff5a50, #ff3b30) !important; border-color: transparent !important; color: #fff !important; animation: rpShake .36s var(--ease); }
+@keyframes rpOkPop { 40% { transform: scale(1.04); } }
+
+/* Collapsed sidebar tooltip */
+.rp-tip { position: fixed; z-index: 650; padding: 7px 11px; border-radius: 9px; background: rgba(36, 42, 64, .92); color: #fff; font: 600 12.5px/1.2 "Plus Jakarta Sans", sans-serif; white-space: nowrap; box-shadow: 0 8px 20px rgba(36, 42, 64, .22); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); pointer-events: none; opacity: 0; transform: translate(-6px, -50%) scale(.96); transition: opacity .16s ease, transform .22s var(--ease-spring); }
+.rp-tip::before { content: ""; position: absolute; left: -4px; top: 50%; width: 8px; height: 8px; margin-top: -4px; background: inherit; transform: rotate(45deg); border-radius: 2px; }
+.rp-tip.is-on { opacity: 1; transform: translate(0, -50%) scale(1); }
+
+/* Light that follows the cursor (a layer behind the content, the card background stays) */
+.rp-lit-host { position: relative; isolation: isolate; --mx: 50%; --my: 50%; }
+.rp-light { position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .25s ease; background: radial-gradient(260px circle at var(--mx) var(--my), rgba(var(--blue-rgb), .09), rgba(255, 255, 255, 0) 65%); }
+.rp-lit > .rp-light { opacity: 1; }
+.rp-fly .rp-light { display: none; }
+
+/* Celebration */
+.rp-confetti { position: fixed; inset: 0; z-index: 650; pointer-events: none; overflow: hidden; }
+.rp-confetti i { position: absolute; width: 7px; height: 10px; border-radius: 2px; }
+
+/* Leaving (deleted) card */
+.rp-fly.rp-leaving { transform: none; box-shadow: none !important; }
+
+/* Modal close ghost */
+.modal-backdrop.rp-ghost { z-index: 125 !important; pointer-events: none; animation: none !important; }
+.modal-backdrop.rp-ghost > .modal { animation: none !important; }
+
+/* Skeletons until the first data arrives */
+@keyframes rpShimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+.df-skeleton td i { display: block; height: 12px; border-radius: 6px; background: linear-gradient(90deg, #eef1f7 25%, #f8f9fc 50%, #eef1f7 75%) 0 0 / 200% 100%; animation: rpShimmer 1.4s linear infinite; }
+.df-skeleton td:nth-child(odd) i { width: 70%; }
+html.rp-loading #boardView .ds-card strong, html.rp-loading #boardView .stat-card strong { color: transparent !important; border-radius: 8px; background: linear-gradient(90deg, #eef1f7 25%, #f8f9fc 50%, #eef1f7 75%) 0 0 / 200% 100%; animation: rpShimmer 1.4s linear infinite; min-width: 90px; }
+html.rp-loading #boardView .board:empty { min-height: 230px; border-radius: 18px; background:
+  linear-gradient(90deg, transparent 25%, rgba(255, 255, 255, .7) 50%, transparent 75%) 0 0 / 200% 100%,
+  linear-gradient(#eef1f7, #eef1f7) 0 0 / 23.5% 100% no-repeat,
+  linear-gradient(#eef1f7, #eef1f7) 33.3% 0 / 23.5% 100% no-repeat,
+  linear-gradient(#eef1f7, #eef1f7) 66.6% 0 / 23.5% 100% no-repeat,
+  linear-gradient(#eef1f7, #eef1f7) 100% 0 / 23.5% 100% no-repeat;
+  animation: rpBoardShimmer 1.4s linear infinite; }
+@keyframes rpBoardShimmer { from { background-position: -200% 0, 0 0, 33.3% 0, 66.6% 0, 100% 0; } to { background-position: 200% 0, 0 0, 33.3% 0, 66.6% 0, 100% 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .rp-progress, .rp-tip { transition: none !important; }
+  .rp-spin, .toast.show::before, .button.is-success, .button.is-error, .df-skeleton td i, html.rp-loading #boardView .board:empty, html.rp-loading #boardView .ds-card strong { animation: none !important; }
+}

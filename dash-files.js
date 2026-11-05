@@ -88,7 +88,11 @@ window.DashFiles = (function () {
       <label class="df-search">${ICON.search}<input type="search" data-f="q" placeholder="${placeholder}" value="${esc(f.q)}" aria-label="${placeholder}"></label>
     </div>`;
   }
-  const empty = (cols, text) => `<tr class="df-empty"><td colspan="${cols}">${text}</td></tr>`;
+  // While the first data is still loading, show placeholder rows instead of "no records".
+  const loading = () => window.TrentonControl?.isReady && !window.TrentonControl.isReady();
+  const empty = (cols, text) => loading()
+    ? Array.from({ length: 3 }, () => `<tr class="df-skeleton" aria-hidden="true">${Array.from({ length: cols }, () => "<td><i></i></td>").join("")}</tr>`).join("")
+    : `<tr class="df-empty"><td colspan="${cols}">${text}</td></tr>`;
   const more = (count, shown, target, label) => count > shown ? `<button type="button" class="df-more" data-open="${target}">${label} (${count}) →</button>` : "";
   const menu = (kind, id) => `<button type="button" class="df-icon df-menu-btn" data-menu="${kind}" data-id="${esc(id)}" aria-label="Más opciones">${ICON.dots}</button>`;
   const pdfCell = (item) => item.hasPdf ? `<button type="button" class="df-icon df-pdf" data-act="view" data-kind="${item.kind}" data-id="${esc(item.id)}" aria-label="Ver PDF">${ICON.pdf}</button>` : `<span class="df-nopdf" title="Falta el PDF">—</span>`;
