@@ -318,3 +318,14 @@ body .sidebar .sidebar-sync > i { border-color: #007aff !important; }
 /* Apple blue on step numbers and checkboxes */
 .b-step i { background: linear-gradient(135deg, #2b8cff, var(--blue)) !important; box-shadow: 0 4px 10px rgba(var(--blue-rgb), .3) !important; }
 input[type="checkbox"], input[type="radio"], .b-check input { accent-color: var(--blue); }
+
+/* Orange action buttons -> Apple blue */
+.pr-open-btn, .df-upload { border-color: rgba(var(--blue-rgb), .35) !important; background: var(--blue-soft) !important; color: var(--blue) !important; }
+.pr-open-btn:hover, .df-upload:hover { background: #d6e9ff !important; }
+.pr-open-btn .pr-count { background: var(--blue) !important; color: #fff !important; }
+.df-tab.is-active { border-color: rgba(var(--blue-rgb), .35) !important; background: var(--blue-soft) !important; color: var(--blue) !important; }
+.df-tab.is-active::after { background: var(--blue) !important; }
+.df-more { background: var(--blue-soft) !important; color: var(--blue) !important; }
+.df-select:focus-within, .df-search:focus-within { border-color: rgba(var(--blue-rgb), .5) !important; box-shadow: var(--ring) !important; }
+.df-table tr.is-latest { background: #f2f8ff !important; }
+.df-table tr.is-latest:hover { background: #e9f3ff !important; }
