@@ -52,13 +52,26 @@ window.RPMotion = (function () {
     bar.classList.add("is-done");
     setTimeout(() => { if (!inflight) bar.classList.remove("is-on", "is-done"); }, 450);
   }
+  // Loading screen: each finished cloud request moves its bar forward and updates the message.
+  let bootDone = 0;
+  function bootStep(url) {
+    if (!document.documentElement.classList.contains("boot-session")) return;
+    bootDone++;
+    const fill = $(".boot-bar i"), message = $("#bootMessage");
+    if (fill) fill.style.transform = `scaleX(${Math.min(.92, .18 + bootDone * .14)})`;
+    const text = /\/auth\/v1\//.test(url) ? "Verificando tu sesión…" : bootDone >= 4 ? "Casi listo…" : "Cargando tu información…";
+    if (message && message.textContent !== text) {
+      message.textContent = text;
+      if (!calm()) message.animate([{ opacity: 0, transform: "translateY(4px)" }, { opacity: 1, transform: "none" }], { duration: M.base, easing: M.ease });
+    }
+  }
   const realFetch = window.fetch.bind(window);
   window.fetch = function (input, init) {
     const url = String(input?.url || input || "");
     const tracked = /supabase\.co|\/rest\/v1\/|\/storage\/v1\/|\/auth\/v1\//.test(url);
     if (!tracked) return realFetch(input, init);
     barStart();
-    return realFetch(input, init).finally(barEnd);
+    return realFetch(input, init).finally(() => { barEnd(); bootStep(url); });
   };
 
   /* ---------- 2. Toast kinds ---------- */

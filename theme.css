@@ -447,3 +447,33 @@ html.rp-loading #boardView .board:empty { min-height: 230px; border-radius: 18px
   .rp-progress, .rp-tip { transition: none !important; }
   .rp-spin, .toast.show::before, .button.is-success, .button.is-error, .df-skeleton td i, html.rp-loading #boardView .board:empty, html.rp-loading #boardView .ds-card strong { animation: none !important; }
 }
+
+/* ===== Loading screen: light Apple style, blue progress, fades into the app ===== */
+html:is(.boot-session, .boot-leaving) .boot-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(900px 520px at 85% -10%, rgba(var(--blue-rgb), .10), transparent 70%),
+    radial-gradient(700px 460px at -5% 30%, rgba(149, 112, 237, .07), transparent 70%),
+    radial-gradient(800px 500px at 60% 110%, rgba(98, 181, 129, .06), transparent 70%),
+    var(--canvas);
+  animation: bootIn .35s ease both;
+}
+html.boot-leaving .boot-screen { pointer-events: none; animation: bootOut .5s var(--ease) forwards; }
+@keyframes bootOut { to { opacity: 0; transform: scale(1.02); } }
+.boot-houses { opacity: .7; }
+.boot-copy h2 { color: var(--ink) !important; font-weight: 800 !important; letter-spacing: -.02em !important; animation: bootRise .55s .05s var(--ease) both; }
+.boot-copy p { margin: 10px 0 26px !important; color: var(--muted) !important; letter-spacing: 0 !important; animation: bootRise .55s .12s var(--ease) both; }
+@keyframes bootRise { from { opacity: 0; transform: translateY(10px); } }
+.boot-bar { width: min(240px, 60vw); height: 5px; margin: 0 auto; overflow: hidden; border-radius: 999px; background: rgba(var(--blue-rgb), .12); animation: bootRise .55s .2s var(--ease) both; }
+.boot-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #5ac8fa, var(--blue)); box-shadow: 0 0 10px rgba(var(--blue-rgb), .45); transform-origin: left; transform: scaleX(.12); transition: transform .5s var(--ease); position: relative; overflow: hidden; }
+.boot-bar i::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .55), transparent); animation: bootSheen 1.3s linear infinite; }
+@keyframes bootSheen { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) {
+  html.boot-leaving .boot-screen, .boot-copy h2, .boot-copy p, .boot-bar, .boot-bar i::after { animation: none !important; }
+  html.boot-leaving .boot-screen { opacity: 0; }
+}
