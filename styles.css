@@ -4920,7 +4920,7 @@ body.workspace-otras #heroWorkspaceTitle { font-size: clamp(24px, 2.9vw, 36px); 
 }
 
 /* Home stat cards with trend badge and animated mini chart */
-#boardView .dash-stats .ds-card { --c: var(--blue); --c2: #6480ff; --soft: #edf1ff; --tile: linear-gradient(135deg, #eaf0ff, #d7e2ff); --tint: #f8faff; }
+#boardView .dash-stats .ds-card { --c: var(--blue); --c2: #3d97ff; --soft: #edf1ff; --tile: linear-gradient(135deg, #eaf0ff, #d7e2ff); --tint: #f8faff; }
 #boardView .dash-stats .stat-work { --c: #f39a17; --c2: #ffb52b; --soft: #fff2df; --tile: linear-gradient(135deg, #fff0d2, #ffe3b1); --tint: #fffaf2; }
 #boardView .dash-stats .stat-wait { --c: #8d63f7; --c2: #a684ff; --soft: #f1eaff; --tile: linear-gradient(135deg, #f0e9ff, #e2d7ff); --tint: #faf7ff; }
 #boardView .dash-stats .stat-paid { --c: #13ad70; --c2: #2cc488; --soft: #e3f7ed; --tile: linear-gradient(135deg, #dff7eb, #c8efdf); --tint: #f5fcf8; }
@@ -7491,7 +7491,7 @@ html.boot-session .boot-screen {
 :is(#hoursView, #jobView) .wa-compact textarea { min-height: 140px; border-radius: 12px; }
 .wa-actions { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
 #invoiceView .wa-analyze,
-:is(#hoursView, #jobView) .wa-analyze { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 18px; border: 0; border-radius: 12px; background: #eef1ff; color: #3d4fd6; font: 700 14.5px "Plus Jakarta Sans", sans-serif; box-shadow: none; }
+:is(#hoursView, #jobView) .wa-analyze { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 18px; border: 0; border-radius: 12px; background: #eef1ff; color: var(--blue-dark); font: 700 14.5px "Plus Jakarta Sans", sans-serif; box-shadow: none; }
 #invoiceView .wa-analyze:hover,
 :is(#hoursView, #jobView) .wa-analyze:hover { background: #e2e7ff; }
 #whatsappHelp { display: flex; align-items: center; gap: 6px; margin: 0; color: #7d879c; font: 500 12.5px/1.4 "Plus Jakarta Sans", sans-serif; }
@@ -7589,7 +7589,7 @@ html.boot-session .boot-screen {
 .translator-panel .translator-heading { cursor: pointer; user-select: none; align-items: center; }
 .translator-panel.is-collapsed { padding-top: 14px; padding-bottom: 14px; }
 .translator-panel.is-collapsed .translator-heading { margin-bottom: 0; }
-.translator-toggle { display: inline-flex; align-items: center; gap: 4px; margin-left: 10px; padding: 6px 12px; border-radius: 10px; background: #eef1ff; color: #3d4fd6; font: 700 13px "Plus Jakarta Sans", sans-serif; white-space: nowrap; }
+.translator-toggle { display: inline-flex; align-items: center; gap: 4px; margin-left: 10px; padding: 6px 12px; border-radius: 10px; background: #eef1ff; color: var(--blue-dark); font: 700 13px "Plus Jakarta Sans", sans-serif; white-space: nowrap; }
 .translator-toggle svg { transition: transform .2s ease; }
 .translator-panel:not(.is-collapsed) .translator-toggle svg { transform: rotate(180deg); }
 .translator-heading:focus-visible { outline: 2px solid #4f46e5; outline-offset: 4px; border-radius: 8px; }
@@ -7599,7 +7599,7 @@ html.boot-session .boot-screen {
 :is(#hoursView, #jobView) .hours-layout.builder-v2 { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 22px; align-items: start; }
 :is(#hoursView, #jobView) .whatsapp-import.wa-compact { margin: 0; padding: 18px 20px; border: 1px solid #e6eaf3; border-radius: 18px; background: #fff; box-shadow: 0 8px 22px rgba(36, 48, 86, .05); }
 :is(#hoursView, #jobView) .wa-compact textarea { min-height: 140px; border-radius: 12px; }
-:is(#hoursView, #jobView) .wa-analyze { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 18px; border: 0; border-radius: 12px; background: #eef1ff; color: #3d4fd6; font: 700 14.5px "Plus Jakarta Sans", sans-serif; box-shadow: none; white-space: nowrap; }
+:is(#hoursView, #jobView) .wa-analyze { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 18px; border: 0; border-radius: 12px; background: #eef1ff; color: var(--blue-dark); font: 700 14.5px "Plus Jakarta Sans", sans-serif; box-shadow: none; white-space: nowrap; }
 :is(#hoursView, #jobView) .wa-analyze:hover { background: #e2e7ff; }
 .wa-help { display: flex; align-items: center; gap: 6px; margin: 0; color: #7d879c; font: 500 12.5px/1.4 "Plus Jakarta Sans", sans-serif; }
 .wa-help svg { width: 16px; height: 16px; flex: none; }
@@ -7689,7 +7689,7 @@ html.boot-session .boot-screen {
 .df-actions { text-align: right; }
 .df-actions .df-box + .df-box { margin-left: 10px; }
 .df-empty td { padding: 26px 14px; color: #8a93a6; text-align: center; white-space: normal; }
-.df-more { display: inline-flex; margin-top: 12px; padding: 8px 14px; border: 0; border-radius: 10px; background: #eef1ff; color: #3d4fd6; font: 700 13px "Plus Jakarta Sans", sans-serif; cursor: pointer; }
+.df-more { display: inline-flex; margin-top: 12px; padding: 8px 14px; border: 0; border-radius: 10px; background: #eef1ff; color: var(--blue-dark); font: 700 13px "Plus Jakarta Sans", sans-serif; cursor: pointer; }
 
 .df-tabbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
 .df-tabbar .df-filters { flex: 0 1 870px; margin: 0; }
@@ -7705,13 +7705,13 @@ html.boot-session .boot-screen {
 .df-state.is-other { background: #eef0f6; color: #4a5470; }
 .df-proof { display: inline-flex; align-items: center; gap: 14px; padding: 0; border: 0; background: none; color: #1b2440; font: 500 14px "Plus Jakarta Sans", sans-serif; text-align: left; cursor: pointer; }
 .df-proof.is-none { color: #8a93a6; cursor: default; }
-.df-proof em { padding: 2px 7px; border-radius: 999px; background: #eef1ff; color: #3d4fd6; font-style: normal; font-size: 12px; font-weight: 700; }
+.df-proof em { padding: 2px 7px; border-radius: 999px; background: #eef1ff; color: var(--blue-dark); font-style: normal; font-size: 12px; font-weight: 700; }
 .df-thumb { display: grid; place-items: center; width: 66px; height: 42px; flex: none; border: 1px solid #e6e9f0; border-radius: 6px; background: #eef0f4 center / cover no-repeat; color: #b7bdcb; }
 .df-proof:hover .df-proof-name { text-decoration: underline; }
 
 .df-devices { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 18px; }
 .df-devices[hidden] { display: none; }
-.df-manage { display: inline-flex; align-items: center; gap: 10px; min-height: 54px; padding: 0 26px; border: 1.5px solid #b8c3f3; border-radius: 12px; background: #fff; color: #3d4fd6; font: 700 15px "Plus Jakarta Sans", sans-serif; cursor: pointer; }
+.df-manage { display: inline-flex; align-items: center; gap: 10px; min-height: 54px; padding: 0 26px; border: 1.5px solid #b8c3f3; border-radius: 12px; background: #fff; color: var(--blue-dark); font: 700 15px "Plus Jakarta Sans", sans-serif; cursor: pointer; }
 .df-manage:hover { background: #f3f5ff; }
 .df-manage svg { width: 22px; height: 22px; }
 
@@ -7836,7 +7836,7 @@ body.pr-open { overflow: hidden; }
 .pr-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .pr-btn { min-height: 40px; padding: 0 16px; border: 1px solid #dfe3ec; border-radius: 10px; background: #fff; color: #241f3a; font: 700 14px "Plus Jakarta Sans", sans-serif; cursor: pointer; }
 .pr-btn:hover { background: #f3f5fa; }
-.pr-btn.is-primary { border-color: transparent; background: #3d4fd6; color: #fff; }
+.pr-btn.is-primary { border-color: transparent; background: var(--blue-dark); color: #fff; }
 .pr-btn.is-primary:hover { background: #3243c4; }
 .pr-btn:disabled { opacity: .6; cursor: progress; }
 .pr-body { overflow: auto; padding: 20px 30px 26px; }
@@ -7855,7 +7855,7 @@ body.pr-open { overflow: hidden; }
 .pr-strong { font-weight: 800; }
 .pr-due { color: #b83a3a; font-weight: 800; }
 .pr-muted { color: #5f5a72; }
-.pr-link { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none; color: #3d4fd6; font: 600 14.5px "Plus Jakarta Sans", sans-serif; text-align: left; text-decoration: underline; text-decoration-color: rgba(61, 79, 214, .35); text-underline-offset: 3px; cursor: pointer; }
+.pr-link { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none; color: var(--blue-dark); font: 600 14.5px "Plus Jakarta Sans", sans-serif; text-align: left; text-decoration: underline; text-decoration-color: rgba(61, 79, 214, .35); text-underline-offset: 3px; cursor: pointer; }
 .pr-link:hover { text-decoration-color: currentColor; }
 .pr-link svg { width: 14px; height: 14px; flex: none; }
 .pr-checks { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px 4px 4px; border: 1px solid #e6e3ee; border-radius: 10px; background: #fff; color: #241f3a; font: 700 13px "Plus Jakarta Sans", sans-serif; cursor: pointer; }
@@ -7895,7 +7895,7 @@ body.pr-open { overflow: hidden; }
 .pr-card-sum .pr-lbl { color: var(--pr-label); font-size: 12px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; }
 .pr-card-sum strong { grid-column: 1 / -1; color: var(--pr-fg); font-size: clamp(22px, 2.4vw, 28px); font-weight: 800; }
 .pr-card-sum.is-orange { --pr-bg: #fff4ec; --pr-border: #f7d3b8; --pr-fg: #d9561f; --pr-label: #9a5a33; }
-.pr-card-sum.is-blue { --pr-bg: #eef1ff; --pr-border: #cfd6fb; --pr-fg: #3d4fd6; --pr-label: #4b5487; }
+.pr-card-sum.is-blue { --pr-bg: #eef1ff; --pr-border: #cfd6fb; --pr-fg: var(--blue-dark); --pr-label: #4b5487; }
 .pr-card-sum.is-red { --pr-bg: #fdf0ef; --pr-border: #f4cdca; --pr-fg: #c0392b; --pr-label: #8f4a44; }
 .pr-card-sum.is-green { --pr-bg: #ecf8f1; --pr-border: #c3e8d2; --pr-fg: #1f8a52; --pr-label: #3f7357; }
 @media (max-width: 900px) { .pr-summary { grid-template-columns: 1fr 1fr; gap: 10px; } }

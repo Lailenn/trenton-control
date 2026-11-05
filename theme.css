@@ -3,10 +3,10 @@
 
 :root {
   /* Brand palette */
-  --blue: #5369e8;
-  --blue-rgb: 83, 105, 232;
-  --blue-dark: #4256d6;
-  --blue-soft: #e9edff;
+  --blue: #007aff;
+  --blue-rgb: 0, 122, 255;
+  --blue-dark: #0066d6;
+  --blue-soft: #e5f1ff;
   --canvas: #f5f6fa;
   --surface: #ffffff;
   --paper: #fafbfe;
@@ -78,8 +78,8 @@ body { font-family: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", s
 .button:active:not(:disabled) { transform: translateY(0) scale(.97); transition-duration: .08s; }
 .button:focus-visible { outline: none; box-shadow: var(--ring); }
 .button:disabled { opacity: .55; cursor: not-allowed; transform: none; }
-.button-primary { background: linear-gradient(180deg, #6177ee, var(--blue)); color: #fff; border-color: transparent; box-shadow: 0 1px 0 rgba(255, 255, 255, .25) inset, 0 8px 18px rgba(var(--blue-rgb), .28); }
-.button-primary:hover:not(:disabled) { background: linear-gradient(180deg, #5a70ec, var(--blue-dark)); box-shadow: 0 1px 0 rgba(255, 255, 255, .25) inset, 0 12px 24px rgba(var(--blue-rgb), .34); }
+.button-primary { background: linear-gradient(180deg, #2b8cff, var(--blue)); color: #fff; border-color: transparent; box-shadow: 0 1px 0 rgba(255, 255, 255, .25) inset, 0 8px 18px rgba(var(--blue-rgb), .28); }
+.button-primary:hover:not(:disabled) { background: linear-gradient(180deg, #1a82ff, var(--blue-dark)); box-shadow: 0 1px 0 rgba(255, 255, 255, .25) inset, 0 12px 24px rgba(var(--blue-rgb), .34); }
 .button-ghost { border-color: var(--line); background: var(--surface); color: #545c78; box-shadow: var(--shadow-sm); }
 .button-ghost:hover:not(:disabled) { border-color: #d3d8e8; background: #fbfcff; color: var(--ink); }
 .button-danger { border-color: transparent; background: var(--red-soft); color: #c0392b; }
@@ -156,7 +156,7 @@ body .sidebar {
 body .sidebar::before, body .sidebar::after { display: none !important; }
 
 /* Profile + sync */
-body .sidebar .sidebar-avatar { border: 2px solid #fff !important; background: linear-gradient(135deg, #6a7ef0, var(--blue)) !important; box-shadow: 0 0 0 3px rgba(var(--blue-rgb), .16), 0 6px 14px rgba(var(--blue-rgb), .25) !important; color: #fff; }
+body .sidebar .sidebar-avatar { border: 2px solid #fff !important; background: linear-gradient(135deg, #2b8cff, var(--blue)) !important; box-shadow: 0 0 0 3px rgba(var(--blue-rgb), .16), 0 6px 14px rgba(var(--blue-rgb), .25) !important; color: #fff; }
 body .sidebar .sidebar-profile-copy strong { color: var(--ink) !important; }
 body .sidebar .sidebar-profile-copy small { color: var(--muted) !important; }
 body .sidebar .sidebar-sync { border: 1px solid var(--line) !important; background: #f7f8fc !important; color: #4a5270 !important; }
@@ -198,7 +198,7 @@ body .sidebar .nav-item.active .nav-icon { background: transparent !important; c
 body .sidebar .nav-title { color: var(--ink) !important; font-weight: 600; }
 body .sidebar .nav-sub { color: var(--muted) !important; }
 body .sidebar .nav-item.active .nav-title { color: var(--blue) !important; font-weight: 700; }
-body .sidebar .nav-item.active .nav-sub { color: #7f8de6 !important; }
+body .sidebar .nav-item.active .nav-sub { color: #5aa7ff !important; }
 body .sidebar .nav-chevron, body .sidebar .nav-item.active .nav-chevron { color: #c3c8d8 !important; }
 body .sidebar .nav-item::before, body .sidebar .nav-item::after, body .sidebar .nav-item.active::before, body .sidebar .nav-item.active::after { display: none !important; }
 body .sidebar .sidebar-logout, body .sidebar .nav-item.sidebar-passkey { color: #4a5270 !important; background: transparent !important; }
@@ -256,14 +256,14 @@ body .mobile-dock.dock-pills .dock-item::before, body .mobile-dock.dock-pills .d
   width: 0;
   height: 0;
   border-radius: 18px;
-  background: linear-gradient(180deg, #6a7ef0, var(--blue));
+  background: linear-gradient(180deg, #2b8cff, var(--blue));
   box-shadow: 0 8px 18px rgba(var(--blue-rgb), .35);
   pointer-events: none;
   opacity: 0;
   transition: transform .42s var(--ease-spring), width .3s var(--ease), opacity .2s ease;
 }
 .dock-indicator.is-ready { opacity: 1; }
-body .mobile-dock .dock-avatar { background: linear-gradient(135deg, #6a7ef0, var(--blue)) !important; border: 3px solid #fff !important; box-shadow: 0 8px 20px rgba(var(--blue-rgb), .32) !important; color: #fff !important; }
+body .mobile-dock .dock-avatar { background: linear-gradient(135deg, #2b8cff, var(--blue)) !important; border: 3px solid #fff !important; box-shadow: 0 8px 20px rgba(var(--blue-rgb), .32) !important; color: #fff !important; }
 
 @media (prefers-reduced-motion: reduce) {
   .nav-indicator, .dock-indicator, body .sidebar, body .sidebar .nav-icon { transition: none !important; }
@@ -292,7 +292,7 @@ body .sidebar .nav-icon, body .sidebar .sidebar-logout svg, body .sidebar .nav-c
 body .sidebar .nav-item:hover .nav-icon, body .sidebar .sidebar-logout:hover svg { color: #fff !important; }
 body .sidebar .nav-item:hover:not(.active), body .sidebar .sidebar-logout:hover, body .sidebar .nav-item.sidebar-passkey:hover { background: rgba(255, 255, 255, .12) !important; }
 body .sidebar .nav-item.active .nav-icon, body .sidebar .nav-item.active .nav-title { color: var(--blue) !important; }
-body .sidebar .nav-item.active .nav-sub { color: #7f8de6 !important; }
+body .sidebar .nav-item.active .nav-sub { color: #5aa7ff !important; }
 body .sidebar .nav-indicator { background: #fff; box-shadow: 0 6px 18px rgba(40, 40, 140, .25); }
 body .sidebar .nav-indicator::before { display: none; }
 body .sidebar .sidebar-sync { border-color: rgba(255, 255, 255, .2) !important; background: rgba(255, 255, 255, .12) !important; color: #fff !important; }
@@ -314,3 +314,7 @@ body .sidebar .nav-item.active .nav-icon, body .sidebar .nav-item.active .nav-ti
 body .sidebar .nav-item.active .nav-sub { color: #5aa7ff !important; }
 body .sidebar .nav-indicator { box-shadow: 0 6px 18px rgba(0, 60, 140, .25); }
 body .sidebar .sidebar-sync > i { border-color: #007aff !important; }
+
+/* Apple blue on step numbers and checkboxes */
+.b-step i { background: linear-gradient(135deg, #2b8cff, var(--blue)) !important; box-shadow: 0 4px 10px rgba(var(--blue-rgb), .3) !important; }
+input[type="checkbox"], input[type="radio"], .b-check input { accent-color: var(--blue); }
