@@ -164,6 +164,21 @@
     scrollTimers.set(list, setTimeout(() => list.classList.remove("is-scrolling"), 900));
   }, { capture: true, passive: true });
 
+  // Count every visible indicator up from 0 again (used when the home view is entered).
+  function recount() {
+    if (calm()) return;
+    COUNTERS.forEach(selector => {
+      const element = document.querySelector(selector);
+      if (!element || element.offsetParent === null) return;
+      const shape = parseShape(element.textContent.trim());
+      if (!shape || !shape.value) return;
+      target.set(element, shape.value);
+      write(element, format(shape, 0));
+      countTo(element, 0, shape);
+    });
+  }
+  window.UxMotion = { recount };
+
   function start() {
     BOARDS.forEach(watchBoard);
     COUNTERS.forEach(watchCounter);
