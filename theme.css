@@ -477,3 +477,20 @@ html.boot-leaving .boot-screen { pointer-events: none; animation: bootOut .5s va
   html.boot-leaving .boot-screen, .boot-copy h2, .boot-copy p, .boot-bar, .boot-bar i::after { animation: none !important; }
   html.boot-leaving .boot-screen { opacity: 0; }
 }
+
+/* Pending report: Apple blue instead of purple, tidy address links, empty paid card */
+.pending-report { --pr-violet: var(--blue); --pr-violet-2: #2b8cff; --pr-violet-soft: var(--blue-soft); }
+.pending-report .pr-card::before { background: radial-gradient(70% 140% at 85% -20%, rgba(var(--blue-rgb), .16), transparent 70%), radial-gradient(40% 90% at 100% 0, rgba(var(--blue-rgb), .10), transparent 70%) !important; }
+.pending-report .pr-btn.is-primary { box-shadow: 0 10px 22px rgba(var(--blue-rgb), .3) !important; }
+.pending-report .pr-tabs button.is-active { border-color: rgba(var(--blue-rgb), .25) !important; }
+.pending-report .pr-pill { background: var(--blue-soft); color: var(--blue-dark); font-weight: 700; white-space: nowrap; }
+.pending-report .pr-link { color: var(--blue-dark); text-decoration-color: rgba(var(--blue-rgb), .35); }
+.pending-report .pr-total-pill { background: linear-gradient(135deg, #eef6ff, #e2efff); color: var(--blue-dark); }
+.pending-report .pr-table th { background: #f3f8ff; }
+.pending-report .pr-table tbody tr:hover { background: #f8fbff; }
+.pending-report .pr-search:focus-within { border-color: rgba(var(--blue-rgb), .5); box-shadow: var(--ring); }
+.pending-report .pr-filter-btn.is-on { border-color: rgba(var(--blue-rgb), .3); }
+.pr-pop button.is-on { background: var(--blue-soft); color: var(--blue); }
+.pr-pop button:hover { background: #f3f8ff; }
+.pr-nowrap { white-space: nowrap; }
+.pending-report .pr-card-sum.is-empty .pr-chart { opacity: .25; filter: grayscale(.6); }

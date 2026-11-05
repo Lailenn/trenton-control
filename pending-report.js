@@ -24,13 +24,21 @@
       return { kind: "invoice", record: r, label: r.invoiceNumber || "—", date: C?.issuedDate?.(r) || isoDate(r.issuedDate), address: r.address || "", total, due, paid: cents(total - due), photos: r.checkPhotos || [] };
     }).filter(row => row.due > 0.004).sort((a, b) => String(b.label).localeCompare(String(a.label), "en", { numeric: true }));
   }
+  // "OUTSTANDING BALANCE 1833 14th St" -> { tag: "Outstanding balance", address: "1833 14th St" }
+  function splitAddress(text) {
+    const match = String(text || "").match(/^([A-Z][A-Z&/\- ]{3,}?)\s+(?=\d)/);
+    if (!match) return { tag: "", address: String(text || "") };
+    const tag = match[1].trim().toLowerCase().replace(/^\w/, c => c.toUpperCase());
+    return { tag, address: String(text).slice(match[0].length).trim() };
+  }
   function reportRow(r, kind) {
     const stored = Number(r.received || 0) + Number(r.due || 0);
     const calc = (r.entries || []).reduce((sum, e) => sum + Number(e.hours || 0) * Number(e.rate || 0), 0);
     const total = cents(stored > 0 ? stored : calc);
     const received = Math.min(cents(r.received), total);
     const dates = [r.startDate, r.reportDate, ...(r.entries || []).map(e => e.date), r.endDate].map(isoDate).filter(Boolean).sort();
-    return { kind, record: r, label: kind === "job" ? "Report" : "Hours", date: dates[dates.length - 1] || "", first: dates[0] || "", address: r.jobAddress || "", total, due: cents(total - received), paid: received, photos: r.checkPhotos || [] };
+    const parts = splitAddress(r.jobAddress);
+    return { kind, record: r, label: parts.tag || (kind === "job" ? "Report" : "Hours"), date: dates[dates.length - 1] || "", first: dates[0] || "", address: parts.address, total, due: cents(total - received), paid: received, photos: r.checkPhotos || [] };
   }
   const byDate = (a, b) => (b.date || "").localeCompare(a.date || "");
   function hoursRows() {
@@ -65,13 +73,18 @@
     external: "M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5",
     close: "M6 6l12 12M18 6 6 18"
   };
+  // Last word and the link icon never wrap apart.
+  const linkText = text => {
+    const words = String(text).trim().split(/\s+/), last = words.pop() || "";
+    return `${esc(words.join(" "))}${words.length ? " " : ""}<span class="pr-nowrap">${esc(last)}${icon("external")}</span>`;
+  };
   const icon = (name, cls = "") => `<svg class="pr-i ${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${UI[name]}"/></svg>`;
   const DOTS = `<svg class="pr-i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>`;
   // Search, filter and sort of the details table (per open window).
   const view = { q: "", filter: "all", sort: { key: "", dir: 1 } };
   const FILTERS = [["all", "All"], ["photo", "With check photo"], ["nophoto", "No photo"]];
   const SORTS = { label: r => String(r.label), date: r => r.date || "", total: r => r.total, due: r => r.due };
-  const tabTitle = which => which === "invoice" ? "Pending Invoices Report" : which === "job" ? "Pending Reports Report" : "Pending Hours Report";
+  const tabTitle = which => which === "invoice" ? "Pending Invoices Report" : which === "job" ? `Reports ${sentLabel()}` : "Pending Hours Report";
   const noun = which => which === "invoice" ? "invoices" : "reports";
   const sentLabel = () => window.CompanyApp?.isOtras?.() ? "Sent to client" : "Sent to Trenton";
 
@@ -210,7 +223,7 @@
         <td data-l="${isInv ? "Invoice" : "Report"}"><span class="pr-pill">${esc(r.label)}</span></td>
         <td data-l="Date"><span class="pr-date-cell">${icon("calendar")}${esc(dateText(r))}</span></td>
         <td class="pr-addr" data-l="Job address">${icon("pin", "pr-pin")}${hasPdf
-          ? `<button type="button" class="pr-link" data-pr-view="${id}" title="Ver PDF">${esc(r.address || "Sin dirección")}${icon("external")}</button>`
+          ? `<button type="button" class="pr-link" data-pr-view="${id}" title="View PDF">${linkText(r.address || "No address")}</button>`
           : `<span>${esc(r.address || "Sin dirección")}</span>`}</td>
         <td class="pr-num" data-l="${isInv ? "Invoice total" : "Total"}">${money(r.total)}</td>
         <td class="pr-num" data-l="Balance due"><span class="pr-due-pill">${money(r.due)}</span></td>
@@ -225,7 +238,7 @@
     }).join("");
     const shownDue = rows.reduce((sum, r) => sum + r.due, 0);
     slot.innerHTML = !all.length
-      ? `<p class="pr-empty">No hay ${isInv ? "invoices" : "reportes"} en Esperando cheque con saldo pendiente.</p>`
+      ? `<p class="pr-empty">No ${isInv ? "invoices" : "reports"} waiting for a check with a balance due.</p>`
       : `<div class="pr-table-wrap"><table class="pr-table"><thead><tr>
           ${sortHead("label", isInv ? "Invoice" : "Report")}${sortHead("date", "Date")}<th>Job Address</th>${sortHead("total", isInv ? "Invoice Total" : "Total", "pr-num")}${sortHead("due", "Balance Due", "pr-num")}<th>Payment Record</th><th class="pr-actions-head">Actions</th>
         </tr></thead><tbody>${body || `<tr class="pr-none"><td colspan="7">No ${noun(tab)} match this search.</td></tr>`}</tbody></table></div>
@@ -276,7 +289,7 @@
     const row = rowsFor(tab).find(r => r.record.id === button.dataset.prMore);
     if (!row) return;
     const hasPdf = Boolean(row.record.pdfBlob || row.record.pdfPath);
-    const items = [hasPdf && ["pdf", "Ver PDF"], hasPdf && ["link", "Copiar link de vista previa"], row.photos.length && ["checks", "Ver cheques"], ["edit", "Editar datos"]].filter(Boolean);
+    const items = [hasPdf && ["pdf", "View PDF"], hasPdf && ["link", "Copy preview link"], row.photos.length && ["checks", "View checks"], ["edit", "Edit details"]].filter(Boolean);
     popAt(button, items.map(([id, label]) => `<button type="button" role="menuitem" data-pick="${id}">${label}</button>`).join(""), id => {
       if (id === "pdf") return archiveOf(row.kind)?.view?.(row.record);
       if (id === "link") return window.ShareLink?.copy(row.kind, row.record);
@@ -317,7 +330,7 @@
   // tile: icon square, fg: icon/chart color, border: card edge, wash: soft corner glow.
   const TONES = {
     orange: { tile: "#fdecdd", fg: "#d9741f", border: "#f8e3d2", wash: "#fde3cc", chart: "#f7c08a" },
-    purple: { tile: "#eeecfd", fg: "#6c5ce7", border: "#e6e3fb", wash: "#e4e0fb", chart: "#7c6cf0" },
+    purple: { tile: "#e5f1ff", fg: "#007aff", border: "#d6e8ff", wash: "#d9eaff", chart: "#3d97ff" },
     plum: { tile: "#fbe9f1", fg: "#a8467e", border: "#f5dde8", wash: "#f9dbe8", chart: "#b05088" },
     green: { tile: "#e2f6ec", fg: "#1f9d61", border: "#d8f0e3", wash: "#d4f1e2", chart: "#8fd8b2" }
   };
@@ -332,7 +345,7 @@
     { label: isInv ? "PENDING INVOICES" : "PENDING REPORTS", value: String(s.count), caption: isInv ? "Invoices waiting for payment" : "Reports waiting for payment", tone: "orange", icon: "doc", chart: "bars" },
     { label: "TOTAL INVOICED", value: money(s.total), caption: "Total amount invoiced", tone: "purple", icon: "dollar", chart: "line" },
     { label: "OUTSTANDING BALANCE", value: money(s.due), caption: "Amount pending to be paid", tone: "plum", icon: "clock", chart: "line" },
-    { label: "AMOUNT PAID", value: money(s.paid), caption: "Confirmed payments", tone: "green", icon: "check", chart: "bars" }
+    { label: "AMOUNT PAID", value: money(s.paid), caption: s.paid > 0 ? "Confirmed payments" : "No payments yet", tone: "green", icon: "check", chart: "bars", empty: !(s.paid > 0) }
   ];
   // Small decorative charts, drawn in a 64 x 40 box.
   const CHART_LINE = "M2 36C10 22 18 18 26 24S40 32 48 22 58 8 62 4";
@@ -343,7 +356,7 @@
       const chart = c.chart === "bars"
         ? CHART_BARS.map(([x, y, w, h]) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3"/>`).join("")
         : `<path d="${CHART_LINE}" fill="none"/><circle cx="62" cy="4" r="3.2"/>`;
-      return `<div class="pr-card-sum is-${c.chart}" style="--t-tile:${t.tile};--t-fg:${t.fg};--t-border:${t.border};--t-wash:${t.wash};--t-chart:${t.chart}">
+      return `<div class="pr-card-sum is-${c.chart}${c.empty ? " is-empty" : ""}" style="--t-tile:${t.tile};--t-fg:${t.fg};--t-border:${t.border};--t-wash:${t.wash};--t-chart:${t.chart}">
         <span class="pr-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS[c.icon]}"/></svg></span>
         <div class="pr-sum-text"><span class="pr-lbl">${c.label.toLowerCase().replace(/(^|\s)\w/g, m => m.toUpperCase())}</span><strong>${c.value}</strong><small>${c.caption}</small></div>
         <svg class="pr-chart" viewBox="0 0 66 42" aria-hidden="true">${chart}</svg>
@@ -387,7 +400,7 @@
       HEAD = rgb("#f6e6d6"), ACCENT = rgb("#e2602a"), RED = rgb("#c0392b"), GREEN = rgb("#23874a"), BLUE = rgb("#3d4fd6"), WHITE = rgb("#ffffff");
     const W = 792, H = 612, M = 40, RIGHT = W - M;
     const s = summary(rows), from = sender();
-    const title = isInv ? "PENDING INVOICES REPORT" : which === "job" ? "PENDING REPORTS" : "PENDING HOURS REPORT";
+    const title = isInv ? "PENDING INVOICES REPORT" : which === "job" ? `REPORTS ${sentLabel().toUpperCase()}` : "PENDING HOURS REPORT";
 
     let logo = null;
     try { const bytes = await loadLogo(); if (bytes) logo = await doc.embedPng(bytes); } catch (_) { logo = null; }
