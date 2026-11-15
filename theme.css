@@ -591,3 +591,132 @@ body .sidebar .nav-icon .i-fill { transition: fill .25s ease; }
 body .sidebar .nav-item.active .nav-icon .i-fill { fill: currentColor; }
 body .sidebar .nav-item.active .nav-icon .i-hand { stroke: #fff; }
 body .sidebar .nav-indicator { box-shadow: 0 8px 20px rgba(0, 50, 140, .25) !important; }
+
+/* =====================================================================
+   Workspace chooser (company gate): premium, minimal, Apple-like
+   ===================================================================== */
+html body .login-screen.auth-gate[data-mode="company"] {
+  background:
+    radial-gradient(900px 620px at 85% -10%, rgba(149, 112, 237, .16), transparent 65%),
+    radial-gradient(760px 520px at -5% 105%, rgba(0, 122, 255, .08), transparent 70%),
+    radial-gradient(600px 420px at 50% 50%, rgba(255, 255, 255, .7), transparent 70%),
+    #f2f4f9 !important;
+}
+html body .login-screen.auth-gate[data-mode="company"] :is(.l3-bg, .l3-intro, .l3-corner-logo) { display: none !important; }
+html body .login-screen.login3.auth-gate[data-mode="company"] .login-card.auth-card.l3-card {
+  width: min(860px, calc(100% - 32px)) !important;
+  max-width: none !important;
+  padding: 30px 36px 22px !important;
+  border: 1px solid rgba(255, 255, 255, .9) !important;
+  border-radius: 28px !important;
+  background: rgba(255, 255, 255, .86) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  backdrop-filter: blur(24px) saturate(1.5);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .9) inset, 0 8px 24px rgba(36, 42, 64, .06), 0 30px 70px rgba(60, 40, 120, .10) !important;
+  animation: cgCardIn .55s cubic-bezier(.2, .8, .2, 1) both;
+}
+html body .login-screen.auth-gate[data-mode="company"] .login-top { padding-bottom: 18px !important; border-bottom: 1px solid #eceff6 !important; }
+html body .login-screen.auth-gate[data-mode="company"] .login-legal { margin-top: 18px !important; padding-top: 12px !important; border-top: 1px solid #eceff6 !important; color: #9aa1b5 !important; font-size: 12px !important; }
+#companyGate { margin-top: 22px !important; }
+#companyGate > p.company-kicker { margin: 0 !important; color: #8b5cf6 !important; font: 800 12px/1.2 "Plus Jakarta Sans", sans-serif !important; letter-spacing: .14em !important; text-transform: uppercase; }
+#companyGate h2 { margin: 10px 0 8px !important; color: var(--ink) !important; font: 800 clamp(26px, 3.4vw, 34px)/1.12 "Plus Jakarta Sans", sans-serif !important; letter-spacing: -.025em !important; }
+#companyGate > p.company-lead { max-width: 560px; margin: 0 0 24px !important; color: var(--muted) !important; font: 500 15px/1.55 "Plus Jakarta Sans", sans-serif !important; }
+
+/* Cards */
+#companyGate .company-choice-grid { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 16px !important; }
+.company-choice-trenton { --c: #e8762c; --c-strong: #d4621a; --soft: #fff4ea; --ring: rgba(232, 118, 44, .14); }
+.company-choice-otras { --c: #8b5cf6; --c-strong: #7444e8; --soft: #f3eeff; --ring: rgba(139, 92, 246, .14); }
+#companyGate .company-choice {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 16px !important;
+  min-height: 232px;
+  padding: 22px !important;
+  border: 1.5px solid #e8ebf3 !important;
+  border-radius: 22px !important;
+  background: #fff !important;
+  box-shadow: 0 2px 6px rgba(36, 42, 64, .04) !important;
+  text-align: left !important;
+  cursor: pointer;
+  transform: none;
+  transition: transform .35s cubic-bezier(.2, .8, .2, 1), box-shadow .35s ease, border-color .25s ease, opacity .3s ease, filter .3s ease !important;
+  animation: cgCardIn .6s cubic-bezier(.2, .8, .2, 1) both;
+}
+#companyGate .company-choice-otras { animation-delay: .08s; }
+#companyGate .company-choice::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(420px 220px at 100% 0%, var(--soft), transparent 70%); opacity: .9; pointer-events: none; }
+#companyGate .company-choice > * { position: relative; }
+#companyGate .company-choice:hover { transform: translateY(-4px) !important; border-color: color-mix(in srgb, var(--c) 45%, #fff) !important; box-shadow: 0 18px 40px color-mix(in srgb, var(--c) 16%, transparent), 0 2px 6px rgba(36, 42, 64, .05) !important; background: #fff !important; }
+#companyGate .company-choice:active { transform: translateY(-1px) scale(.985) !important; }
+#companyGate .company-choice:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--ring) !important; }
+/* The space in use */
+#companyGate .company-choice.is-selected { border-color: var(--c) !important; box-shadow: 0 0 0 4px var(--ring), 0 14px 32px color-mix(in srgb, var(--c) 14%, transparent) !important; background: #fff !important; }
+
+#companyGate .company-logo {
+  display: grid !important; place-items: center; flex: none;
+  width: 68px !important; height: 68px !important; padding: 8px !important;
+  border: 1px solid color-mix(in srgb, var(--c) 18%, #fff) !important; border-radius: 20px !important;
+  background: var(--soft) !important; box-shadow: none !important; color: var(--c) !important; overflow: hidden;
+  transition: transform .4s cubic-bezier(.34, 1.4, .64, 1);
+}
+#companyGate .company-choice:hover .company-logo { transform: scale(1.06) rotate(-2deg); }
+#companyGate .company-logo img { width: 100% !important; height: 100% !important; max-width: none !important; object-fit: contain; }
+#companyGate .company-logo-icon { background: linear-gradient(145deg, #f6f1ff, #ebe2ff) !important; }
+#companyGate .company-logo-icon svg { width: 34px !important; height: 34px !important; }
+#companyGate .company-info { display: grid !important; gap: 8px !important; padding: 0 !important; }
+#companyGate .company-info strong { padding: 0 !important; color: var(--ink) !important; font: 800 19px/1.2 "Plus Jakarta Sans", sans-serif !important; letter-spacing: -.01em; }
+#companyGate .company-tag { justify-self: start; padding: 4px 10px !important; border-radius: 999px !important; background: var(--soft) !important; color: var(--c-strong) !important; font: 700 12px/1.2 "Plus Jakarta Sans", sans-serif !important; font-style: normal !important; white-space: nowrap; }
+#companyGate .company-desc { color: var(--muted) !important; font: 500 13.5px/1.5 "Plus Jakarta Sans", sans-serif !important; }
+#companyGate .company-go {
+  display: flex !important; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%; margin-top: auto; padding-top: 14px; border-top: 1px solid #f0f2f7;
+  color: var(--c-strong) !important; font: 700 14px "Plus Jakarta Sans", sans-serif !important;
+}
+#companyGate .company-go svg { display: grid; width: 34px !important; height: 34px !important; padding: 8px; border-radius: 50%; background: var(--soft); color: var(--c); transition: transform .3s cubic-bezier(.34, 1.4, .64, 1), background .25s ease, color .25s ease !important; }
+#companyGate .company-choice:hover .company-go svg { transform: translateX(4px); background: var(--c); color: #fff; }
+#companyGate .company-mark {
+  position: absolute !important; top: 18px !important; right: 18px !important; left: auto !important;
+  display: grid !important; place-items: center; width: 28px !important; height: 28px !important;
+  border-radius: 50% !important; background: var(--c) !important; color: #fff !important;
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--c) 35%, transparent) !important;
+  opacity: 0; transform: scale(.4); transition: opacity .25s ease, transform .35s cubic-bezier(.34, 1.6, .64, 1) !important;
+  animation: none !important;
+}
+#companyGate .company-mark svg { width: 15px !important; height: 15px !important; }
+#companyGate .company-choice.is-selected .company-mark, #companyGate .company-choice.is-picked .company-mark { opacity: 1; transform: none; }
+#companyGate .company-chevron { display: none !important; }
+
+/* Choosing a space: the picked card pops, the other steps back */
+#companyGate.is-choosing .company-choice { pointer-events: none; }
+#companyGate.is-choosing .company-choice:not(.is-picked) { opacity: .35; transform: scale(.97) !important; filter: blur(1px) saturate(.6); }
+#companyGate.is-choosing .company-choice.is-picked { transform: scale(1.02) !important; border-color: var(--c) !important; box-shadow: 0 0 0 5px var(--ring), 0 22px 46px color-mix(in srgb, var(--c) 22%, transparent) !important; }
+#companyGate.is-choosing .company-choice.is-picked .company-go svg { background: var(--c); color: #fff; transform: translateX(6px); }
+
+@keyframes cgCardIn { from { opacity: 0; transform: translateY(14px) scale(.985); } }
+
+/* Tablet and phone */
+@media (max-width: 760px) {
+  html body .login-screen.login3.auth-gate[data-mode="company"] .login-card.auth-card.l3-card { padding: 22px 18px 16px !important; border-radius: 24px !important; }
+  #companyGate .company-choice-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+  #companyGate .company-choice { min-height: 0; padding: 18px !important; gap: 12px !important; display: grid !important; grid-template-columns: auto minmax(0, 1fr); align-items: start !important; }
+  #companyGate .company-logo { width: 58px !important; height: 58px !important; border-radius: 17px !important; }
+  #companyGate .company-info { grid-column: 2; }
+  #companyGate .company-go { grid-column: 1 / -1; padding-top: 12px; }
+  #companyGate .company-info strong { font-size: 17px !important; padding-right: 30px !important; }
+  #companyGate h2 { font-size: 25px !important; }
+  #companyGate > p.company-lead { font-size: 14px !important; margin-bottom: 18px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html body .login-screen.login3.auth-gate[data-mode="company"] .login-card.auth-card.l3-card, #companyGate .company-choice { animation: none !important; transition: none !important; }
+}
+
+/* Trenton logo is wide: give it the full tile */
+#companyGate .company-choice-trenton .company-logo { padding: 4px !important; background: #fff !important; }
+#companyGate .company-choice-trenton .company-logo img { width: 128% !important; height: 128% !important; }
+/* The login layout uses a fixed 440px column; the chooser gets a wider one */
+html body .login-screen.login3.auth-gate[data-mode="company"] { grid-template-columns: minmax(0, 860px) !important; justify-content: center !important; }
+@media (max-width: 760px) {
+  html body .login-screen.login3.auth-gate[data-mode="company"] { grid-template-columns: minmax(0, 1fr) !important; padding-inline: 12px !important; }
+  html body .login-screen.login3.auth-gate[data-mode="company"] .login-card.auth-card.l3-card { width: 100% !important; margin: 12px 0 !important; }
+}

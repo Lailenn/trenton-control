@@ -125,14 +125,23 @@
   function bind() {
     $("#companyGate")?.addEventListener("click", event => {
       const button = event.target.closest("[data-company-choice]");
-      if (!button) return;
-      const value = setId(button.dataset.companyChoice);
-      hideChooser();
-      if (chooseWaiter) {
-        const done = chooseWaiter;
-        chooseWaiter = null;
-        done(value);
-      }
+      const gate = $("#companyGate");
+      if (!button || gate.classList.contains("is-choosing")) return;
+      // The picked card is marked and the other fades for a moment before entering the space.
+      const calm = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      gate.classList.add("is-choosing");
+      gate.querySelectorAll("[data-company-choice]").forEach(b => b.classList.toggle("is-picked", b === button));
+      setTimeout(() => {
+        gate.classList.remove("is-choosing");
+        gate.querySelectorAll("[data-company-choice]").forEach(b => b.classList.remove("is-picked"));
+        const value = setId(button.dataset.companyChoice);
+        hideChooser();
+        if (chooseWaiter) {
+          const done = chooseWaiter;
+          chooseWaiter = null;
+          done(value);
+        }
+      }, calm ? 0 : 420);
     });
     $("#switchCompanyButton")?.addEventListener("click", () => {
       clearSession();
