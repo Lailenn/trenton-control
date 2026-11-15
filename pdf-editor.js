@@ -201,7 +201,7 @@ window.PdfEditor = (function () {
       <button type="button" class="pe-drop" data-lib="upload">${ic("upload")}<strong>Arrastra un PDF aquí o toca para elegirlo</strong><span>Solo archivos PDF, hasta 50 MB</span></button>
       <div class="pe-lib-bar">
         <div class="pe-tabs" role="tablist">
-          ${[["recientes", "Recientes"], ["editados", "Editados"], ["revision", "Pendientes de revisión"], ["firmas", "Mis firmas"], ["plantillas", "Plantillas"]]
+          ${[["recientes", "Recientes"], ["editados", "Editados"], ["revision", "Pendientes de revisión"], ["firmas", "Mis firmas"], ["imagenes", "Mis imágenes"], ["plantillas", "Plantillas"]]
             .map(([id, label]) => `<button type="button" role="tab" class="${libTab === id ? "is-active" : ""}" data-tab="${id}">${label}</button>`).join("")}
         </div>
         <label class="pe-search">${ic("zoomOut").replace("M8 11h6", "")}<input type="search" placeholder="Buscar documento o dirección…" value="${esc(libQuery)}"></label>
@@ -214,8 +214,9 @@ window.PdfEditor = (function () {
 
   async function renderLibraryBody() {
     const body = $(".pe-lib-body", root);
-    $(".pe-search", root).hidden = libTab === "firmas" || libTab === "plantillas";
+    $(".pe-search", root).hidden = libTab === "firmas" || libTab === "plantillas" || libTab === "imagenes";
     if (libTab === "firmas") return renderSignatures(body);
+    if (libTab === "imagenes") return renderImages(body);
     if (libTab === "plantillas") return renderTemplates(body);
     let docs = [];
     try { docs = await Store().listDocs(); } catch (error) { body.innerHTML = `<p class="pe-empty">${esc(error.message)}</p>`; return; }
@@ -271,6 +272,7 @@ window.PdfEditor = (function () {
     // Signature and template actions are handled in their renderers (delegation below).
     onSignatureClick(e);
     onTemplateClick(e);
+    onImageClick(e);
   }
 
   async function downloadLatest(doc) {
@@ -429,6 +431,65 @@ window.PdfEditor = (function () {
     toast("Firma guardada.");
     if (libTab === "firmas" && libraryVisible()) renderLibraryBody();
     refreshSigTray();
+  }
+
+  /* ---------- Mis imágenes ---------- */
+  async function libImageUrl(item) { const res = await imageFor(item.key); return res?.url || ""; }
+  async function renderImages(body) {
+    const items = await Store().listImages();
+    body.innerHTML = `
+      <div class="pe-sig-head">
+        <p class="pe-muted">Logotipos, sellos escaneados y fotos que subes quedan guardados aquí para insertarlos en cualquier documento con la herramienta Imagen.</p>
+        <div class="pe-row"><button type="button" class="pe-btn is-primary" data-img="upload">${ic("upload")} Subir imágenes</button></div>
+      </div>
+      ${items.length ? `<div class="pe-sig-grid">${items.map(it => `
+        <article class="pe-sig" data-img-id="${esc(it.id)}">
+          <div class="pe-sig-img"><img alt="${esc(it.name)}" data-img-src="${esc(it.id)}"></div>
+          <div class="pe-sig-info"><strong>${esc(it.name)}</strong><small>${it.w} × ${it.h} px · ${fmtDate(it.createdAt)}</small></div>
+          <div class="pe-sig-actions">
+            <button type="button" class="pe-icon" data-img-act="rename" title="Cambiar nombre">${ic("edit")}</button>
+            <button type="button" class="pe-icon is-danger" data-img-act="delete" title="Quitar de Mis imágenes">${ic("trash")}</button>
+          </div>
+        </article>`).join("")}</div>`
+        : `<div class="pe-empty">${ic("image")}<strong>Aún no hay imágenes guardadas</strong><span>Sube un logotipo o un sello y úsalo en todos los documentos.</span></div>`}`;
+    for (const it of items) { const img = $(`img[data-img-src="${CSS.escape(it.id)}"]`, body); if (img) img.src = await libImageUrl(it); }
+  }
+  // Uploads one or more PNG/JPG files into the library. Returns the saved items.
+  async function uploadImages() {
+    const files = await new Promise(resolve => {
+      const input = Object.assign(document.createElement("input"), { type: "file", accept: "image/png,image/jpeg", multiple: true });
+      input.addEventListener("change", () => resolve([...(input.files || [])]), { once: true });
+      input.click();
+    });
+    const saved = [];
+    for (const f of files) {
+      if (!/^image\/(png|jpeg)$/.test(f.type) || f.size > MAX_IMG) { toast(`"${f.name}" no es PNG/JPG de hasta 10 MB.`); continue; }
+      const { w, h, url } = await loadImage(f);
+      URL.revokeObjectURL(url);
+      saved.push(await Store().addLibraryImage({ blob: f, name: f.name.replace(/\.(png|jpe?g)$/i, ""), w, h }));
+    }
+    if (saved.length) toast(saved.length === 1 ? "Imagen guardada en Mis imágenes." : `${saved.length} imágenes guardadas en Mis imágenes.`);
+    if (libTab === "imagenes" && libraryVisible()) renderLibraryBody();
+    return saved;
+  }
+  async function onImageClick(e) {
+    if (e.target.closest('[data-img="upload"]')) {
+      const saved = await uploadImages();
+      if (saved.length && ed.doc && ed.tool === "image") { ed.imgId = saved[0].id; refreshImageTray(); }
+      return;
+    }
+    const act = e.target.closest("[data-img-act]");
+    if (!act) return;
+    const id = act.closest("[data-img-id]").dataset.imgId;
+    const item = (await Store().listImages()).find(i => i.id === id);
+    if (!item) return;
+    if (act.dataset.imgAct === "rename") {
+      const r = await dialog({ title: "Cambiar nombre", body: `<label class="pe-field"><span>Nombre</span><input value="${esc(item.name)}" maxlength="60"></label>`, actions: [{ id: "c", label: "Cancelar" }, { id: "ok", label: "Guardar", primary: true }] });
+      const name = r?.id === "ok" ? $("input", r.root).value.trim() : "";
+      if (name) await Store().renameLibraryImage(id, name);
+    }
+    if (act.dataset.imgAct === "delete" && await confirmDialog("Quitar imagen", `¿Quitar "${item.name}" de Mis imágenes? Los documentos donde ya está insertada no cambian.`, "Quitar")) await Store().removeLibraryImage(id);
+    renderLibraryBody();
   }
 
   /* ---------- Plantillas ---------- */
@@ -839,19 +900,40 @@ window.PdfEditor = (function () {
     $$(".pe-tool", root).forEach(b => b.classList.toggle("is-on", b.dataset.tool === tool));
     $(".pe-canvas", root).dataset.tool = tool;
     const tray = $(".pe-sig-tray", root);
-    tray.hidden = tool !== "signature";
+    tray.hidden = tool !== "signature" && tool !== "image";
     if (tool === "signature") refreshSigTray();
-    if (tool === "image") pickImageForPlacement();
+    if (tool === "image") refreshImageTray();
   }
   async function refreshSigTray() {
     const tray = $(".pe-sig-tray", root);
-    if (!tray || tray.hidden) return;
+    if (!tray || tray.hidden || ed.tool !== "signature") return;
     const sigs = await Store().listSignatures();
     if (!sigs.length) { tray.innerHTML = `<span class="pe-muted">No hay firmas guardadas.</span><button type="button" class="pe-btn" data-sig="upload">${ic("upload")} Subir</button><button type="button" class="pe-btn is-primary" data-sig="draw">${ic("sign")} Dibujar</button>`; return; }
     if (!sigs.some(s => s.id === ed.sigId)) ed.sigId = sigs.find(s => s.isDefault)?.id || sigs[0].id;
     tray.innerHTML = `<span class="pe-muted">Toca la página donde va la firma:</span>${sigs.map(s => `<button type="button" class="pe-sig-pick${s.id === ed.sigId ? " is-on" : ""}" data-pick-sig="${s.id}" title="${esc(s.name)}"><img alt="${esc(s.name)}" data-src="${s.id}"><span>${esc(s.name)}${s.isDefault ? " ★" : ""}</span></button>`).join("")}
-      <button type="button" class="pe-btn" data-ed="quickSign">${ic("sign")} Insertar en esta página</button>`;
+      <button type="button" class="pe-btn is-primary" data-ed="quickSign">${ic("sign")} Insertar en esta página</button>
+      <span class="pe-sep"></span>
+      <button type="button" class="pe-btn" data-sig="upload">${ic("upload")} Subir firma</button>
+      <button type="button" class="pe-btn" data-sig="draw">${ic("sign")} Dibujar</button>`;
     for (const s of sigs) { const img = $(`img[data-src="${CSS.escape(s.id)}"]`, tray); if (img) img.src = await sigUrl(s); }
+  }
+  async function refreshImageTray() {
+    const tray = $(".pe-sig-tray", root);
+    if (!tray || tray.hidden || ed.tool !== "image") return;
+    const items = await Store().listImages();
+    if (!items.some(i => i.id === ed.imgId)) ed.imgId = items[0]?.id || null;
+    tray.innerHTML = items.length
+      ? `<span class="pe-muted">Elige una imagen y toca la página:</span>${items.map(i => `<button type="button" class="pe-sig-pick${i.id === ed.imgId ? " is-on" : ""}" data-pick-img="${i.id}" title="${esc(i.name)}"><img alt="${esc(i.name)}" data-img-src="${i.id}"><span>${esc(i.name)}</span></button>`).join("")}
+         <button type="button" class="pe-btn is-primary" data-ed="quickImage">${ic("image")} Insertar en esta página</button><span class="pe-sep"></span>
+         <button type="button" class="pe-btn" data-img="upload">${ic("upload")} Subir imagen</button>`
+      : `<span class="pe-muted">Aún no hay imágenes guardadas.</span><button type="button" class="pe-btn is-primary" data-img="upload">${ic("upload")} Subir imagen</button>`;
+    for (const i of items) { const img = $(`img[data-img-src="${CSS.escape(i.id)}"]`, tray); if (img) img.src = await libImageUrl(i); }
+  }
+  async function imageElement(id, page, cx, cy) {
+    const item = (await Store().listImages()).find(i => i.id === id);
+    if (!item) return null;
+    const ww = Math.min(200, item.w), hh = ww * item.h / item.w;
+    return { type: "image", page, src: item.key, x: cx - ww / 2, y: cy - hh / 2, w: ww, h: hh, lock: true };
   }
   async function pickImageForPlacement() {
     const f = await pickFile("image/png,image/jpeg");
@@ -909,8 +991,13 @@ window.PdfEditor = (function () {
       if (el) { addElement(el); setTool("select"); }
       return;
     }
+    if (t === "image" && ed.imgId) {
+      const el = await imageElement(ed.imgId, pid, px, py);
+      if (el) { addElement(el); setTool("select"); }
+      return;
+    }
     if (t === "image") {
-      if (!ed.pendingImage) return;
+      if (!ed.pendingImage) { toast("Primero sube una imagen."); return; }
       const { key, w, h } = ed.pendingImage, ww = Math.min(200, w), hh = ww * h / w;
       ed.pendingImage = null;
       addElement({ type: "image", page: pid, src: key, x: px - ww / 2, y: py - hh / 2, w: ww, h: hh, lock: true });
@@ -1344,6 +1431,9 @@ window.PdfEditor = (function () {
     const pick = e.target.closest("[data-pick-sig]");
     if (pick) { ed.sigId = pick.dataset.pickSig; $$(".pe-sig-pick", root).forEach(b => b.classList.toggle("is-on", b === pick)); return; }
     if (e.target.closest("[data-sig]")) return onSignatureClick(e);
+    const pickImg = e.target.closest("[data-pick-img]");
+    if (pickImg) { ed.imgId = pickImg.dataset.pickImg; $$(".pe-sig-pick", root).forEach(b => b.classList.toggle("is-on", b === pickImg)); return; }
+    if (e.target.closest('[data-img="upload"]')) return onImageClick(e);
     const page = e.target.closest("[data-page]");
     if (page) return pageOp(page.dataset.page);
     const thumb = e.target.closest("[data-thumb]");
@@ -1367,6 +1457,13 @@ window.PdfEditor = (function () {
       if (!ed.sigId) return toast("Primero guarda una firma.");
       const p = ed.pages[ed.current], { w, h } = pageSize(p);
       const el = await signatureElement(ed.sigId, p.pid, w * .72, h * .82);
+      if (el) { addElement(el); setTool("select"); }
+      return;
+    }
+    if (a === "quickImage") {
+      if (!ed.imgId) return toast("Primero sube una imagen.");
+      const p = ed.pages[ed.current], { w, h } = pageSize(p);
+      const el = await imageElement(ed.imgId, p.pid, w / 2, h * .2);
       if (el) { addElement(el); setTool("select"); }
       return;
     }

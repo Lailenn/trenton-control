@@ -185,6 +185,23 @@ window.PdfStore = (function () {
   }
   const getImage = key => get(IMG_BUCKET, imgPath(key));
 
+  /* ---------- image library ("Mis imágenes": logos, scanned stamps, photos) ---------- */
+  // Removing an image from the library keeps its file, so documents that already use it don't break.
+  const IMG_INDEX = () => `editor/${company()}/imagenes.json`;
+  async function listImages() { return (await loadIndex(IMG_INDEX())).items.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))); }
+  async function addLibraryImage({ blob, name, w, h }) {
+    const key = await putImage(blob);
+    const item = { id: uid(), key, name: name || "Imagen", w, h, createdAt: now(), updatedAt: now() };
+    await editIndex(IMG_INDEX(), index => { index.items.push(item); });
+    return item;
+  }
+  async function renameLibraryImage(id, name) {
+    await editIndex(IMG_INDEX(), index => { const it = index.items.find(i => i.id === id); if (it) Object.assign(it, { name, updatedAt: now() }); });
+  }
+  async function removeLibraryImage(id) {
+    await editIndex(IMG_INDEX(), index => { index.items = index.items.filter(i => i.id !== id); index.deleted = [...(index.deleted || []), id]; });
+  }
+
   /* ---------- signatures (shared by both companies: they are Rubén's) ---------- */
   const SIG_INDEX = "firmas/index.json";
   const sigFile = (id, kind) => `firmas/${id}${kind === "original" ? "-original" : ""}`;
@@ -239,7 +256,7 @@ window.PdfStore = (function () {
   return {
     onStatus, flushRetries,
     listDocs, getDoc, createDoc, updateDoc, getOriginal, getState, saveState, flushState, saveVersion, getVersionPdf, getVersionState, deleteDoc, duplicateDoc,
-    putImage, getImage,
+    putImage, getImage, listImages, addLibraryImage, renameLibraryImage, removeLibraryImage,
     listSignatures, addSignature, updateSignature, replaceSignature, removeSignature, getSignature,
     listTemplates, addTemplate, removeTemplate
   };

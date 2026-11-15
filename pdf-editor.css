@@ -231,3 +231,5 @@
 @media (prefers-reduced-motion: reduce) {
   .pe-doc, .pe-sig, .pe-page, .pe-editor, .pe-props-in, .pe-sig-tray, .pe-dialog, .pe-dialog-card, .pe-tool.is-on .pe-i { animation: none !important; }
 }
+.pe-sig-tray .pe-sep { flex: none; width: 1px; height: 26px; background: var(--line); }
+.pe-sig-tray .pe-btn { flex: none; }
