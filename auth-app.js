@@ -500,6 +500,18 @@
     if (blob.includes("webauthn_credential_not_found") || blob.includes("credential_not_found")) {
       return "Este aparato aún no está registrado. Entra con contraseña y pulsa “Registrar este aparato”.";
     }
+    // supabase-js wraps browser errors with its own codes (ERROR_...).
+    if (blob.includes("previously_registered") || blob.includes("previously registered")) {
+      markThisDevice(readThisDevice() || "registered");
+      setTimeout(() => refreshPasskeyPanel(), 0);
+      return "Este aparato ya tiene la huella registrada. Ya puedes entrar con “Usar huella digital”.";
+    }
+    if (blob.includes("ceremony_aborted")) return "Se canceló la huella. Inténtalo de nuevo.";
+    if (blob.includes("missing_user_verification") || blob.includes("missing_discoverable")) return "Este aparato no tiene huella o bloqueo de pantalla configurado. Actívalo en los ajustes del teléfono y vuelve a intentar.";
+    if (blob.includes("invalid_rp_id") || blob.includes("error_invalid_domain")) {
+      techNote(`La dirección no coincide con la configurada en Supabase. ${setupDetail()}`);
+      return "La huella no funciona en esta dirección. Entra con tu correo y contraseña.";
+    }
     if (blob.includes("webauthn_credential_exists")) {
       return "Este aparato ya tiene la huella registrada. Prueba “Usar huella digital”.";
     }
@@ -523,7 +535,9 @@
       techNote("Falta la versión nueva de la librería de Supabase; recarga con Ctrl+F5.");
       return "Recarga la página e inténtalo de nuevo.";
     }
-    return "No se pudo usar la huella. Inténtalo de nuevo o entra con tu contraseña.";
+    // Unknown case: include the code so it can be reported.
+    const detail = (code || msg).replace(/^error_?/i, "").slice(0, 60);
+    return `No se pudo usar la huella${detail ? ` (${detail})` : ""}. Inténtalo de nuevo o entra con tu contraseña.`;
   }
   function userIsConfirmed(user) {
     return Boolean(user?.email_confirmed_at || user?.confirmed_at || user?.phone_confirmed_at);
@@ -576,15 +590,16 @@
     });
   }
 
+  let knownNames = [];
   async function listPasskeys() {
     const auth = authClient();
     if (!auth?.passkey?.list) return [];
     const result = await auth.passkey.list();
     if (result?.error) throw result.error;
     const raw = result?.data;
-    if (Array.isArray(raw)) return raw;
-    if (Array.isArray(raw?.passkeys)) return raw.passkeys;
-    return [];
+    const list = Array.isArray(raw) ? raw : Array.isArray(raw?.passkeys) ? raw.passkeys : [];
+    knownNames = list.map(passkeyName);
+    return list;
   }
 
   async function refreshPasskeyPanel() {
@@ -673,9 +688,7 @@
       throw new Error("Recarga la página con Ctrl+F5. Falta la librería nueva de Supabase.");
     }
     await assertPasskeyUser();
-    let names = [];
-    try { names = (await listPasskeys()).map(passkeyName); } catch (_ignore) { /* the name is only a label */ }
-    const label = uniqueLabel(names);
+    const label = uniqueLabel(knownNames);
     const { data, error } = await auth.registerPasskey({ friendlyName: label });
     if (error) throw error;
     const id = data?.id;
@@ -880,6 +893,23 @@
     if (!root.TrentonConfig.ready()) root.TrentonEndBoot?.();
     watchAuth(onReady, onLogout);
   }
+
+  // Devices window: list, rename, delete (only the signed-in user's own passkeys).
+  async function renamePasskey(id, name) {
+    const auth = authClient();
+    const { error } = await auth.passkey.update({ passkeyId: id, friendlyName: name });
+    if (error) throw new Error(passkeyMessage(error));
+    await refreshPasskeyPanel();
+  }
+  async function deletePasskey(id) {
+    const auth = authClient();
+    if (typeof auth?.passkey?.delete !== "function") throw new Error("Recarga la página e inténtalo de nuevo.");
+    const { error } = await auth.passkey.delete({ passkeyId: id });
+    if (error) throw new Error(passkeyMessage(error));
+    if (readThisDevice() === id) markThisDevice("");
+    await refreshPasskeyPanel();
+  }
+  root.PasskeyAdmin = { list: listPasskeys, rename: renamePasskey, remove: deletePasskey, thisDevice: readThisDevice, register: () => document.getElementById("registerPasskeyButton")?.click() };
 
   root.AuthApp = { start, greeting, phrase: phraseFor, phrases: PHRASES, replayWelcome, loadProfile, switchCompany };
 })(typeof globalThis !== "undefined" ? globalThis : this);

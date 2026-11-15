@@ -162,9 +162,71 @@ window.DashFiles = (function () {
     </article>`;
   }
   function devicesCard() {
-    return `<article class="df-card df-wide df-devices"><span class="df-badge is-blue">${ICON.finger}</span>
-      <div><h2>Dispositivos registrados (Windows Hello)</h2><p class="df-passkey-text"></p></div>
+    return `<article class="df-card df-wide df-devices" data-act="devices" role="button" tabindex="0" title="Ver dispositivos"><span class="df-badge is-blue">${ICON.finger}</span>
+      <div><h2>Dispositivos registrados</h2><p class="df-passkey-text"></p><span class="df-devices-more">Ver dispositivos →</span></div>
       <button type="button" class="df-manage" data-act="passkey">${ICON.gear} <span>Registrar este aparato</span></button></article>`;
+  }
+
+  /* ---------- devices window (passkeys of the signed-in user) ---------- */
+  const dateTime = iso => { const d = new Date(iso); return iso && !Number.isNaN(d.getTime()) ? d.toLocaleString("es", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Sin dato"; };
+  const kindOf = name => /iphone|ipad/i.test(name) ? "iPhone / iPad" : /android|celular/i.test(name) ? "Teléfono Android" : /windows|pc/i.test(name) ? "Computadora Windows" : /mac/i.test(name) ? "Mac" : "Aparato";
+  async function openDevices() {
+    const admin = window.PasskeyAdmin;
+    if (!admin) return tc()?.toast?.("Recarga la página e inténtalo de nuevo.");
+    let wrap = document.querySelector(".df-dev-modal");
+    if (!wrap) {
+      wrap = document.createElement("div");
+      wrap.className = "df-dev-modal";
+      wrap.innerHTML = `<section class="df-dev-card" role="dialog" aria-modal="true" aria-labelledby="devTitle">
+        <header><span class="df-badge is-blue">${ICON.finger}</span><div><h3 id="devTitle">Dispositivos registrados</h3><p>Aparatos que pueden entrar con huella, Face ID o Windows Hello.</p></div><button type="button" class="df-dev-x" aria-label="Cerrar">×</button></header>
+        <div class="df-dev-body"></div>
+        <footer><p class="df-dev-note">Si ya no usas un aparato o lo perdiste, elimínalo: dejará de poder entrar con huella.</p><button type="button" class="df-manage" data-dev="register">${ICON.gear} <span>Registrar este aparato</span></button></footer>
+      </section>`;
+      document.body.append(wrap);
+      wrap.addEventListener("click", async e => {
+        if (e.target === wrap || e.target.closest(".df-dev-x")) return closeDevices();
+        if (e.target.closest('[data-dev="register"]')) { admin.register(); setTimeout(() => fillDevices(), 4000); return; }
+        const row = e.target.closest("[data-pk]");
+        const act = e.target.closest("[data-dev]")?.dataset.dev;
+        if (!row || !act) return;
+        const id = row.dataset.pk, name = row.dataset.name;
+        try {
+          if (act === "rename") {
+            const next = window.prompt("Nuevo nombre del aparato:", name);
+            if (next && next.trim() && next.trim() !== name) { await admin.rename(id, next.trim().slice(0, 60)); tc()?.toast?.("Nombre actualizado."); }
+          }
+          if (act === "delete" && window.confirm(`¿Eliminar "${name}"? Ese aparato ya no podrá entrar con huella.`)) {
+            await admin.remove(id);
+            tc()?.toast?.("Aparato eliminado.");
+          }
+        } catch (error) { tc()?.toast?.(error.message || "No se pudo completar la acción."); }
+        fillDevices();
+      });
+      document.addEventListener("keydown", e => { if (e.key === "Escape" && document.querySelector(".df-dev-modal.is-open")) closeDevices(); });
+    }
+    wrap.classList.add("is-open");
+    document.body.classList.add("pr-open");
+    fillDevices();
+  }
+  function closeDevices() { document.querySelector(".df-dev-modal")?.classList.remove("is-open"); document.body.classList.remove("pr-open"); }
+  async function fillDevices() {
+    const body = document.querySelector(".df-dev-body");
+    if (!body) return;
+    body.innerHTML = `<p class="df-dev-empty">Cargando…</p>`;
+    let list = [];
+    try { list = await window.PasskeyAdmin.list(); } catch (error) { body.innerHTML = `<p class="df-dev-empty">No se pudo cargar la lista. ${esc(error.message || "")}</p>`; return; }
+    const mine = window.PasskeyAdmin.thisDevice();
+    body.innerHTML = list.length ? list.map(p => {
+      const name = p.friendly_name || p.friendlyName || "Aparato";
+      const here = mine && mine === p.id;
+      return `<article class="df-dev-row" data-pk="${esc(p.id)}" data-name="${esc(name)}">
+        <span class="df-dev-ico">${ICON.finger}</span>
+        <div class="df-dev-info"><strong>${esc(name)}${here ? ` <em>Este aparato</em>` : ""}</strong>
+          <small>${kindOf(name)} · Registrado ${dateTime(p.created_at || p.createdAt)}</small>
+          <small>Último uso: ${p.last_used_at || p.lastUsedAt ? dateTime(p.last_used_at || p.lastUsedAt) : "Sin dato"}</small></div>
+        <div class="df-dev-actions"><button type="button" class="df-icon df-box" data-dev="rename" title="Cambiar nombre">${ICON.gear}</button><button type="button" class="df-icon df-box is-danger" data-dev="delete" title="Eliminar">${ICON.trash}</button></div>
+      </article>`;
+    }).join("") : `<p class="df-dev-empty">Todavía no hay aparatos registrados.</p>`;
   }
 
   /* ---------- render ---------- */
@@ -309,6 +371,7 @@ window.DashFiles = (function () {
     const a = t.closest("[data-act]");
     if (a) {
       if (a.dataset.act === "passkey") return $("#registerPasskeyButton")?.click();
+      if (a.dataset.act === "devices") return openDevices();
       if (a.dataset.act.startsWith("photo-")) return photoAction(a.dataset.act, a.dataset.kind, a.dataset.id);
       return act(a.dataset.act, a.dataset.kind, a.dataset.id);
     }
