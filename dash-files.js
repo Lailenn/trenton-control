@@ -246,6 +246,7 @@ window.DashFiles = (function () {
     if (task === "view") return archive?.view?.(record);
     if (task === "download") return archive?.download?.(record);
     if (task === "link") return window.ShareLink?.copy(kind, record);
+    if (task === "editor") return window.PdfEditor?.openFromRecord(kind, record);
     if (task === "delete") return Promise.resolve(archive?.remove?.(record)).then(schedule);
     if (task === "edit") return kind === "invoice" ? tc()?.edit?.(record) : kind === "hours" ? window.HoursApp?.edit?.(record) : window.JobApp?.edit?.(record);
   }
@@ -257,7 +258,7 @@ window.DashFiles = (function () {
     const hasPdf = Boolean(record?.pdfBlob || record?.pdfPath);
     const menuEl = document.createElement("div");
     menuEl.className = "df-menu"; menuEl.dataset.for = button.dataset.id; menuEl.setAttribute("role", "menu");
-    menuEl.innerHTML = [hasPdf && ["view", "Ver PDF"], hasPdf && ["download", "Descargar PDF"], hasPdf && ["link", "Copiar link de vista previa"], ["edit", "Editar datos"], ["delete", "Eliminar"]].filter(Boolean)
+    menuEl.innerHTML = [hasPdf && ["view", "Ver PDF"], hasPdf && ["download", "Descargar PDF"], hasPdf && ["link", "Copiar link de vista previa"], hasPdf && ["editor", "Editar en Editor PDF"], ["edit", "Editar datos"], ["delete", "Eliminar"]].filter(Boolean)
       .map(([task, label]) => `<button type="button" role="menuitem" class="${task === "delete" ? "is-danger" : ""}" data-task="${task}">${label}</button>`).join("");
     document.body.append(menuEl);
     const box = button.getBoundingClientRect();

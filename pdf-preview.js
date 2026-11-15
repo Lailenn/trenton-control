@@ -269,5 +269,5 @@ window.PdfPreview = (function () {
     }
   });
 
-  return { show, clear, open, close };
+  return { show, clear, open, close, loadLib, openDoc };
 })();

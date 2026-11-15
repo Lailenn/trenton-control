@@ -1236,6 +1236,31 @@
     return response.blob();
   }
 
+  // Private files of the signed-in user (PDF editor: documents, versions, signatures, templates).
+  // Paths are always inside the user's own folder. Some buckets only accept certain types, so a
+  // rejected upload is retried with a type the bucket accepts; the bytes are unchanged.
+  async function userFilePut(bucket, path, blob, type) {
+    const full = `${ownerId()}/${path}`;
+    try {
+      await upload(bucket, full, blob, type || blob.type || "application/octet-stream");
+    } catch (error) {
+      const fallback = bucket.includes("pdf") ? "application/pdf" : "image/png";
+      if (type === fallback) throw error;
+      await upload(bucket, full, blob, fallback);
+    }
+    return full;
+  }
+  async function userFileGet(bucket, path) {
+    const response = await storageFetch(`${bucket}/${ownerId()}/${path}`, { method: "GET", timeout: 20000, timeoutMessage: "No se pudo descargar el archivo." });
+    if (response.status === 400 || response.status === 404) return null;
+    if (!response.ok) throw new Error(`No se pudo descargar el archivo (${response.status}).`);
+    return response.blob();
+  }
+  async function userFileRemove(bucket, path) {
+    const response = await storageFetch(`${bucket}/${ownerId()}/${path}`, { method: "DELETE", timeout: 12000, timeoutMessage: "No se pudo borrar el archivo." });
+    if (!response.ok && response.status !== 404 && response.status !== 400) throw new Error("No se pudo borrar el archivo de la nube.");
+  }
+
   // Report PDFs (pending invoices, etc.) live next to the invoice PDFs, under the owner's folder.
   async function uploadReportPdf(blob, name) {
     const path = `${ownerId()}/reports/${String(name || "report").replace(/[^a-zA-Z0-9._-]+/g, "-")}`;
@@ -1507,6 +1532,9 @@
     ensureInvoicePdf,
     signedUrl,
     uploadReportPdf,
+    userFilePut,
+    userFileGet,
+    userFileRemove,
     nextInvoiceNumber,
     listHours,
     saveHours,
