@@ -233,3 +233,36 @@
 }
 .pe-sig-tray .pe-sep { flex: none; width: 1px; height: 26px; background: var(--line); }
 .pe-sig-tray .pe-btn { flex: none; }
+
+/* ===== Tablet and phone fixes ===== */
+.pe-props-close { display: none; }
+.pe-tray-hint { flex: none; white-space: nowrap; }
+.pe-sig-tray { scrollbar-width: none; }
+.pe-sig-tray::-webkit-scrollbar { display: none; }
+@media (max-width: 1100px) {
+  /* Top bar in two rows: name + save state, then the actions */
+  .pe-top { flex-wrap: wrap; row-gap: 6px; }
+  .pe-title { flex: 1 1 calc(100% - 50px); }
+  .pe-top-actions { order: 3; width: 100%; justify-content: flex-end; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .pe-top-actions::-webkit-scrollbar { display: none; }
+  .pe-name { max-width: none; }
+  .pe-props { max-height: 52%; }
+  .pe-props-close { display: grid; place-items: center; position: sticky; top: 0; float: right; margin: -4px -4px 0 8px; z-index: 1; }
+}
+@media (max-width: 760px) {
+  .pe-top { padding: 8px 10px; }
+  .pe-top-actions { justify-content: space-between; gap: 2px; }
+  /* Buttons with text become icon buttons so everything fits */
+  .pe-top-actions .pe-btn { min-width: 38px; padding: 0 10px; font-size: 0; gap: 0; }
+  .pe-top-actions .pe-btn .pe-i { width: 19px; height: 19px; }
+  .pe-top-actions .pe-sep { display: none; }
+  .pe-tray-hint { display: none; }
+  .pe-sig-tray { padding: 8px 10px; }
+  .pe-sig-pick { width: 104px; }
+  .pe-props { max-height: 46%; }
+  .pe-tabs { flex-wrap: wrap; overflow: visible; }
+  .pe-tabs button { min-height: 34px; padding: 0 12px; font-size: 12.5px; }
+  .pe-lib-actions { width: 100%; }
+  .pe-lib-actions .button { flex: 1; }
+  .pe-doc-actions .pe-btn { flex: 1; }
+}

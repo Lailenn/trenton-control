@@ -792,7 +792,7 @@ window.PdfEditor = (function () {
     const e = selected();
     if (!e) {
       const p = ed.pages[ed.current];
-      panel.innerHTML = `<div class="pe-props-in">
+      panel.innerHTML = `<div class="pe-props-in"><button type="button" class="pe-x pe-props-close" data-ed="toggleProps" aria-label="Cerrar propiedades">×</button>
         <h4>Documento</h4>
         <p class="pe-muted">Página ${ed.current + 1} de ${ed.pages.length}${p ? ` · ${Math.round(pageSize(p).w)} × ${Math.round(pageSize(p).h)} pt` : ""}</p>
         <p class="pe-muted">Elige una herramienta y toca la página. Toca un elemento para moverlo o cambiar sus propiedades.</p>
@@ -806,7 +806,7 @@ window.PdfEditor = (function () {
     }
     const num = (k, label, step = 1, min) => `<label class="pe-field is-sm"><span>${label}</span><input type="number" data-prop="${k}" value="${Math.round((e[k] ?? 0) * 10) / 10}" step="${step}" ${min != null ? `min="${min}"` : ""}></label>`;
     const textual = e.type === "text" || e.type === "date" || e.type === "comment";
-    panel.innerHTML = `<div class="pe-props-in">
+    panel.innerHTML = `<div class="pe-props-in"><button type="button" class="pe-x pe-props-close" data-ed="toggleProps" aria-label="Cerrar propiedades">×</button>
       <h4>${TOOLS.find(t => t[0] === e.type)?.[2] || "Elemento"}</h4>
       <div class="pe-grid2">${num("x", "X")}${num("y", "Y")}${num("w", "Ancho", 1, 4)}${num("h", "Alto", 1, 2)}</div>
       ${ROTATABLE.has(e.type) ? `<label class="pe-field is-sm"><span>Rotación (°)</span><input type="range" min="-180" max="180" step="1" data-prop="rot" value="${e.rot || 0}"></label>` : ""}
@@ -910,7 +910,7 @@ window.PdfEditor = (function () {
     const sigs = await Store().listSignatures();
     if (!sigs.length) { tray.innerHTML = `<span class="pe-muted">No hay firmas guardadas.</span><button type="button" class="pe-btn" data-sig="upload">${ic("upload")} Subir</button><button type="button" class="pe-btn is-primary" data-sig="draw">${ic("sign")} Dibujar</button>`; return; }
     if (!sigs.some(s => s.id === ed.sigId)) ed.sigId = sigs.find(s => s.isDefault)?.id || sigs[0].id;
-    tray.innerHTML = `<span class="pe-muted">Toca la página donde va la firma:</span>${sigs.map(s => `<button type="button" class="pe-sig-pick${s.id === ed.sigId ? " is-on" : ""}" data-pick-sig="${s.id}" title="${esc(s.name)}"><img alt="${esc(s.name)}" data-src="${s.id}"><span>${esc(s.name)}${s.isDefault ? " ★" : ""}</span></button>`).join("")}
+    tray.innerHTML = `<span class="pe-muted pe-tray-hint">Toca la página donde va la firma:</span>${sigs.map(s => `<button type="button" class="pe-sig-pick${s.id === ed.sigId ? " is-on" : ""}" data-pick-sig="${s.id}" title="${esc(s.name)}"><img alt="${esc(s.name)}" data-src="${s.id}"><span>${esc(s.name)}${s.isDefault ? " ★" : ""}</span></button>`).join("")}
       <button type="button" class="pe-btn is-primary" data-ed="quickSign">${ic("sign")} Insertar en esta página</button>
       <span class="pe-sep"></span>
       <button type="button" class="pe-btn" data-sig="upload">${ic("upload")} Subir firma</button>
@@ -923,7 +923,7 @@ window.PdfEditor = (function () {
     const items = await Store().listImages();
     if (!items.some(i => i.id === ed.imgId)) ed.imgId = items[0]?.id || null;
     tray.innerHTML = items.length
-      ? `<span class="pe-muted">Elige una imagen y toca la página:</span>${items.map(i => `<button type="button" class="pe-sig-pick${i.id === ed.imgId ? " is-on" : ""}" data-pick-img="${i.id}" title="${esc(i.name)}"><img alt="${esc(i.name)}" data-img-src="${i.id}"><span>${esc(i.name)}</span></button>`).join("")}
+      ? `<span class="pe-muted pe-tray-hint">Elige una imagen y toca la página:</span>${items.map(i => `<button type="button" class="pe-sig-pick${i.id === ed.imgId ? " is-on" : ""}" data-pick-img="${i.id}" title="${esc(i.name)}"><img alt="${esc(i.name)}" data-img-src="${i.id}"><span>${esc(i.name)}</span></button>`).join("")}
          <button type="button" class="pe-btn is-primary" data-ed="quickImage">${ic("image")} Insertar en esta página</button><span class="pe-sep"></span>
          <button type="button" class="pe-btn" data-img="upload">${ic("upload")} Subir imagen</button>`
       : `<span class="pe-muted">Aún no hay imágenes guardadas.</span><button type="button" class="pe-btn is-primary" data-img="upload">${ic("upload")} Subir imagen</button>`;
