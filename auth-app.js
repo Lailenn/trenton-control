@@ -611,6 +611,12 @@
       else if (mine && ids.length && /^[0-9a-f-]{16,}$/i.test(mine) && !ids.includes(mine)) markThisDevice("");
       const registeredHere = Boolean(readThisDevice());
       buttons.forEach(button => {
+        // Sidebar item: keep its icon, title and arrow; only the second line changes.
+        const sub = button.querySelector(".nav-sub");
+        if (sub) {
+          sub.textContent = registeredHere ? "Registrado · agregar otro aparato" : "Registrar este aparato";
+          return;
+        }
         button.textContent = registeredHere ? "Registrar otro aparato" : "Registrar este aparato";
         button.classList.toggle("button-primary", !registeredHere);
         button.classList.toggle("button-ghost", registeredHere);
