@@ -42,6 +42,7 @@
     <link rel="stylesheet" href="theme.css?v=28">
     <link rel="stylesheet" href="pdf-editor.css?v=3">
     <link rel="stylesheet" href="devices-panel.css?v=4">
+    <link rel="stylesheet" href="hero-carousel.css?v=2">
   </head>
   <body>
     <div class="boot-screen" id="bootScreen" aria-live="polite" aria-busy="true">
@@ -312,33 +313,45 @@
               <p class="dash-kicker"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M4 5h16v3H4zm0 5h10v3H4zm0 5h16v3H4z"/></svg> PANEL DE CONTROL</p>
               <p class="welcome-greeting" id="welcomeGreeting" aria-live="polite">Buenos días, Lilian. 👋</p>
               <h1 id="heroWorkspaceTitle">Todo el trabajo de <span>Ruben Perla</span>,<br class="hero-br"> en un solo lugar.</h1>
-              <p class="hero-copy">Crea, organiza y da seguimiento a cada invoice, hora y PDF sin perder nada.</p>
+              <p class="hero-copy">Organiza facturas, controla horas y administra cada trabajo desde un solo espacio.</p>
               <p class="dash-quote" id="heroQuote">“Con vos el cheque no se pierde en el camino.”</p>
-              <div class="hero-actions hero-actions-enhanced"><button class="button button-primary button-large dash-cta" id="newInvoiceButton" type="button" title="Crear una nueva invoice"><span>+</span> Nueva invoice</button></div>
+              <div class="hero-actions hero-actions-enhanced"><button class="button button-primary button-large dash-cta" id="newInvoiceButton" type="button" title="Crear una nueva invoice"><span>+</span> Nueva invoice</button><button class="button button-ghost button-large hc-quick" type="button" data-hero-go="hours"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Registrar horas</button><button class="button button-ghost button-large hc-quick" type="button" data-hero-go="upload"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18.5h10.5a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.6 9.1 4.5 4.5 0 0 0 7 18.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 16v-5.5M9.5 13l2.5-2.5 2.5 2.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Subir documento</button></div>
             </div>
-            <div class="dash-hero-art" aria-hidden="true">
-              <div class="hero-art2">
-                <span class="ha-orbit"><i class="ha-orbit-dot ha-dot-a"></i><i class="ha-orbit-dot ha-dot-b"></i></span>
-                <span class="ha-burst"><i></i><i></i><i></i></span>
-                <span class="ha-sheet ha-sheet-1"></span>
-                <span class="ha-sheet ha-sheet-2"></span>
-                <div class="ha-doc">
-                  <div class="ha-doc-head"><strong>Invoice</strong><img src="assets/logo-ruben-clear.png?v=1" alt=""></div>
-                  <i class="ha-line w70"></i>
-                  <i class="ha-line w95"></i>
-                  <i class="ha-line ha-line-blue w50"></i>
-                  <i class="ha-line w45"></i>
-                  <i class="ha-line w30"></i>
-                  <span class="ha-chart"><i></i><i></i><i></i></span>
-                </div>
-                <span class="ha-check"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" d="M6.5 12.4 10.2 16 17.5 8.6"/></svg></span>
-                <span class="ha-tile ha-tile-pay"><b>$</b></span>
-                <span class="ha-tile ha-tile-doc"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M7 2.8h7.2L19 7.6V20a1.2 1.2 0 0 1-1.2 1.2H7A1.2 1.2 0 0 1 5.8 20V4A1.2 1.2 0 0 1 7 2.8zm6.6 1.4v4.2h4.2zM9 12.2h6v1.6H9zm0 3.2h6V17H9z"/></svg></span>
-                <p class="ha-note ha-note-top">Organiza<br>facturas<br>sin complicaciones</p>
-                <svg class="ha-arrow ha-arrow-top" viewBox="0 0 60 60"><path d="M50 8C30 10 16 22 12 44" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M5 36l7 10 9-7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <p class="ha-note ha-note-bottom">Todo tu trabajo<br>bien ordenado</p>
-                <svg class="ha-arrow ha-arrow-bottom" viewBox="0 0 60 60"><path d="M54 48C34 50 18 40 14 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M6 25l8-9 9 8" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div class="dash-hero-art hc" aria-roledescription="carrusel" aria-label="Lo que puedes hacer">
+              <div class="hc-stage">
+                <article class="hc-card" data-slide="0" data-go="hours" role="group" aria-label="Controla tus horas">
+                  <div class="hc-art hc-art-clock" aria-hidden="true">
+                    <svg viewBox="0 0 120 120"><defs><linearGradient id="hcG1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7cc0ff"/><stop offset="1" stop-color="#007aff"/></linearGradient></defs>
+                      <rect x="54" y="8" width="12" height="10" rx="3" fill="url(#hcG1)"/><rect x="48" y="4" width="24" height="7" rx="3.5" fill="#5aa7ff"/>
+                      <path d="M86 24l8-8" stroke="#5aa7ff" stroke-width="6" stroke-linecap="round"/>
+                      <circle cx="60" cy="66" r="42" fill="#fff" stroke="url(#hcG1)" stroke-width="9"/>
+                      <circle cx="60" cy="66" r="31" fill="#eef6ff"/>
+                      <g stroke="#9cc8ff" stroke-width="3" stroke-linecap="round"><path d="M60 39v6M60 87v6M33 66h6M81 66h6"/></g>
+                      <g class="hc-hand"><path d="M60 66V44" stroke="#007aff" stroke-width="5" stroke-linecap="round"/></g>
+                      <g class="hc-hand-min"><path d="M60 66l14 9" stroke="#1d2a55" stroke-width="5" stroke-linecap="round"/></g>
+                      <circle cx="60" cy="66" r="5.5" fill="#007aff"/></svg>
+                  </div>
+                  <h3>Controla tus horas</h3><p>Registra el tiempo de cada trabajo y lleva un control preciso.</p>
+                </article>
+                <article class="hc-card" data-slide="1" data-go="invoice" role="group" aria-label="Gestiona tus invoices">
+                  <div class="hc-art hc-art-invoice" aria-hidden="true">
+                    <div class="hc-doc hc-doc-back"></div>
+                    <div class="hc-doc"><strong>Invoice</strong><i class="w80"></i><i class="w60"></i><i class="is-blue w70"></i><i class="w50"></i><i class="w35"></i></div>
+                    <span class="hc-coin">$</span>
+                    <span class="hc-check"><svg viewBox="0 0 24 24"><path d="M6.5 12.4 10.2 16 17.5 8.6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  </div>
+                  <h3>Gestiona tus invoices</h3><p>Crea, da seguimiento y controla el estado de cada factura.</p>
+                </article>
+                <article class="hc-card" data-slide="2" data-go="archive" role="group" aria-label="Genera reportes">
+                  <div class="hc-art hc-art-chart" aria-hidden="true">
+                    <div class="hc-panel"><i style="--h:38%"></i><i style="--h:62%"></i><i style="--h:48%"></i><i style="--h:86%"></i><svg class="hc-trend" viewBox="0 0 100 60" preserveAspectRatio="none"><path d="M4 50 C22 40 30 44 44 30 S70 26 96 8" fill="none" stroke="#34c759" stroke-width="3.5" stroke-linecap="round"/></svg></div>
+                  </div>
+                  <h3>Genera reportes</h3><p>Consulta resultados, pagos y avances en tiempo real.</p>
+                </article>
               </div>
+              <button type="button" class="hc-nav hc-prev" aria-label="Anterior"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              <button type="button" class="hc-nav hc-next" aria-label="Siguiente"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              <div class="hc-dots" role="tablist"><button type="button" role="tab" aria-label="Horas"></button><button type="button" role="tab" aria-label="Invoices"></button><button type="button" role="tab" aria-label="Reportes"></button></div>
             </div>
           </section>
 
@@ -1211,6 +1224,7 @@
     <script src="balance-ui.js?v=1" defer></script>
     <script src="dash-stats.js?v=2" defer></script>
     <script src="app.js?v=editor-1" defer></script>
+    <script src="hero-carousel.js?v=1" defer></script>
     <script src="security-log.js?v=1" defer></script>
     <script src="devices-panel.js?v=1" defer></script>
     <script src="pdf-store.js?v=2" defer></script>

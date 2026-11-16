@@ -1,0 +1,119 @@
+/* Home header carousel (hero-carousel.js) — Apple blue */
+#boardView .dash-hero { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) !important; align-items: center; overflow: hidden !important;
+  background: radial-gradient(700px 420px at 85% 10%, rgba(var(--blue-rgb), .14), transparent 65%), radial-gradient(500px 360px at 70% 100%, rgba(90, 200, 250, .12), transparent 70%), linear-gradient(135deg, #f7faff, #eef5ff) !important; }
+#boardView .dash-hero .hero-copy { max-width: 560px !important; font-size: 15.5px !important; }
+#boardView .dash-hero .hero-actions-enhanced { display: flex !important; flex-wrap: wrap; gap: 12px; }
+#boardView .dash-hero .hero-actions-enhanced .dash-cta { width: auto !important; flex: none; min-width: 190px; border-radius: 16px !important; background: var(--blue) !important; box-shadow: 0 10px 22px rgba(var(--blue-rgb), .3) !important; }
+#boardView .dash-hero .hc-quick { display: inline-flex; align-items: center; gap: 10px; min-height: 50px; padding: 0 20px; border: 1px solid #dfe6f3 !important; border-radius: 16px !important; background: rgba(255, 255, 255, .85) !important; color: var(--ink) !important; font-size: 15px; font-weight: 700; box-shadow: 0 4px 14px rgba(36, 42, 64, .06) !important; }
+#boardView .dash-hero .hc-quick svg { width: 22px; height: 22px; color: var(--blue); transition: transform .35s var(--ease-spring); }
+#boardView .dash-hero .hc-quick:hover { border-color: rgba(var(--blue-rgb), .35) !important; background: #fff !important; }
+#boardView .dash-hero .hc-quick:hover svg { transform: scale(1.15) rotate(-8deg); }
+
+/* Carousel stage */
+#boardView .dash-hero-art.hc { position: relative !important; width: 100% !important; max-width: 560px; height: 330px; justify-self: center; perspective: 1100px; }
+#boardView .dash-hero-art.hc::before, #boardView .dash-hero-art.hc::after { display: none !important; }
+.hc-stage { position: absolute; inset: 0 44px 34px; transform-style: preserve-3d; }
+.hc-card {
+  --tx: 0deg; --ty: 0deg;
+  position: absolute; left: 50%; top: 50%; width: 230px; min-height: 270px; margin: -135px 0 0 -115px; padding: 18px 18px 20px;
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px;
+  border: 1px solid rgba(255, 255, 255, .95); border-radius: 26px;
+  background: linear-gradient(170deg, rgba(255, 255, 255, .96), rgba(244, 249, 255, .9));
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  box-shadow: 0 1px 0 #fff inset, 0 10px 24px rgba(0, 60, 140, .08), 0 24px 50px rgba(0, 60, 140, .10);
+  cursor: pointer; user-select: none; outline: none;
+  transition: transform .7s cubic-bezier(.2, .85, .25, 1), opacity .5s ease, filter .5s ease, box-shadow .5s ease;
+  will-change: transform;
+}
+.hc-card h3 { margin: 6px 0 0; color: var(--ink); font: 800 18px/1.2 "Plus Jakarta Sans", sans-serif; letter-spacing: -.01em; }
+.hc-card p { margin: 0; color: var(--muted); font: 500 13px/1.45 "Plus Jakarta Sans", sans-serif; }
+.hc-card.is-front { z-index: 3; transform: translate3d(0, 0, 60px) rotateY(var(--tx)) rotateX(var(--ty)); box-shadow: 0 1px 0 #fff inset, 0 14px 30px rgba(0, 60, 140, .12), 0 34px 70px rgba(0, 80, 180, .18); }
+.hc-card.is-right { z-index: 2; transform: translate3d(66%, 4px, -80px) rotateY(-22deg) scale(.82); opacity: .82; filter: saturate(.85); }
+.hc-card.is-left { z-index: 1; transform: translate3d(-66%, 4px, -80px) rotateY(22deg) scale(.82); opacity: .82; filter: saturate(.85); }
+.hc-card:not(.is-front):hover { opacity: .95; }
+.hc-card.is-front:focus-visible { box-shadow: 0 0 0 4px rgba(var(--blue-rgb), .25), 0 34px 70px rgba(0, 80, 180, .18); }
+.hc-art { position: relative; display: grid; place-items: center; width: 140px; height: 130px; animation: hcFloat 6s ease-in-out infinite; }
+.hc-card.is-right .hc-art, .hc-card.is-left .hc-art { animation-play-state: paused; }
+
+/* Clock */
+.hc-art-clock svg { width: 120px; height: 120px; overflow: visible; filter: drop-shadow(0 10px 16px rgba(0, 122, 255, .22)); }
+.hc-hand, .hc-hand-min { transform-origin: 60px 66px; }
+.hc-hand { animation: hcTick 8s steps(60) infinite; }
+.hc-card.is-play .hc-hand-min { animation: hcSpin 1.2s cubic-bezier(.3, 1.2, .5, 1) both; }
+
+/* Invoice */
+.hc-doc { position: absolute; left: 22px; top: 8px; width: 92px; height: 112px; padding: 12px 11px; display: grid; align-content: start; gap: 7px; border-radius: 12px; background: #fff; box-shadow: 0 10px 22px rgba(0, 60, 140, .14); transform: rotate(-6deg); text-align: left; }
+.hc-doc strong { color: #1d2a55; font: italic 800 13px "Plus Jakarta Sans", sans-serif; }
+.hc-doc i { display: block; height: 6px; border-radius: 4px; background: #e6edf8; }
+.hc-doc i.is-blue { background: var(--blue); }
+.hc-doc .w80 { width: 80%; } .hc-doc .w60 { width: 60%; } .hc-doc .w70 { width: 70%; } .hc-doc .w50 { width: 50%; } .hc-doc .w35 { width: 35%; }
+.hc-doc-back { left: 34px; top: 16px; transform: rotate(5deg); background: #eaf2ff; box-shadow: none; }
+.hc-coin { position: absolute; left: 4px; bottom: 6px; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 13px; background: #fff; color: #fff; font: 800 18px "Plus Jakarta Sans", sans-serif; box-shadow: 0 8px 18px rgba(36, 42, 64, .14); }
+.hc-coin::before { content: ""; position: absolute; inset: 7px; border-radius: 50%; background: linear-gradient(145deg, #4cd37b, #22a85a); }
+.hc-coin { color: #fff; }
+.hc-coin { isolation: isolate; }
+.hc-coin::before { z-index: -1; }
+.hc-check { position: absolute; right: 6px; top: 0; display: grid; place-items: center; width: 40px; height: 40px; border: 3px solid #fff; border-radius: 50%; background: var(--blue); color: #fff; box-shadow: 0 8px 18px rgba(var(--blue-rgb), .4); }
+.hc-check svg { width: 22px; height: 22px; }
+.hc-card.is-play .hc-doc:not(.hc-doc-back) { animation: hcDocIn .7s cubic-bezier(.2, .9, .3, 1.2) both; }
+.hc-card.is-play .hc-doc i { animation: hcLine .6s calc(.25s + var(--d, 0s)) ease-out both; transform-origin: left; }
+.hc-card.is-play .hc-doc i:nth-of-type(2) { --d: .06s; } .hc-card.is-play .hc-doc i:nth-of-type(3) { --d: .12s; } .hc-card.is-play .hc-doc i:nth-of-type(4) { --d: .18s; } .hc-card.is-play .hc-doc i:nth-of-type(5) { --d: .24s; }
+.hc-card.is-play .hc-coin { animation: hcPop .5s .45s cubic-bezier(.34, 1.6, .64, 1) both; }
+.hc-card.is-play .hc-check { animation: hcPop .5s .65s cubic-bezier(.34, 1.6, .64, 1) both, hcPulse 2.6s 1.4s ease-in-out infinite; }
+
+/* Chart */
+.hc-panel { position: relative; display: flex; align-items: flex-end; gap: 9px; width: 120px; height: 104px; padding: 14px 14px 12px; border-radius: 18px; background: #fff; box-shadow: 0 10px 22px rgba(0, 60, 140, .14); }
+.hc-panel i { flex: 1; height: var(--h); border-radius: 6px 6px 3px 3px; background: linear-gradient(180deg, #5aa7ff, var(--blue)); transform-origin: bottom; }
+.hc-trend { position: absolute; inset: 12px 10px 18px; width: calc(100% - 20px); height: calc(100% - 30px); overflow: visible; }
+.hc-trend path { stroke-dasharray: 160; stroke-dashoffset: 0; }
+.hc-card.is-play .hc-panel i { animation: hcGrow .8s cubic-bezier(.2, .9, .3, 1.15) both; }
+.hc-card.is-play .hc-panel i:nth-child(2) { animation-delay: .08s; } .hc-card.is-play .hc-panel i:nth-child(3) { animation-delay: .16s; } .hc-card.is-play .hc-panel i:nth-child(4) { animation-delay: .24s; }
+.hc-card.is-play .hc-trend path { animation: hcDraw 1.1s .5s ease-out both; }
+
+/* Arrows and dots */
+.hc-nav { position: absolute; top: calc(50% - 38px); z-index: 5; display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid rgba(255, 255, 255, .9); border-radius: 50%; background: #fff; color: var(--ink); box-shadow: 0 8px 20px rgba(0, 60, 140, .14); cursor: pointer; transition: transform .25s var(--ease-spring), color .2s, box-shadow .2s; }
+.hc-nav svg { width: 20px; height: 20px; }
+.hc-nav:hover { color: var(--blue); transform: scale(1.1); box-shadow: 0 10px 24px rgba(var(--blue-rgb), .25); }
+.hc-nav:active { transform: scale(.94); }
+.hc-prev { left: 0; } .hc-next { right: 0; }
+.hc-dots { position: absolute; left: 50%; bottom: 4px; display: flex; gap: 8px; transform: translateX(-50%); }
+.hc-dots button { width: 9px; height: 9px; padding: 0; border: 0; border-radius: 999px; background: #c9d8ee; cursor: pointer; transition: width .4s var(--ease), background .3s; }
+.hc-dots button.is-on { width: 26px; background: var(--blue); }
+
+@keyframes hcFloat { 50% { transform: translateY(-7px); } }
+@keyframes hcTick { to { transform: rotate(360deg); } }
+@keyframes hcSpin { from { transform: rotate(-300deg); } }
+@keyframes hcDocIn { from { opacity: 0; transform: translateY(18px) rotate(-14deg) scale(.9); } }
+@keyframes hcLine { from { transform: scaleX(0); } }
+@keyframes hcPop { from { opacity: 0; transform: scale(0) rotate(-25deg); } }
+@keyframes hcPulse { 50% { box-shadow: 0 0 0 8px rgba(var(--blue-rgb), .14), 0 8px 18px rgba(var(--blue-rgb), .4); } }
+@keyframes hcGrow { from { transform: scaleY(0); } }
+@keyframes hcDraw { from { stroke-dashoffset: 160; } }
+
+/* Tablet and phone */
+@media (max-width: 1100px) {
+  #boardView .dash-hero { grid-template-columns: 1fr !important; }
+  #boardView .dash-hero-art.hc { order: 2; max-width: 520px; margin-top: 8px; }
+}
+@media (max-width: 640px) {
+  #boardView .dash-hero-art.hc { height: 300px; }
+  .hc-stage { inset: 0 0 30px; }
+  .hc-card { width: 200px; min-height: 248px; margin: -124px 0 0 -100px; padding: 14px 14px 16px; }
+  .hc-card.is-right { transform: translate3d(58%, 4px, -90px) rotateY(-22deg) scale(.78); opacity: .7; }
+  .hc-card.is-left { transform: translate3d(-58%, 4px, -90px) rotateY(22deg) scale(.78); opacity: .7; }
+  .hc-art { transform: scale(.88); }
+  .hc-nav { display: none; }
+  #boardView .dash-hero .hero-actions-enhanced > * { flex: 1 1 100%; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hc-card, .hc-dots button { transition: none !important; }
+  .hc-art, .hc-hand, .hc-card.is-play * { animation: none !important; }
+}
+/* Quick actions in one row (older rules stretched them) */
+#boardView .dash-hero .hero-actions-enhanced > .button { width: auto !important; flex: 0 0 auto !important; }
+@media (max-width: 640px) {
+  #boardView .dash-hero .hero-actions-enhanced > .button { flex: 1 1 100% !important; }
+  #boardView .dash-hero-art.hc { height: 350px; }
+  .hc-stage { inset: 0 0 40px; }
+  .hc-dots { bottom: 6px; }
+}
