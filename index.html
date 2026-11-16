@@ -43,6 +43,7 @@
     <link rel="stylesheet" href="pdf-editor.css?v=3">
     <link rel="stylesheet" href="devices-panel.css?v=4">
     <link rel="stylesheet" href="hero-carousel.css?v=5">
+    <link rel="stylesheet" href="settings.css?v=2">
   </head>
   <body>
     <div class="boot-screen" id="bootScreen" aria-live="polite" aria-busy="true">
@@ -256,9 +257,14 @@
               <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M9.4 6.4 15 12l-5.6 5.6-1.4-1.4 4.2-4.2-4.2-4.2z"/></svg></span>
             </button>
           </nav>
+
         </div>
         <div class="sidebar-footer">
           <span class="nav-label sidebar-footer-label">General</span>
+          <button class="sidebar-logout" type="button" id="settingsNavButton">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path class="i-fill" d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+            Configuración
+          </button>
           <button class="sidebar-logout js-switch-company" type="button" id="switchCompanyButton">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6.5" cy="15.2" r="2.1"/><path d="M2.5 21.5a4 4 0 0 1 8 0z"/><circle cx="17.5" cy="4.6" r="2.1"/><path d="M13.5 10.9a4 4 0 0 1 8 0z"/><path d="M4.6 12.2C4.9 7.6 7.6 4.6 11.8 4.1"/><path d="M9.9 2.4l2 1.7-1.6 2.1"/><path d="M19.4 13.2c-.3 4.4-3 7.3-7.2 7.8"/><path d="M14.1 22.7l-2-1.7 1.6-2.1"/></svg>
             Cambiar empresa
@@ -695,6 +701,7 @@
           </section>
 
           <section class="page-view hidden editor-view" id="editorView" aria-label="Editor PDF"></section>
+          <section class="page-view hidden settings-view" id="settingsView" aria-label="Configuración"></section>
 
           <section class="page-view hidden archive-view" id="archiveView">
             <div class="archive-heading">
@@ -1218,15 +1225,16 @@
     <script src="job-app.js?v=motion-1" defer></script>
     <script src="job-archive.js?v=files-1" defer></script>
     <script src="translator.js?v=grow-1" defer></script>
-    <script src="auth-app.js?v=sec-1" defer></script>
+    <script src="auth-app.js?v=set-1" defer></script>
     <script src="pdf-preview.js?v=editor-1" defer></script>
     <script src="check-viewer.js?v=1" defer></script>
     <script src="balance-ui.js?v=1" defer></script>
     <script src="dash-stats.js?v=2" defer></script>
-    <script src="app.js?v=editor-1" defer></script>
-    <script src="hero-carousel.js?v=1" defer></script>
+    <script src="app.js?v=set-1" defer></script>
+    <script src="hero-carousel.js?v=2" defer></script>
+    <script src="settings.js?v=2" defer></script>
     <script src="security-log.js?v=1" defer></script>
-    <script src="devices-panel.js?v=1" defer></script>
+    <script src="devices-panel.js?v=set-1" defer></script>
     <script src="pdf-store.js?v=2" defer></script>
     <script src="pdf-editor.js?v=4" defer></script>
     <script src="dash-files.js?v=sec-1" defer></script>

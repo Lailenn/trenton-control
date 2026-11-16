@@ -908,6 +908,7 @@
     $("#hoursView").classList.toggle("hidden", view !== "hours");
     $("#jobView")?.classList.toggle("hidden", view !== "job");
     $("#editorView")?.classList.toggle("hidden", view !== "editor");
+    $("#settingsView")?.classList.toggle("hidden", view !== "settings");
     setSidebarOpen(false);
     replayViewAnimation(view);
     if (view === "board") {
@@ -918,6 +919,7 @@
     if (view === "hours") window.HoursApp?.open();
     if (view === "job") window.JobApp?.open();
     if (view === "editor") window.PdfEditor?.open();
+    if (view === "settings") window.SettingsPage?.open();
   }
 
   function fillInvoiceFromText() {
@@ -1203,13 +1205,14 @@
 
   function navClick(stage) {
     document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.nav === stage));
-    const titles = {board: "Inicio", editor: "Editor PDF", invoice: "Crear invoice", hours: "Horas trabajadas", job: "Otro formato de horas", reports: `Reportes ${window.CompanyApp?.toClient?.() || "a Trenton"}`, archive: "Invoices / PDFs", "hours-archive": "Horas / PDFs", "job-archive": "Reportes / PDFs", created: "Facturas creadas", working: "En trabajo", waiting: "Esperando cheque", paid: "Pagadas"};
+    const titles = {board: "Inicio", editor: "Editor PDF", settings: "Configuración", invoice: "Crear invoice", hours: "Horas trabajadas", job: "Otro formato de horas", reports: `Reportes ${window.CompanyApp?.toClient?.() || "a Trenton"}`, archive: "Invoices / PDFs", "hours-archive": "Horas / PDFs", "job-archive": "Reportes / PDFs", created: "Facturas creadas", working: "En trabajo", waiting: "Esperando cheque", paid: "Pagadas"};
     const label = $("#topbarSection");
     if (label) label.textContent = titles[stage] || "Inicio";
     if (stage === "invoice") { showView("invoice"); setDock("archive"); return; }
     if (stage === "hours") { showView("hours"); setDock("hours"); return; }
     if (stage === "job") { showView("job"); setDock("hours"); return; }
     if (stage === "editor") { showView("editor"); setDock(""); return; }
+    if (stage === "settings") { showView("settings"); setDock(""); return; }
     if (stage === "reports") {
       showView("board");
       renderBoard();

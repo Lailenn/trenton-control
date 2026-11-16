@@ -276,5 +276,10 @@ window.DevicesPanel = (function () {
       : `<p class="dp-empty">No hay actividad registrada con estos filtros. Los accesos se registran desde esta versión de la app en adelante.</p>`;
   }
 
-  return { open, close };
+  // Opens only the activity history (used by the settings page).
+  async function history() {
+    try { await load(); } catch (_) { state.devices = state.devices || []; }
+    openHistory("");
+  }
+  return { open, close, history };
 })();

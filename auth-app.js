@@ -925,5 +925,19 @@
   }
   root.PasskeyAdmin = { list: listPasskeys, rename: renamePasskey, remove: deletePasskey, thisDevice: readThisDevice, register: () => document.getElementById("registerPasskeyButton")?.click() };
 
+  // Settings page: read the profile and change the password (real Supabase calls).
+  async function changePassword(next) {
+    const auth = authClient();
+    if (!auth?.updateUser) throw new Error("Vuelve a entrar e inténtalo de nuevo.");
+    const { error } = await auth.updateUser({ password: next });
+    if (error) throw new Error(/should be different|same/i.test(error.message || "") ? "La nueva contraseña debe ser distinta a la actual." : /weak|at least|characters/i.test(error.message || "") ? "La contraseña es muy corta o débil (mínimo 8 caracteres)." : (error.message || "No se pudo cambiar la contraseña."));
+    root.SecurityLog?.record?.({ result: "review", action: "Contraseña cambiada", method: "Contraseña" }).catch?.(() => {});
+  }
+  root.AccountInfo = {
+    profile: () => ({ ...profile, email: profile.email || sessionEmail(), phone: profile.phone || accountPhone(), memberYear: memberYearFrom(profile.createdAt) }),
+    openEditor: () => document.getElementById("sidebarProfileButton")?.click(),
+    changePassword
+  };
+
   root.AuthApp = { start, greeting, phrase: phraseFor, phrases: PHRASES, replayWelcome, loadProfile, switchCompany };
 })(typeof globalThis !== "undefined" ? globalThis : this);

@@ -4,7 +4,7 @@
    buttons beside "Nueva invoice" are handled here too. */
 (function () {
   "use strict";
-  const calm = () => Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
+  const calm = () => Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) || document.documentElement.classList.contains("rp-calm");
   const go = target => {
     const app = window.TrentonControl;
     if (!app) return;
@@ -42,7 +42,7 @@
     const to = i => { index = i; paint(); restart(); };
     function restart() {
       clearInterval(timer);
-      if (calm() || paused || !visible) return;
+      if (calm() || paused || !visible || document.documentElement.classList.contains("rp-no-autoplay")) return;
       timer = setInterval(() => { index = (index + 1) % n; paint(); }, 5500);
     }
 
