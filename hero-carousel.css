@@ -129,3 +129,9 @@
 @media (max-width: 1100px) {
   #boardView .dash-hero { background-size: 100% 55%, auto, auto, auto !important; background-position: right bottom, center, center, center !important; }
 }
+
+/* Phone: carousel first, then the welcome text and buttons */
+@media (max-width: 760px) {
+  #boardView .dash-hero-art.hc { order: -1 !important; margin: 0 auto 6px; }
+}
+@media (max-width: 760px) { #boardView .dash-hero-art.hc { margin-top: 14px !important; } }
