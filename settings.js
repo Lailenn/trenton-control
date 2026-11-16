@@ -6,16 +6,57 @@ window.SettingsPage = (function () {
   const $ = (s, r = document) => r.querySelector(s);
   const esc = v => String(v ?? "").replace(/[&<>'"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#039;", '"': "&quot;" }[c]));
   const toast = t => window.TrentonControl?.toast?.(t);
-  const PREF_CALM = "rp.pref.calm", PREF_AUTO = "rp.pref.carousel";
+  // Preferences saved on this device: [storage key, default, html class, class when the toggle is ON?]
+  const PREFS = {
+    calm: ["rp.pref.calm", false, "rp-calm", true], auto: ["rp.pref.carousel", true, "rp-no-autoplay", false],
+    herobg: ["rp.pref.herobg", true, "rp-plain-hero", false], shadow: ["rp.pref.shadow", true, "rp-flat", false],
+    toasts: ["rp.pref.toasts", true, "rp-no-toast", false], sound: ["rp.pref.sound", false, "", true],
+    bigtext: ["rp.pref.bigtext", false, "rp-big-text", true], contrast: ["rp.pref.contrast", false, "rp-contrast", true],
+    focus: ["rp.pref.focus", false, "rp-focus", true]
+  };
+  const PREF_START = "rp.pref.start";
   const pref = (k, def) => { try { const v = localStorage.getItem(k); return v == null ? def : v === "1"; } catch (_) { return def; } };
   const setPref = (k, v) => { try { localStorage.setItem(k, v ? "1" : "0"); } catch (_) {} };
-  const applyPrefs = () => {
-    document.documentElement.classList.toggle("rp-calm", pref(PREF_CALM, false));
-    document.documentElement.classList.toggle("rp-no-autoplay", !pref(PREF_AUTO, true));
-  };
+  const on = id => pref(PREFS[id][0], PREFS[id][1]);
+  const startView = () => { try { return localStorage.getItem(PREF_START) || "board"; } catch (_) { return "board"; } };
+  const applyPrefs = () => Object.entries(PREFS).forEach(([id, [, , cls, whenOn]]) => { if (cls) document.documentElement.classList.toggle(cls, on(id) === whenOn); });
   applyPrefs();
+  // Soft sound when a notice appears (only if turned on).
+  function chime() {
+    try {
+      const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+      const ctx = chime.ctx || (chime.ctx = new C()), o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime;
+      o.type = "sine"; o.frequency.setValueAtTime(880, t); o.frequency.exponentialRampToValueAtTime(1320, t + .08);
+      g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.08, t + .02); g.gain.exponentialRampToValueAtTime(.0001, t + .25);
+      o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + .26);
+    } catch (_) {}
+  }
+  function watchToast() {
+    const el = document.getElementById("toast");
+    if (!el) return;
+    let was = el.classList.contains("show");
+    new MutationObserver(() => { const now = el.classList.contains("show"); if (now && !was && on("sound") && on("toasts")) chime(); was = now; }).observe(el, { attributes: true, attributeFilter: ["class"] });
+  }
+  // Screen to open after signing in (only if still on Home when the app gets ready).
+  function goStart() {
+    const view = startView();
+    if (view === "board") return;
+    let tries = 0;
+    const t = setInterval(() => {
+      const app = window.TrentonControl, board = document.getElementById("boardView");
+      if (app?.isReady?.()) { clearInterval(t); if (board && !board.classList.contains("hidden")) app.navClick(view); }
+      else if (++tries > 480) clearInterval(t);
+    }, 250);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => { watchToast(); goStart(); }); else { watchToast(); goStart(); }
+  let openGroup = "";
 
   const I = {
+    palette: "M12 3.5a8.5 8.5 0 1 0 0 17c1.1 0 1.7-.8 1.7-1.6 0-.5-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.6 1.6-1.6H16a4.5 4.5 0 0 0 4.5-4.5C20.5 6.9 16.7 3.5 12 3.5zM7.5 12h.01M9.5 8h.01M14.5 8h.01M16.8 11.5h.01",
+    translate: "M4 5.5h8M8 3.5v2M5.5 5.5c.6 2.6 2.4 4.8 5 6M10.5 5.5c-.6 2.8-2.6 5.2-5.5 6.5M12.5 20.5l3.5-9 3.5 9M13.8 17.5h4.4",
+    bell: "M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15zM10 20.5a2.2 2.2 0 0 0 4 0",
+    a11y: "M12 6.5a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2zM5 9l7 1.5L19 9M12 10.5V15M12 15l-3 5.5M12 15l3 5.5",
+    clock: "M12 20.5a8.5 8.5 0 1 0 0-17 8.5 8.5 0 0 0 0 17zM12 7.5V12l3 2",
     gear: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z",
     user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4.5 20a7.5 7.5 0 0 1 15 0",
     shield: "M12 3 5 6v5.5c0 4.4 3 7.8 7 9.5 4-1.7 7-5.1 7-9.5V6zM12 9v3.5M12 15.5h.01",
@@ -87,9 +128,28 @@ window.SettingsPage = (function () {
     if (tab === "access") return `<div class="st-panel-head"><div><h3>Accesos</h3><p>Espacio de trabajo y lo que puedes hacer en la app.</p></div></div>
       <div class="st-action"><span class="st-row-i">${ic("layers")}</span><div><strong>Espacio activo: ${esc(workspace)}</strong><small>Cada empresa guarda sus datos por separado.</small></div><button type="button" class="st-btn" data-st="switch">${ic("swap")} Cambiar empresa</button></div>
       <ul class="st-perms is-wide">${PERMS.map(x => `<li>${ic("check")}${x}</li>`).join("")}</ul>`;
-    return `<div class="st-panel-head"><div><h3>Preferencias</h3><p>Se guardan en este aparato.</p></div></div>
-      <label class="st-toggle"><span><strong>Reducir animaciones</strong><small>Menos movimiento en toda la app.</small></span><input type="checkbox" data-pref="calm" ${pref(PREF_CALM, false) ? "checked" : ""}><i></i></label>
-      <label class="st-toggle"><span><strong>Carrusel automático en Inicio</strong><small>Las tarjetas del encabezado avanzan solas.</small></span><input type="checkbox" data-pref="auto" ${pref(PREF_AUTO, true) ? "checked" : ""}><i></i></label>`;
+    const tg = (id, title, sub) => `<label class="st-toggle"><span><strong>${title}</strong><small>${sub}</small></span><input type="checkbox" data-pref="${id}" ${on(id) ? "checked" : ""}><i></i></label>`;
+    const lang = window.I18n?.get?.() || "es", sv = startView();
+    let tz = ""; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (_) {}
+    const sample = new Date().toLocaleDateString(lang === "en" ? "en-US" : "es", { day: "numeric", month: "long", year: "numeric" });
+    const groups = [
+      ["look", "palette", "Apariencia", "Tema, colores y personalización visual",
+        tg("herobg", "Fondo azul en Inicio", "La curva azul detrás del carrusel.") + tg("shadow", "Sombras suaves", "Profundidad en tarjetas y paneles.")],
+      ["behave", "sliders", "Comportamiento", "Animaciones, carrusel y navegación",
+        tg("calm", "Reducir animaciones", "Menos movimiento en toda la app.") + tg("auto", "Carrusel automático en Inicio", "Las tarjetas del encabezado avanzan solas.")
+        + `<label class="st-toggle st-select"><span><strong>Pantalla al entrar</strong><small>Lo primero que ves al iniciar sesión.</small></span><select data-start>${[["board", "Inicio"], ["hours", "Horas trabajadas"], ["invoice", "Crear invoice"], ["archive", "Invoices / PDFs"], ["editor", "Editor PDF"]].map(([v, l]) => `<option value="${v}" ${sv === v ? "selected" : ""}>${l}</option>`).join("")}</select></label>`],
+      ["lang", "translate", "Idioma y región", "Idioma, fecha, hora y moneda",
+        `<div class="st-toggle st-select"><span><strong>Idioma</strong><small>Textos de la interfaz en español o inglés.</small></span><div class="st-seg" role="radiogroup" aria-label="Idioma" data-i18n-skip><button type="button" role="radio" data-lang="es" aria-checked="${lang === "es"}" class="${lang === "es" ? "is-on" : ""}">Español</button><button type="button" role="radio" data-lang="en" aria-checked="${lang === "en"}" class="${lang === "en" ? "is-on" : ""}">English</button></div></div>`
+        + row("calendar", "Formato de fecha", esc(sample)) + row("clock", "Zona horaria", esc(tz || "—")) + row("badge", "Moneda", "USD ($)")],
+      ["notify", "bell", "Notificaciones", "Avisos y alertas del sistema",
+        tg("toasts", "Avisos en pantalla", "Mensajes breves como “Guardado” en la parte de abajo.") + tg("sound", "Sonido en los avisos", "Un toque suave cuando aparece un aviso.")],
+      ["a11y", "a11y", "Accesibilidad", "Texto, contraste y efectos visuales",
+        tg("bigtext", "Texto más grande", "Aumenta el tamaño de toda la interfaz.") + tg("contrast", "Alto contraste", "Textos y bordes más oscuros.") + tg("focus", "Resaltar el foco", "Marca clara al moverte con el teclado.")]
+    ];
+    return `<div class="st-panel-head"><div><h3>Preferencias</h3><p>Personaliza tu experiencia en Ruben Perla. Se guardan en este aparato.</p></div></div>
+      <div class="st-groups">${groups.map(([id, icon, title, sub, body]) => `<section class="st-group${openGroup === id ? " is-open" : ""}" data-group="${id}">
+        <button type="button" class="st-group-head" data-group-toggle="${id}" aria-expanded="${openGroup === id}"><span class="st-group-i">${ic(icon)}</span><span class="st-group-t"><strong>${title}</strong><small>${sub}</small></span><svg class="st-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+        <div class="st-group-body"><div>${body}</div></div></section>`).join("")}</div>`;
   }
   async function fillActivity() {
     const box = $("#settingsView .st-activity");
@@ -105,6 +165,14 @@ window.SettingsPage = (function () {
   }
 
   async function onClick(e) {
+    const g = e.target.closest("[data-group-toggle]");
+    if (g) {
+      openGroup = openGroup === g.dataset.groupToggle ? "" : g.dataset.groupToggle;
+      g.closest(".st-groups").querySelectorAll(".st-group").forEach(x => { const open = x.dataset.group === openGroup; x.classList.toggle("is-open", open); x.querySelector(".st-group-head").setAttribute("aria-expanded", String(open)); });
+      return;
+    }
+    const lg = e.target.closest("[data-lang]");
+    if (lg) { window.I18n?.set?.(lg.dataset.lang); render(); toast(lg.dataset.lang === "en" ? "Language: English." : "Idioma: Español."); return; }
     const t = e.target.closest("[data-tab]");
     if (t) { tab = t.dataset.tab; return render(); }
     const a = e.target.closest("[data-st]")?.dataset.st;
@@ -129,9 +197,10 @@ window.SettingsPage = (function () {
     finally { btn.disabled = false; }
   }
   function onChange(e) {
+    if (e.target.matches("[data-start]")) { try { localStorage.setItem(PREF_START, e.target.value); } catch (_) {} toast("Preferencia guardada."); return; }
     const k = e.target.dataset.pref;
-    if (!k) return;
-    setPref(k === "calm" ? PREF_CALM : PREF_AUTO, e.target.checked);
+    if (!k || !PREFS[k]) return;
+    setPref(PREFS[k][0], e.target.checked);
     applyPrefs();
     toast("Preferencia guardada.");
   }

@@ -119,3 +119,53 @@ html.rp-calm *, html.rp-calm *::before, html.rp-calm *::after { animation-durati
 #settingsNavButton.is-active { background: #fff !important; color: var(--blue) !important; }
 #settingsNavButton.is-active svg { color: var(--blue) !important; background: transparent !important; }
 #settingsNavButton.is-active .i-fill { fill: currentColor; }
+
+/* Preferences: grouped rows that open like iOS settings */
+.st-groups { display: grid; gap: 10px; }
+.st-group { border: 1px solid #edf1f8; border-radius: 18px; background: #fff; overflow: hidden; transition: border-color .25s, box-shadow .25s; }
+.st-group.is-open { border-color: rgba(var(--blue-rgb), .25); box-shadow: 0 10px 26px rgba(0, 60, 140, .08); }
+.st-group-head { display: flex; align-items: center; gap: 16px; width: 100%; padding: 14px 16px; border: 0; background: transparent; text-align: left; cursor: pointer; font: inherit; color: inherit; }
+.st-group-head:hover { background: #f7faff; }
+.st-group-head:focus-visible { outline: none; box-shadow: inset var(--ring); }
+.st-group-i { display: grid; place-items: center; flex: none; width: 48px; height: 48px; border-radius: 14px; background: var(--blue-soft); color: var(--blue); }
+.st-group-i .st-i { width: 24px; height: 24px; }
+.st-group-t { display: grid; gap: 2px; flex: 1; min-width: 0; }
+.st-group-t strong { color: var(--ink); font-size: 17px; font-weight: 700; }
+.st-group-t small { color: var(--muted); font-size: 14px; }
+.st-chev { flex: none; width: 22px; height: 22px; fill: none; stroke: #9aa3b5; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform .3s var(--ease-spring), stroke .2s; }
+.st-group.is-open .st-chev { transform: rotate(90deg); stroke: var(--blue); }
+.st-group-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .35s var(--ease); }
+.st-group-body > div { overflow: hidden; padding: 0 16px; }
+.st-group.is-open .st-group-body { grid-template-rows: 1fr; }
+.st-group.is-open .st-group-body > div { padding-bottom: 14px; }
+.st-group-body .st-toggle:last-child, .st-group-body .st-row:last-child { margin-bottom: 0; }
+.st-select select { flex: none; max-width: 52%; padding: 9px 12px; border: 1px solid #dfe5ef; border-radius: 12px; background: #fff; color: var(--ink); font: inherit; font-size: 14px; }
+.st-seg { display: inline-flex; flex: none; padding: 3px; border-radius: 12px; background: #eef1f6; }
+.st-seg button { padding: 8px 14px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .2s, color .2s, box-shadow .2s; }
+.st-seg button.is-on { background: #fff; color: var(--blue); box-shadow: 0 2px 8px rgba(0, 0, 0, .1); }
+@media (max-width: 640px) {
+  .st-group-head { gap: 12px; padding: 12px; }
+  .st-group-i { width: 42px; height: 42px; }
+  .st-group-t strong { font-size: 16px; }
+  .st-group-t small { font-size: 13px; }
+  .st-select { flex-wrap: wrap; }
+  .st-select select { max-width: 100%; width: 100%; }
+}
+
+/* Effects of the preferences */
+html.rp-plain-hero #boardView .dash-hero { background: linear-gradient(135deg, #f8fbff, #eef5ff) !important; }
+html.rp-flat body * { box-shadow: none !important; }
+html.rp-flat body .st-seg button.is-on { box-shadow: 0 1px 3px rgba(0, 0, 0, .15) !important; }
+html.rp-flat body .st-toggle i::after { box-shadow: 0 1px 3px rgba(0, 0, 0, .25) !important; }
+html.rp-no-toast #toast { display: none !important; }
+html.rp-big-text body { zoom: 1.1; }
+html.rp-contrast { --muted: #3c4458 !important; --line: #b9c2d3 !important; }
+html.rp-contrast body { color: #0b0f19; }
+html.rp-contrast body small, html.rp-contrast body .nav-sub, html.rp-contrast body p { color: #2f3647; }
+html.rp-focus body :focus-visible { outline: 3px solid var(--blue) !important; outline-offset: 2px !important; }
+
+/* Collapsed rail: General buttons centered like the main nav */
+@media (min-width: 821px) {
+  body .sidebar:not(.open) .sidebar-footer .sidebar-logout { display: flex !important; justify-content: center !important; align-items: center !important; gap: 0 !important; width: 100% !important; padding: 6px 0 !important; margin-inline: 0 !important; }
+  body .sidebar:not(.open) .sidebar-footer .sidebar-logout svg { margin: 0 !important; }
+}
