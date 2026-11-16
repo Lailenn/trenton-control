@@ -371,7 +371,7 @@ window.DashFiles = (function () {
     const a = t.closest("[data-act]");
     if (a) {
       if (a.dataset.act === "passkey") return $("#registerPasskeyButton")?.click();
-      if (a.dataset.act === "devices") return openDevices();
+      if (a.dataset.act === "devices") return window.DevicesPanel ? window.DevicesPanel.open() : openDevices();
       if (a.dataset.act.startsWith("photo-")) return photoAction(a.dataset.act, a.dataset.kind, a.dataset.id);
       return act(a.dataset.act, a.dataset.kind, a.dataset.id);
     }

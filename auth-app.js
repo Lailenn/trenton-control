@@ -656,7 +656,8 @@
       throw new Error("Recarga la página con Ctrl+F5. Falta la librería nueva de Supabase.");
     }
     const { error } = await auth.signInWithPasskey();
-    if (error) throw error;
+    if (error) { root.SecurityLog?.signInFailed?.("Passkey", String(error.code || error.message || "")).catch(() => {}); throw error; }
+    try { sessionStorage.setItem("rp.loginMethod", "Passkey"); } catch (_) {}
     // Signing in with the fingerprint proves this device has a passkey.
     markThisDevice(readThisDevice() || "signed-in");
   }
@@ -698,6 +699,7 @@
       } catch (_ignore) { /* el nombre amistoso es opcional */ }
     }
     markThisDevice(id || "registered");
+    root.SecurityLog?.deviceRegistered?.(id, label).catch(() => {});
     return data;
   }
 
@@ -791,6 +793,15 @@
         showApp(true);
         root.TrentonEndBoot?.();
         await onReady?.(user);
+        // Access log: one entry per real sign-in on this tab (not on every page load).
+        try {
+          const method = sessionStorage.getItem("rp.loginMethod");
+          if (method) {
+            sessionStorage.removeItem("rp.loginMethod");
+            const mine = readThisDevice();
+            root.SecurityLog?.signedIn?.(method, method === "Passkey" && /^[0-9a-f-]{16,}$/i.test(mine) ? mine : "").catch(() => {});
+          } else root.SecurityLog?.flushQueue?.().catch(() => {});
+        } catch (_) {}
       } finally {
         booting = false;
       }
@@ -843,7 +854,8 @@
           email,
           password: $("#loginPassword").value
         });
-        if (error) throw error;
+        if (error) { root.SecurityLog?.signInFailed?.("Contraseña", String(error.message || "")).catch(() => {}); throw error; }
+        try { sessionStorage.setItem("rp.loginMethod", "Contraseña"); } catch (_) {}
       } catch (error) {
         $("#authError").textContent = error.message || "No se pudo entrar. Revisa el correo y la contraseña.";
       } finally {
@@ -899,14 +911,16 @@
     const auth = authClient();
     const { error } = await auth.passkey.update({ passkeyId: id, friendlyName: name });
     if (error) throw new Error(passkeyMessage(error));
+    root.SecurityLog?.saveDevice?.(id, { name }).catch(() => {});
     await refreshPasskeyPanel();
   }
-  async function deletePasskey(id) {
+  async function deletePasskey(id, name) {
     const auth = authClient();
     if (typeof auth?.passkey?.delete !== "function") throw new Error("Recarga la página e inténtalo de nuevo.");
     const { error } = await auth.passkey.delete({ passkeyId: id });
     if (error) throw new Error(passkeyMessage(error));
     if (readThisDevice() === id) markThisDevice("");
+    await root.SecurityLog?.revoked?.(id, name || "").catch?.(() => {});
     await refreshPasskeyPanel();
   }
   root.PasskeyAdmin = { list: listPasskeys, rename: renamePasskey, remove: deletePasskey, thisDevice: readThisDevice, register: () => document.getElementById("registerPasskeyButton")?.click() };
