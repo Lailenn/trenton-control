@@ -142,3 +142,7 @@
 .dp-sum strong, .dp-sum small { white-space: normal; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; text-overflow: clip; }
 .dp-sum small { line-height: 1.35; }
 @media (max-width: 640px) { .dp-summary { grid-template-columns: 1fr !important; } .dp-register { min-height: 52px; } }
+
+/* Solid Apple blue, no gradient */
+.dp-register { background: var(--blue) !important; box-shadow: 0 8px 20px rgba(var(--blue-rgb), .28) !important; }
+.dp-register:hover { background: var(--blue-dark) !important; filter: none; }
