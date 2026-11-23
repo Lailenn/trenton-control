@@ -170,3 +170,5 @@ html.rp-focus body :focus-visible { outline: 3px solid var(--blue) !important; o
   body .sidebar:not(.open) .sidebar-footer .sidebar-logout svg { margin: 0 !important; }
 }
 .st-grid.is-single { grid-template-columns: minmax(0, 1fr); max-width: 980px; }
+
+.st-steps small b { color: var(--ink); }

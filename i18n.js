@@ -127,6 +127,10 @@ window.I18n = (function () {
     "Toca uno para abrirlo. Cuando llegue el cheque, muévelo a Pagado y desaparece de aquí.": "Tap one to open it. When the check arrives, move it to Paid and it leaves this list.",
     "Por cobrar": "To collect", "cobrado": "collected", "Facturado (barras)": "Billed (bars)", "Cobrado (línea)": "Collected (line)",
     "Lo facturado cada mes y cuánto de eso ya se cobró": "What was billed each month and how much of it is collected", "Cobrado de lo facturado ese mes (línea)": "Collected from that month's billing (line)", "Registrar horas": "Log hours", "Nuevo reporte": "New report",
+    "Directorio": "Directory", "Clientes y empleados": "Clients and employees", "Clientes y empleados para no reescribir datos.": "Clients and employees so you don't retype details.", "Clientes": "Clients", "Empleados": "Employees",
+    "Nuevo cliente": "New client", "Nuevo empleado": "New employee", "Encontrados en tu historial": "Found in your history", "Agregar": "Add", "Guardar": "Save", "Empresa o cliente": "Company or client", "Tarifa USD/h": "Rate USD/h", "Correo": "Email",
+    "Todavía no hay clientes": "No clients yet", "Todavía no hay empleados": "No employees yet", "Al escribir el nombre en una invoice se llena la dirección.": "Typing the name in an invoice fills in the address.", "Al escribir el nombre en Horas se llena su tarifa.": "Typing the name in Hours fills in their rate.",
+    "App en tu celular": "App on your phone", "Instalar y usar sin internet": "Install and use offline", "Ya está instalada": "Already installed", "Instalar Ruben Perla": "Install Ruben Perla", "Instalar": "Install", "Instalar la app": "Install the app", "Instalar en iPhone o iPad": "Install on iPhone or iPad",
     "Duplicar": "Duplicate", "Predeterminada": "Default"
   };
   // Texts with numbers or names.

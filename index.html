@@ -33,7 +33,11 @@
       })();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#1b2a4e" />
+    <meta name="theme-color" content="#007aff" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Ruben Perla" />
     <meta name="color-scheme" content="light only" />
     <meta name="description" content="Tablero, archivo de PDFs, importación y resumen anual de invoices de Ruben Perla." />
     <title>Ruben Perla | Control de invoices</title>
@@ -48,7 +52,7 @@
     <link rel="stylesheet" href="devices-panel.css?v=4">
     <link rel="stylesheet" href="hero-carousel.css?v=5">
     <link rel="stylesheet" href="settings.css?v=5">
-    <link rel="stylesheet" href="tools.css?v=1">
+    <link rel="stylesheet" href="tools.css?v=3">
     <link rel="stylesheet" href="insights.css?v=6">
     <link rel="stylesheet" href="dark.css?v=2">
   </head>
@@ -256,6 +260,11 @@
             <button class="nav-item" type="button" data-nav="job-archive">
               <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/><path d="M8.5 13.5h6.5M12.5 11l2.5 2.5-2.5 2.5"/></svg></span>
               <span class="nav-copy"><span class="nav-title">Reportes / PDFs</span><span class="nav-sub" data-otras="Formato enviado al cliente">Formato enviado a Trenton</span></span>
+              <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M9.4 6.4 15 12l-5.6 5.6-1.4-1.4 4.2-4.2-4.2-4.2z"/></svg></span>
+            </button>
+            <button class="nav-item" type="button" id="directoryNavButton" data-open-directory="">
+              <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle class="i-fill" cx="9" cy="7.5" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 6.5M18 14.5a5.5 5.5 0 0 1 3.5 5.5"/></svg></span>
+              <span class="nav-copy"><span class="nav-title">Directorio</span><span class="nav-sub">Clientes y empleados</span></span>
               <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M9.4 6.4 15 12l-5.6 5.6-1.4-1.4 4.2-4.2-4.2-4.2z"/></svg></span>
             </button>
             <button class="nav-item" type="button" id="trashNavButton" data-open-trash="">
@@ -1253,10 +1262,12 @@
     <script src="dash-stats.js?v=2" defer></script>
     <script src="app.js?v=ins-1" defer></script>
     <script src="hero-carousel.js?v=2" defer></script>
-    <script src="i18n.js?v=5" defer></script>
+    <script src="i18n.js?v=6" defer></script>
     <script src="tools.js?v=1" defer></script>
     <script src="insights.js?v=6" defer></script>
-    <script src="settings.js?v=7" defer></script>
+    <script src="directory.js?v=2" defer></script>
+    <script src="pwa.js?v=1" defer></script>
+    <script src="settings.js?v=8" defer></script>
     <script src="security-log.js?v=1" defer></script>
     <script src="devices-panel.js?v=set-1" defer></script>
     <script src="pdf-store.js?v=2" defer></script>

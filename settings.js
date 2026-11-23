@@ -126,6 +126,14 @@ window.SettingsPage = (function () {
     if (tab === "security") return `<section class="st-card"><div class="st-card-head"><h3>${ic("pulse", "is-blue")}Actividad reciente</h3><button type="button" class="st-link" data-st="history">Ver historial ${ic("arrow")}</button></div><div class="st-activity"><p class="st-muted">Cargando…</p></div></section>`;
     return "";
   }
+  // Install as an app (PWA): button when the browser offers it, steps on iPhone.
+  function appHtml() {
+    const st = window.AppInstall?.state?.() || "manual";
+    if (st === "installed") return `<div class="st-toggle"><span><strong>Ya está instalada</strong><small>Estás usando la app desde tu pantalla de inicio.</small></span></div>`;
+    if (st === "ready") return `<div class="st-toggle"><span><strong>Instalar Ruben Perla</strong><small>Ícono en tu pantalla de inicio. Abre aunque falle el internet.</small></span><button type="button" class="st-btn is-primary" data-st="install">Instalar</button></div>`;
+    if (st === "ios") return `<div class="st-toggle st-steps"><span><strong>Instalar en iPhone o iPad</strong><small>En Safari toca <b>Compartir</b> y luego <b>Agregar a pantalla de inicio</b>.</small></span></div>`;
+    return `<div class="st-toggle st-steps"><span><strong>Instalar la app</strong><small>Abre el menú del navegador (⋮) y elige <b>Instalar app</b> o <b>Agregar a la pantalla principal</b>.</small></span></div>`;
+  }
   function row(icon, label, value) { return `<div class="st-row"><span class="st-row-i">${ic(icon)}</span><span class="st-row-l">${label}</span><strong>${value}</strong></div>`; }
   function panelHtml(p, workspace) {
     if (tab === "info") return `<div class="st-panel-head"><div><h3>Información personal</h3><p>Datos de tu cuenta y contacto.</p></div><button type="button" class="st-btn" data-st="edit">${ic("edit")} Editar</button></div>
@@ -152,6 +160,7 @@ window.SettingsPage = (function () {
       ["lang", "translate", "Idioma y región", "Idioma, fecha, hora y moneda",
         `<div class="st-toggle st-select"><span><strong>Idioma</strong><small>Textos de la interfaz en español o inglés.</small></span><div class="st-seg" role="radiogroup" aria-label="Idioma" data-i18n-skip><button type="button" role="radio" data-lang="es" aria-checked="${lang === "es"}" class="${lang === "es" ? "is-on" : ""}">Español</button><button type="button" role="radio" data-lang="en" aria-checked="${lang === "en"}" class="${lang === "en" ? "is-on" : ""}">English</button></div></div>`
         + row("calendar", "Formato de fecha", esc(sample)) + row("clock", "Zona horaria", esc(tz || "—")) + row("badge", "Moneda", "USD ($)")],
+      ["app", "phone", "App en tu celular", "Instalar y usar sin internet", appHtml()],
       ["notify", "bell", "Notificaciones", "Avisos y alertas del sistema",
         tg("toasts", "Avisos en pantalla", "Mensajes breves como “Guardado” en la parte de abajo.") + tg("sound", "Sonido en los avisos", "Un toque suave cuando aparece un aviso.") + tg("remind", "Recordatorios de cobro", "Avisa en Inicio cuando algo lleva más de 30 días esperando cheque.")],
       ["a11y", "a11y", "Accesibilidad", "Texto, contraste y efectos visuales",
@@ -198,6 +207,7 @@ window.SettingsPage = (function () {
     if (!a) return;
     if (a === "edit" || a === "photo") return window.AccountInfo?.openEditor?.();
     if (a === "devices") return window.DevicesPanel?.open?.();
+    if (a === "install") { await window.AppInstall?.install?.(); return render(); }
     if (a === "history") return window.DevicesPanel?.history?.();
     if (a === "logout") return document.getElementById("logoutButton")?.click();
     if (a === "switch") return document.getElementById("switchCompanyButton")?.click();
@@ -228,6 +238,7 @@ window.SettingsPage = (function () {
   function open() {
     const root = $("#settingsView");
     if (!root) return;
+    if (!open.watching && window.AppInstall) { open.watching = true; window.AppInstall.onChange(() => { if (!root.classList.contains("hidden") && tab === "prefs") render(); }); }
     if (!root.dataset.bound) {
       root.dataset.bound = "1";
       root.addEventListener("click", onClick);
