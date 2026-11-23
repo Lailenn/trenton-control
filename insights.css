@@ -114,3 +114,4 @@ body .sidebar.open #notifyNavButton .nt-badge { margin-left: auto; box-shadow: n
 
 html.rp-dark .income-chart { background: #e5e5e8 !important; border: 1px solid #d2d2d7 !important; }
 html.rp-dark .in-tip, html.rp-dark .nt-badge { filter: invert(1) hue-rotate(180deg); }
+.nt-badge[hidden] { display: none !important; }

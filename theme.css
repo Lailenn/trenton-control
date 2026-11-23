@@ -809,3 +809,43 @@ body .mobile-dock .dock-item.is-active .i-hand { stroke: var(--blue); }
   body .sidebar:not(.open) .nav-kicker { margin-top: 4px !important; margin-bottom: 0 !important; padding-top: 6px !important; }
   body .sidebar:not(.open) .sidebar-footer { padding-top: 6px !important; gap: 1px !important; }
 }
+
+/* Closed rail on computer: every option is the same 46px square (the selected one too), the
+   sections follow each other with the same spacing and the rail ends after the last button. */
+@media (min-width: 821px) {
+  body .sidebar:not(.open) { bottom: auto !important; height: auto !important; min-height: 0 !important; max-height: calc(100vh - 28px) !important; }
+  body .sidebar:not(.open) .sidebar-scroll { flex: 0 1 auto !important; min-height: 0 !important; }
+  body .sidebar:not(.open) .main-nav { gap: 4px !important; }
+  body .sidebar:not(.open) .nav-item, body .sidebar:not(.open) .sidebar-logout { min-height: 48px !important; height: 48px !important; margin: 0 !important; }
+  body .sidebar:not(.open) .nav-icon, body .sidebar:not(.open) .sidebar-logout svg { width: 40px !important; height: 40px !important; min-width: 40px !important; }
+  body .sidebar:not(.open) .nav-indicator { width: 46px !important; height: 46px !important; margin: 1px 0 0 6px; border-radius: 15px; box-shadow: 0 0 0 4px rgba(255, 255, 255, .18), 0 8px 18px rgba(0, 50, 140, .26) !important; }
+  body .sidebar:not(.open) .nav-kicker { margin: 10px 0 4px !important; padding-top: 10px !important; }
+  body .sidebar:not(.open) .sidebar-footer { margin-top: 0 !important; padding-top: 0 !important; gap: 4px !important; border-top: 0 !important; }
+  body .sidebar:not(.open) .sidebar-footer .nav-kicker, body .sidebar:not(.open) .sidebar-footer-label { margin-top: 10px !important; }
+}
+@media (min-width: 821px) and (max-height: 1040px) {
+  body .sidebar:not(.open) .main-nav, body .sidebar:not(.open) .sidebar-footer { gap: 1px !important; }
+  body .sidebar:not(.open) .nav-item, body .sidebar:not(.open) .sidebar-logout { min-height: 42px !important; height: 42px !important; }
+  body .sidebar:not(.open) .nav-icon, body .sidebar:not(.open) .sidebar-logout svg { width: 36px !important; height: 36px !important; min-width: 36px !important; }
+  body .sidebar:not(.open) .nav-indicator { width: 40px !important; height: 40px !important; margin: 1px 0 0 9px; border-radius: 13px; }
+  body .sidebar:not(.open) .nav-kicker { margin: 6px 0 2px !important; padding-top: 6px !important; }
+}
+@media (min-width: 821px) and (max-height: 900px) {
+  body .sidebar:not(.open) .nav-item, body .sidebar:not(.open) .sidebar-logout { min-height: 36px !important; height: 36px !important; }
+  body .sidebar:not(.open) .nav-icon, body .sidebar:not(.open) .sidebar-logout svg { width: 34px !important; height: 34px !important; min-width: 34px !important; }
+  body .sidebar:not(.open) .nav-indicator { width: 36px !important; height: 36px !important; margin: 0 0 0 11px; border-radius: 12px; }
+  body .sidebar:not(.open) .nav-kicker { margin: 4px 0 1px !important; padding-top: 4px !important; }
+}
+/* Same drawing size for every icon in the closed rail (menu items and the General buttons) */
+@media (min-width: 821px) {
+  body .sidebar:not(.open) .nav-icon svg { width: 22px !important; height: 22px !important; }
+  body .sidebar:not(.open) .sidebar-logout svg { padding: 9px !important; }
+}
+@media (min-width: 821px) and (max-height: 1040px) { body .sidebar:not(.open) .sidebar-logout svg { padding: 7px !important; } }
+@media (min-width: 821px) and (max-height: 900px) {
+  body .sidebar:not(.open) .nav-icon svg { width: 20px !important; height: 20px !important; }
+  body .sidebar:not(.open) .sidebar-logout svg { padding: 7px !important; }
+  body .sidebar:not(.open) .nav-item, body .sidebar:not(.open) .sidebar-logout { min-height: 34px !important; height: 34px !important; }
+  body .sidebar:not(.open) .main-nav, body .sidebar:not(.open) .sidebar-footer { gap: 0 !important; }
+  body .sidebar:not(.open) .nav-indicator { width: 34px !important; height: 34px !important; margin: 0 0 0 12px; }
+}
