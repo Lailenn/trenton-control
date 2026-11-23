@@ -1377,6 +1377,7 @@
 
   window.TrentonControl = { toast: showToast, records: () => records, render, archive, hoursArchive, jobArchive, download, showView, navClick,
     isReady: () => ready,
+    async reload() { await loadRecords(); render(); archive?.render?.(); },
     edit: record => openModal(record.stage, record),
     openCheckPicker,
     async removeInvoiceCheck(recordId, photoId) {

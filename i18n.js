@@ -116,6 +116,10 @@ window.I18n = (function () {
     "Alto contraste": "High contrast", "Textos y bordes más oscuros.": "Darker text and borders.", "Resaltar el foco": "Highlight focus", "Marca clara al moverte con el teclado.": "A clear outline when using the keyboard.",
     "Aún no hay actividad registrada. Se anota desde tu próximo inicio de sesión.": "No activity recorded yet. It starts with your next sign-in.",
     "Tema": "Theme", "Claro, oscuro o según tu aparato.": "Light, dark or match your device.", "Claro": "Light", "Oscuro": "Dark", "Automático": "Automatic",
+    "Papelera": "Trash", "Recuperar lo borrado": "Recover deleted items", "Recupera invoices y reportes que borraste.": "Recover invoices and reports you deleted.", "Restaurar": "Restore", "Restaurando…": "Restoring…",
+    "La papelera está vacía": "The trash is empty", "Lo que borras queda aquí. Al restaurarlo vuelve al tablero y al archivo como estaba.": "Deleted items stay here. Restoring brings them back to the board and archive as they were.",
+    "Exportar": "Export", "Exportar a Excel": "Export to Excel", "Descarga tus datos en una hoja de cálculo.": "Download your data as a spreadsheet.", "Año": "Year", "Descargar para Excel (.csv)": "Download for Excel (.csv)",
+    "invoices para exportar": "invoices to export", "filas de jornada para exportar": "work rows to export", "Se abre en Excel, Numbers o Google Sheets. Útil para el contador o los impuestos de fin de año.": "Opens in Excel, Numbers or Google Sheets. Handy for the accountant or year-end taxes.",
     "Duplicar": "Duplicate", "Predeterminada": "Default"
   };
   // Texts with numbers or names.

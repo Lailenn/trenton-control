@@ -48,6 +48,7 @@
     <link rel="stylesheet" href="devices-panel.css?v=4">
     <link rel="stylesheet" href="hero-carousel.css?v=5">
     <link rel="stylesheet" href="settings.css?v=4">
+    <link rel="stylesheet" href="tools.css?v=1">
     <link rel="stylesheet" href="dark.css?v=1">
   </head>
   <body>
@@ -254,6 +255,11 @@
             <button class="nav-item" type="button" data-nav="job-archive">
               <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/><path d="M8.5 13.5h6.5M12.5 11l2.5 2.5-2.5 2.5"/></svg></span>
               <span class="nav-copy"><span class="nav-title">Reportes / PDFs</span><span class="nav-sub" data-otras="Formato enviado al cliente">Formato enviado a Trenton</span></span>
+              <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M9.4 6.4 15 12l-5.6 5.6-1.4-1.4 4.2-4.2-4.2-4.2z"/></svg></span>
+            </button>
+            <button class="nav-item" type="button" id="trashNavButton" data-open-trash="">
+              <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path class="i-fill" d="M6 7l1 12.5A1.5 1.5 0 0 0 8.5 21h7a1.5 1.5 0 0 0 1.5-1.5L18 7z"/><path d="M9 7V4.5h6V7"/></svg></span>
+              <span class="nav-copy"><span class="nav-title">Papelera</span><span class="nav-sub">Recuperar lo borrado</span></span>
               <span class="nav-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M9.4 6.4 15 12l-5.6 5.6-1.4-1.4 4.2-4.2-4.2-4.2z"/></svg></span>
             </button>
 
@@ -708,6 +714,8 @@
             <div class="archive-heading">
               <div><p class="eyebrow">Documentos guardados por dirección</p><h1 id="archiveTitle">Todas las invoices</h1><p>Consulta tus PDFs y el total de facturas por año.</p></div>
               <div class="archive-heading-actions">
+                <button class="button button-ghost" type="button" data-open-export="invoices">Exportar a Excel</button>
+                <button class="button button-ghost" type="button" data-open-trash="invoices">Papelera</button>
                 <button class="button button-ghost" type="button" id="backupInvoicesButton">Descargar respaldo</button>
                 <button class="button button-primary" type="button" id="importInvoicesButton">＋ Subir invoices anteriores</button>
                 <input id="importInvoiceFiles" type="file" accept="application/pdf,application/zip,.pdf,.zip" multiple hidden>
@@ -741,6 +749,8 @@
             <div class="archive-heading">
               <div><p class="eyebrow">Reportes de jornada por dirección</p><h1 id="hoursArchiveTitle">Todos los reportes de horas</h1><p data-otras="Solo el formato de jornada (Letter). Los reportes enviados al cliente viven en Reportes / PDFs.">Solo el formato de jornada (Letter). Los reportes enviados a Trenton viven en Reportes / PDFs.</p></div>
               <div class="archive-heading-actions">
+                <button class="button button-ghost" type="button" data-open-export="hours">Exportar a Excel</button>
+                <button class="button button-ghost" type="button" data-open-trash="hours">Papelera</button>
                 <button class="button button-ghost" type="button" id="backupHoursButton">Descargar respaldo</button>
                 <button class="button button-primary" type="button" id="importHoursArchiveButton">＋ Subir reportes anteriores</button>
                 <input id="importHoursFiles" type="file" accept="application/pdf,.pdf,application/zip,.zip" multiple hidden>
@@ -772,6 +782,8 @@
             <div class="archive-heading">
               <div><p class="eyebrow" data-otras="Reportes enviados al cliente">Reportes enviados a Trenton</p><h1 id="jobArchiveTitle">Todos los reportes de este formato</h1><p>PDFs A3 de este formato. No se mezcla con invoices ni con horas trabajadas.</p></div>
               <div class="archive-heading-actions">
+                <button class="button button-ghost" type="button" data-open-export="jobs">Exportar a Excel</button>
+                <button class="button button-ghost" type="button" data-open-trash="jobs">Papelera</button>
                 <button class="button button-ghost" type="button" id="importJobArchiveButton">＋ Subir PDFs</button>
                 <input id="importJobFiles" type="file" accept="application/pdf,.pdf" multiple hidden>
                 <button class="button button-ghost" type="button" id="openJobFormButton">＋ Nuevo reporte</button>
@@ -1217,7 +1229,7 @@
     <script src="vendor/jszip.min.js" defer></script>
     <script src="invoice-core.js?v=style-1" defer></script>
     <script src="invoice-pdf.js?v=style-6" defer></script>
-    <script src="cloud-db.js?v=editor-1" defer></script>
+    <script src="cloud-db.js?v=trash-1" defer></script>
     <script src="whatsapp-invoice.js?v=parse-2" defer></script>
     <script src="invoice-archive.js?v=files-1" defer></script>
     <script src="hours-pdf.js?v=grand-2" defer></script>
@@ -1233,9 +1245,10 @@
     <script src="check-viewer.js?v=1" defer></script>
     <script src="balance-ui.js?v=1" defer></script>
     <script src="dash-stats.js?v=2" defer></script>
-    <script src="app.js?v=fix-1" defer></script>
+    <script src="app.js?v=trash-1" defer></script>
     <script src="hero-carousel.js?v=2" defer></script>
-    <script src="i18n.js?v=2" defer></script>
+    <script src="i18n.js?v=3" defer></script>
+    <script src="tools.js?v=1" defer></script>
     <script src="settings.js?v=4" defer></script>
     <script src="security-log.js?v=1" defer></script>
     <script src="devices-panel.js?v=set-1" defer></script>

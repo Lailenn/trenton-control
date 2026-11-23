@@ -571,6 +571,24 @@
     for (const record of incoming) await saveInvoice(record, existing);
   }
 
+  // Trash: items marked as deleted (nothing is erased), and restoring them.
+  const TRASH_TABLES = { invoices: "invoices", hours: "hours_reports", jobs: "job_reports" };
+  async function listDeleted(kind) {
+    const table = TRASH_TABLES[kind];
+    if (!table) return [];
+    const rows = await rest(`${table}?deleted_at=not.is.null&${companyQuery()}&order=deleted_at.desc&limit=300`);
+    return Array.isArray(rows) ? rows : [];
+  }
+  async function restoreDeleted(kind, id) {
+    const table = TRASH_TABLES[kind];
+    if (!table || !id) return;
+    try {
+      await rest(`${table}?id=eq.${encodeURIComponent(id)}`, { method: "PATCH", body: { deleted_at: null, updated_at: new Date().toISOString() } });
+    } catch (error) {
+      fail(error, "No se pudo restaurar.");
+    }
+  }
+
   async function softDeleteInvoice(record) {
     try {
       await rest(`invoices?id=eq.${encodeURIComponent(record.id)}`, {
@@ -595,9 +613,7 @@
     } catch (error) {
       fail(error, "No se pudo eliminar el reporte de horas.");
     }
-    try {
-      await rest(`hours_entries?report_id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
-    } catch (_) { /* las jornadas pueden no existir */ }
+    // Rows stay so the report comes back complete if restored from the trash.
     writeJson(hoursMetaKey(), readJson(hoursMetaKey()).filter(item => item.id !== id));
     await root.LocalCache.remove("hours", id);
   }
@@ -613,9 +629,7 @@
     } catch (error) {
       fail(error, "No se pudo eliminar el reporte de otro formato de horas.");
     }
-    try {
-      await rest(`job_entries?report_id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
-    } catch (_) { /* las filas pueden no existir */ }
+    // Rows stay so the report comes back complete if restored from the trash.
     writeJson(jobMetaKey(), readJson(jobMetaKey()).filter(item => item.id !== id));
     await root.LocalCache.remove("job", id);
   }
@@ -1529,6 +1543,8 @@
     saveInvoice,
     saveMany,
     softDeleteInvoice,
+    listDeleted,
+    restoreDeleted,
     ensureInvoicePdf,
     signedUrl,
     uploadReportPdf,
