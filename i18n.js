@@ -120,6 +120,13 @@ window.I18n = (function () {
     "La papelera está vacía": "The trash is empty", "Lo que borras queda aquí. Al restaurarlo vuelve al tablero y al archivo como estaba.": "Deleted items stay here. Restoring brings them back to the board and archive as they were.",
     "Exportar": "Export", "Exportar a Excel": "Export to Excel", "Descarga tus datos en una hoja de cálculo.": "Download your data as a spreadsheet.", "Año": "Year", "Descargar para Excel (.csv)": "Download for Excel (.csv)",
     "invoices para exportar": "invoices to export", "filas de jornada para exportar": "work rows to export", "Se abre en Excel, Numbers o Google Sheets. Útil para el contador o los impuestos de fin de año.": "Opens in Excel, Numbers or Google Sheets. Handy for the accountant or year-end taxes.",
+    "Ingresos por mes": "Monthly income", "Facturado contra cobrado": "Billed vs collected", "6 meses": "6 months", "12 meses": "12 months", "Facturado": "Billed", "Cobrado": "Collected", "Cobrado del total": "Collected of total",
+    "Cobros atrasados": "Overdue payments", "días": "days", "Recordatorios de cobro": "Payment reminders", "Avisa en Inicio cuando algo lleva más de 30 días esperando cheque.": "Shows a notice on Home when something waits for a check over 30 days.",
+    "＋ Crear invoice": "＋ Create invoice", "＋ Registrar horas": "＋ Log hours", "Ver tablero": "See board", "Subir PDFs anteriores": "Upload earlier PDFs", "Subir reportes anteriores": "Upload earlier reports", "＋ Nuevo reporte": "＋ New report",
+    "Notificaciones": "Notifications", "Avisos de cobro de tus invoices y reportes.": "Payment notices for your invoices and reports.", "Todo al día": "All caught up", "Recordatorios apagados": "Reminders are off",
+    "Toca uno para abrirlo. Cuando llegue el cheque, muévelo a Pagado y desaparece de aquí.": "Tap one to open it. When the check arrives, move it to Paid and it leaves this list.",
+    "Por cobrar": "To collect", "cobrado": "collected", "Facturado (barras)": "Billed (bars)", "Cobrado (línea)": "Collected (line)",
+    "Lo facturado cada mes y cuánto de eso ya se cobró": "What was billed each month and how much of it is collected", "Cobrado de lo facturado ese mes (línea)": "Collected from that month's billing (line)", "Registrar horas": "Log hours", "Nuevo reporte": "New report",
     "Duplicar": "Duplicate", "Predeterminada": "Default"
   };
   // Texts with numbers or names.

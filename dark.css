@@ -2,36 +2,46 @@
    document previews and the blue brand pieces are flipped back so they keep their real
    colors. Shadows become thin borders, since inverted shadows would look like glows. */
 /* On the root element the filter keeps fixed bars (dock, dialogs) working. */
-html.rp-dark { filter: invert(1) hue-rotate(180deg); background: #fdfdfe; color-scheme: light; }
-html.rp-dark body, html.rp-dark .main-shell, html.rp-dark .app-backdrop { background: #fdfdfe !important; }
+html.rp-dark:not(.rp-dark-pause) { filter: invert(1) hue-rotate(180deg); background: #fdfdfe; color-scheme: light; }
+html.rp-dark:not(.rp-dark-pause) body, html.rp-dark:not(.rp-dark-pause) .main-shell, html.rp-dark:not(.rp-dark-pause) .app-backdrop { background: #fdfdfe !important; }
 
 /* Flipped back to their real colors */
-html.rp-dark img,
-html.rp-dark video,
-html.rp-dark iframe,
-html.rp-dark picture,
-html.rp-dark .invoice-paper,
-html.rp-dark .hours-paper,
-html.rp-dark .pe-page,
-html.rp-dark .pe-thumb canvas,
-html.rp-dark .pdf-dialog-pages,
-html.rp-dark .login2-visual,
-html.rp-dark .l3-bg,
-html.rp-dark .bd-photo,
-html.rp-dark .sidebar,
-html.rp-dark .hc,
-html.rp-dark .button-primary,
-html.rp-dark .st-btn.is-primary,
-html.rp-dark .st-tabs button.is-on,
-html.rp-dark .mobile-dock .dock-item.is-active,
-html.rp-dark .b-step > i,
-html.rp-dark .dm-btn-primary,
-html.rp-dark .pr-btn.is-primary,
-html.rp-dark #toast { filter: invert(1) hue-rotate(180deg); }
+html.rp-dark:not(.rp-dark-pause) img,
+html.rp-dark:not(.rp-dark-pause) video,
+html.rp-dark:not(.rp-dark-pause) iframe,
+html.rp-dark:not(.rp-dark-pause) picture,
+html.rp-dark:not(.rp-dark-pause) .invoice-paper,
+html.rp-dark:not(.rp-dark-pause) .hours-paper,
+html.rp-dark:not(.rp-dark-pause) .pe-page,
+html.rp-dark:not(.rp-dark-pause) .pe-thumb canvas,
+html.rp-dark:not(.rp-dark-pause) .pdf-dialog-pages,
+html.rp-dark:not(.rp-dark-pause) .login2-visual,
+html.rp-dark:not(.rp-dark-pause) .l3-bg,
+html.rp-dark:not(.rp-dark-pause) .bd-photo,
+html.rp-dark:not(.rp-dark-pause) .sidebar,
+html.rp-dark:not(.rp-dark-pause) .hc,
+html.rp-dark:not(.rp-dark-pause) .button-primary,
+html.rp-dark:not(.rp-dark-pause) .st-btn.is-primary,
+html.rp-dark:not(.rp-dark-pause) .st-tabs button.is-on,
+html.rp-dark:not(.rp-dark-pause) .mobile-dock .dock-item.is-active,
+html.rp-dark:not(.rp-dark-pause) .b-step > i,
+html.rp-dark:not(.rp-dark-pause) .dm-btn-primary,
+html.rp-dark:not(.rp-dark-pause) .pr-btn.is-primary,
+html.rp-dark:not(.rp-dark-pause) #toast { filter: invert(1) hue-rotate(180deg); }
 /* …but not twice when nested inside something already flipped back */
-html.rp-dark :is(.invoice-paper, .hours-paper, .pe-page, .pdf-dialog-pages, .sidebar, .hc, .button-primary, .st-btn.is-primary, .st-tabs button.is-on, .mobile-dock .dock-item.is-active, .login2-visual, #toast) :is(img, video, iframe, picture, canvas, .sidebar, .button-primary) { filter: none; }
+html.rp-dark:not(.rp-dark-pause) :is(.invoice-paper, .hours-paper, .pe-page, .pdf-dialog-pages, .sidebar, .hc, .button-primary, .st-btn.is-primary, .st-tabs button.is-on, .mobile-dock .dock-item.is-active, .login2-visual, #toast) :is(img, video, iframe, picture, canvas, .sidebar, .button-primary) { filter: none; }
 
 /* Depth without glowing shadows */
-html.rp-dark body * { box-shadow: none !important; }
-html.rp-dark :is(.b-card, .st-panel, .st-group, .st-card, .board-section, .stat-card, .archive-card, .hours-form-panel, .hours-preview-panel, .invoice-preview-panel, .invoice-form-panel, .df-card, .df-dev-card, .pr-card, .invoice-card, .st-hero, .st-tabs, .st-top-i) { background-color: #e5e5e8 !important; border: 1px solid #d2d2d7 !important; }
-html.rp-dark ::selection { background: #ffd9a8; }
+html.rp-dark:not(.rp-dark-pause) body * { box-shadow: none !important; }
+html.rp-dark:not(.rp-dark-pause) :is(.b-card, .st-panel, .st-group, .st-card, .board-section, .stat-card, .archive-card, .hours-form-panel, .hours-preview-panel, .invoice-preview-panel, .invoice-form-panel, .df-card, .df-dev-card, .pr-card, .invoice-card, .st-hero, .st-tabs, .st-top-i) { background-color: #e5e5e8 !important; border: 1px solid #d2d2d7 !important; }
+html.rp-dark:not(.rp-dark-pause) ::selection { background: #ffd9a8; }
+
+/* PDF editor: the full-page filter is paused (it made scrolling and zooming stutter on phones).
+   Only the small toolbars and side panels are flipped; the page area gets a plain dark color. */
+html.rp-dark.rp-dark-pause { color-scheme: dark; background: #0d0f14; }
+html.rp-dark.rp-dark-pause body, html.rp-dark.rp-dark-pause .main-shell, html.rp-dark.rp-dark-pause .app-backdrop { background: #0d0f14 !important; }
+html.rp-dark.rp-dark-pause :is(.pe-top, .pe-tools, .pe-mobile-bar, .pe-props, .pe-thumbs, .pe-library, .pe-dialog, .pe-menu, .mobile-dock, .tl-modal, #toast) { filter: invert(1) hue-rotate(180deg); }
+html.rp-dark.rp-dark-pause :is(.pe-thumbs, .pe-library, .pe-dialog, .pe-props) :is(canvas, img), html.rp-dark.rp-dark-pause .mobile-dock .dock-item.is-active, html.rp-dark.rp-dark-pause .mobile-dock img { filter: invert(1) hue-rotate(180deg); }
+html.rp-dark.rp-dark-pause .pe-editor { background: #1c1c1e; border-color: #2c2c2e; box-shadow: none; }
+html.rp-dark.rp-dark-pause .pe-canvas { background: #121214; }
+html.rp-dark.rp-dark-pause .pe-page-no { color: #8e8e93; }

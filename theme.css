@@ -800,3 +800,12 @@ body .mobile-dock .dock-item.is-active .i-hand { stroke: var(--blue); }
   #sidebarToggle { min-width: 34px; min-height: 34px; }
   .st-link { padding: 8px 0; }
 }
+
+/* Short desktop screens: the whole rail (including Papelera and Notificaciones) fits without scrolling */
+@media (min-width: 821px) and (max-height: 980px) {
+  body .sidebar:not(.open) .nav-item, body .sidebar:not(.open) .sidebar-logout { min-height: 40px !important; height: 40px !important; }
+  body .sidebar:not(.open) .main-nav { gap: 1px !important; }
+  body .sidebar:not(.open) .nav-icon, body .sidebar:not(.open) .sidebar-logout svg { width: 36px !important; height: 36px !important; min-width: 36px !important; }
+  body .sidebar:not(.open) .nav-kicker { margin-top: 4px !important; margin-bottom: 0 !important; padding-top: 6px !important; }
+  body .sidebar:not(.open) .sidebar-footer { padding-top: 6px !important; gap: 1px !important; }
+}

@@ -244,7 +244,7 @@
     wireBoardEvents();
   }
 
-  function render() { updateWelcome(); updateStats(); renderBoard(); renderCheckDesk(); archive?.render(); hoursArchive?.render(); jobArchive?.render(); window.HoursApp?.render(); window.JobApp?.render(); window.DashFiles?.render(); }
+  function render() { updateWelcome(); updateStats(); renderBoard(); renderCheckDesk(); archive?.render(); hoursArchive?.render(); jobArchive?.render(); window.HoursApp?.render(); window.JobApp?.render(); window.DashFiles?.render(); window.Insights?.refresh?.(); }
 
   function replayViewAnimation(view) {
     const node = $(`#${view}View`);

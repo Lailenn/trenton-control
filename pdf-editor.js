@@ -681,23 +681,43 @@ window.PdfEditor = (function () {
       return `<div class="pe-page${i === ed.current ? " is-current" : ""}" data-pid="${p.pid}" style="width:${w * scale}px;height:${h * scale}px"><canvas></canvas><div class="pe-layer"></div><span class="pe-page-no">${i + 1}</span></div>`;
     }).join("");
     ed.pages.forEach(p => renderLayer(p.pid));
-    // Draw page images (visible ones first is not needed for typical documents).
-    for (const p of ed.pages) {
+    // Current page first, then the rest (pages already drawn at this size come from the cache).
+    const order = ed.pages.slice(ed.current).concat(ed.pages.slice(0, ed.current));
+    for (const p of order) {
       if (run !== renderRun) return;
       const node = $(`.pe-page[data-pid="${p.pid}"] canvas`, host);
       if (node) await drawPage(p, node, scale);
     }
   }
+  // Rendered pages are kept per size and rotation, so undo, reordering or reopening the
+  // pages panel copies the picture instead of drawing the PDF again (much smoother on phones).
+  const pageCache = new Map();
+  let pdfSeq = 0;
+  const pdfIds = new WeakMap(); // one id per loaded PDF file, so a new version never reuses old pictures
+  function cacheKey(p, cw, ch) { if (!pdfIds.has(ed.pdf)) pdfIds.set(ed.pdf, ++pdfSeq); return `${pdfIds.get(ed.pdf)}|${p.index}|${totalRot(p)}|${cw}x${ch}`; }
   async function drawPage(p, canvas, s) {
     const { w, h } = pageSize(p), dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = Math.round(w * s * dpr); canvas.height = Math.round(h * s * dpr);
+    const cw = Math.round(w * s * dpr), ch = Math.round(h * s * dpr);
+    canvas.width = cw; canvas.height = ch;
     canvas.style.width = `${w * s}px`; canvas.style.height = `${h * s}px`;
     const x = canvas.getContext("2d");
-    x.fillStyle = "#fff"; x.fillRect(0, 0, canvas.width, canvas.height);
+    x.fillStyle = "#fff"; x.fillRect(0, 0, cw, ch);
     if (p.src !== "orig") return;
+    const key = cacheKey(p, cw, ch), hit = pageCache.get(key);
+    if (hit) { x.drawImage(hit, 0, 0); pageCache.delete(key); pageCache.set(key, hit); return; }
     const page = await ed.pdf.getPage(p.index + 1);
     const vp = page.getViewport({ scale: s * dpr, rotation: totalRot(p) });
     await page.render({ canvasContext: x, viewport: vp }).promise;
+    try {
+      const copy = document.createElement("canvas");
+      copy.width = cw; copy.height = ch;
+      copy.getContext("2d").drawImage(canvas, 0, 0);
+      pageCache.set(key, copy);
+      // Keep memory small: big pages count more than thumbnails.
+      let pixels = 0;
+      for (const c of pageCache.values()) pixels += c.width * c.height;
+      for (const k of pageCache.keys()) { if (pixels < 24e6 && pageCache.size <= 60) break; const c = pageCache.get(k); pixels -= c.width * c.height; pageCache.delete(k); }
+    } catch (_) { /* no cache, still drawn */ }
   }
   const pageOf = pid => ed.pages.find(p => p.pid === pid);
   function renderLayer(pid) {

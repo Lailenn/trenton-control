@@ -1,0 +1,114 @@
+/* Home: monthly income chart. Notifications panel (overdue payments). Empty states. */
+.income-chart { position: relative; margin: 18px 0 0; padding: 22px 24px 18px; border-radius: 24px; background: #fff; box-shadow: 0 1px 2px rgba(0, 40, 100, .04), 0 12px 32px rgba(0, 60, 140, .08); font-family: "Plus Jakarta Sans", sans-serif; overflow: hidden; animation: peIn .45s var(--ease) both; }
+.income-chart::before { content: ""; position: absolute; top: -120px; right: -80px; width: 340px; height: 260px; border-radius: 50%; background: radial-gradient(closest-side, rgba(var(--blue-rgb), .10), transparent); pointer-events: none; }
+.in-head { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; }
+.in-head-i { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 14px; background: linear-gradient(145deg, #e9f3ff, #d7e9ff); color: var(--blue); }
+.in-head-i svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+.in-head h3 { margin: 0; color: var(--ink); font-size: 20px; font-weight: 800; letter-spacing: -.02em; }
+.in-head p { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+.in-range { display: inline-flex; padding: 3px; border-radius: 12px; background: #eef1f6; }
+.in-range button { padding: 7px 13px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font: 700 13px "Plus Jakarta Sans", sans-serif; cursor: pointer; transition: background .2s, color .2s; }
+.in-range button.is-on { background: #fff; color: var(--blue); box-shadow: 0 2px 8px rgba(0, 0, 0, .08); }
+
+.in-source { position: relative; display: inline-flex; gap: 4px; margin-top: 16px; padding: 4px; border-radius: 14px; background: #eef1f6; }
+.in-source button { padding: 8px 16px; border: 0; border-radius: 11px; background: transparent; color: var(--muted); font: 700 13.5px "Plus Jakarta Sans", sans-serif; cursor: pointer; transition: background .2s, color .2s; }
+.in-source button.is-on { background: #fff; color: var(--blue); box-shadow: 0 2px 8px rgba(0, 0, 0, .08); }
+@media (max-width: 640px) { .in-source { display: flex; } .in-source button { flex: 1; padding: 8px 6px; } }
+.in-kpis { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 10px; margin: 18px 0 6px; }
+.in-kpi { display: grid; gap: 4px; padding: 12px 14px; border-radius: 16px; background: #f6f8fc; }
+.in-kpi.is-billed { background: linear-gradient(160deg, #eef6ff, #f7faff); }
+.in-kpi.is-paid { background: linear-gradient(160deg, #ecfaf0, #f7fdf9); }
+.in-kpi.is-owed { background: linear-gradient(160deg, #fff5ea, #fffaf4); }
+.in-kpi small { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12.5px; font-weight: 600; }
+.in-kpi strong { overflow: hidden; color: var(--ink); font-size: 19px; font-weight: 800; letter-spacing: -.02em; text-overflow: ellipsis; white-space: nowrap; }
+.in-dot { display: inline-block; flex: none; width: 9px; height: 9px; border-radius: 50%; }
+.in-dot.is-billed { background: var(--blue); }
+.in-dot.is-paid { background: #34c759; }
+.in-dot.is-owed { background: #ff9f0a; }
+.in-ring { position: relative; display: grid; place-items: center; width: 74px; }
+.in-ring svg { width: 64px; height: 64px; transform: rotate(-90deg); }
+.in-ring-bg { fill: none; stroke: #edf1f7; stroke-width: 6; }
+.in-ring-fg { fill: none; stroke: #34c759; stroke-width: 6; stroke-linecap: round; stroke-dasharray: var(--c); stroke-dashoffset: var(--o); animation: inRing 1s var(--ease) both; }
+.in-ring span { position: absolute; display: grid; justify-items: center; line-height: 1.05; }
+.in-ring strong { color: var(--ink); font-size: 14px; font-weight: 800; }
+.in-ring small { color: var(--muted); font-size: 9.5px; font-weight: 600; }
+@keyframes inRing { from { stroke-dashoffset: var(--c); } }
+
+.in-plot { position: relative; margin-top: 6px; }
+.in-svg { display: block; width: 100%; overflow: visible; }
+.in-grid { stroke: #eef2f7; stroke-width: 1; stroke-dasharray: 3 5; }
+.in-grid.is-base { stroke: #e3e8f0; stroke-dasharray: none; }
+.in-axis { fill: #a0a8b9; font: 600 11px "Plus Jakarta Sans", sans-serif; }
+.in-month { text-transform: capitalize; }
+.in-col.is-now .in-month { fill: var(--blue); font-weight: 800; }
+.in-hit { fill: transparent; cursor: pointer; transition: fill .2s; }
+.in-col.is-hover .in-hit, .in-col:focus-visible .in-hit { fill: rgba(var(--blue-rgb), .05); }
+.in-col:focus { outline: none; }
+.in-track { fill: #f3f6fb; }
+.in-bar { transform-box: fill-box; transform-origin: bottom; animation: inGrow .8s var(--ease-spring, ease) both; animation-delay: var(--d, 0ms); transition: opacity .25s, filter .25s; }
+.in-col.is-hover .in-bar { filter: drop-shadow(0 6px 10px rgba(var(--blue-rgb), .35)); }
+.in-plot:has(.in-col.is-hover) .in-col:not(.is-hover) .in-bar { opacity: .4; }
+.in-line { fill: none; stroke: #34c759; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: inDraw 1.1s .35s var(--ease) forwards; pointer-events: none; }
+.in-area { opacity: 0; animation: inFade .8s .7s ease forwards; pointer-events: none; }
+.in-dotp { fill: #fff; stroke: #34c759; stroke-width: 2.5; opacity: 0; transform-box: fill-box; transform-origin: center; animation: inPop .4s var(--d, 0ms) var(--ease-spring, ease) forwards; pointer-events: none; transition: r .2s; }
+.in-dotp.is-hover { fill: #34c759; stroke: #fff; stroke-width: 3; r: 7; }
+@keyframes inGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes inDraw { to { stroke-dashoffset: 0; } }
+@keyframes inFade { to { opacity: 1; } }
+@keyframes inPop { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
+.in-tip { position: absolute; top: -8px; z-index: 2; display: grid; gap: 4px; min-width: 180px; padding: 11px 13px; border-radius: 14px; background: rgba(28, 32, 48, .92); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); color: #fff; font-size: 12.5px; pointer-events: none; box-shadow: 0 14px 34px rgba(0, 0, 0, .22); animation: inFade .15s ease both; opacity: 1; }
+.in-tip[hidden] { display: none; }
+.in-tip strong { margin-bottom: 2px; font-size: 13px; }
+.in-tip span { display: flex; align-items: center; gap: 7px; }
+.in-tip .in-tip-owed { color: #ffc56b; }
+.in-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; margin-top: 6px; color: var(--muted); font-size: 12.5px; font-weight: 600; }
+.in-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.in-empty { margin: 8px 0 0; color: var(--muted); font-size: 14px; text-align: center; }
+.in-empty button, .df-empty-btn { margin-left: 6px; padding: 7px 12px; border: 0; border-radius: 10px; background: var(--blue-soft); color: var(--blue); font: 700 13px "Plus Jakarta Sans", sans-serif; cursor: pointer; }
+
+@media (max-width: 760px) {
+  .in-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .in-ring { grid-column: 2; grid-row: 2; width: auto; justify-self: stretch; padding: 4px 0; border-radius: 16px; background: #f6f8fc; }
+  .in-kpi.is-owed { grid-column: 1; grid-row: 2; }
+}
+@media (max-width: 640px) {
+  .income-chart { padding: 16px 16px 14px; border-radius: 22px; }
+  .in-head { grid-template-columns: auto minmax(0, 1fr); }
+  .in-range { grid-column: 1 / -1; justify-self: start; }
+  .in-head-i { width: 42px; height: 42px; }
+  .in-kpi { padding: 10px 12px; }
+  .in-kpi strong { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { .in-bar, .in-line, .in-area, .in-dotp, .in-ring-fg { animation-duration: .01ms !important; animation-delay: 0ms !important; } }
+html.rp-calm :is(.in-bar, .in-line, .in-area, .in-dotp, .in-ring-fg) { animation-duration: .01ms !important; animation-delay: 0ms !important; }
+
+/* Notifications: sidebar badge, phone "Más" badge and the panel content */
+.nt-badge { display: inline-grid; place-items: center; min-width: 20px; height: 20px; margin-left: auto; padding: 0 6px; border-radius: 999px; background: #ff3b30; color: #fff; font: 800 11px/1 "Plus Jakarta Sans", sans-serif; box-shadow: 0 0 0 2px rgba(255, 255, 255, .9); animation: prPopIn .35s var(--ease-spring, ease) both; }
+.nt-badge[hidden] { display: none; }
+#notifyNavButton { position: relative; }
+/* Collapsed rail: a small counter on the bell corner, like iOS */
+body .sidebar:not(.open) #notifyNavButton .nt-badge { position: absolute; top: 50%; left: 50%; min-width: 16px; height: 16px; margin: -15px 0 0 3px; padding: 0 4px; border: 0; font-size: 9.5px !important; line-height: 16px; letter-spacing: -.02em; box-shadow: 0 0 0 2px #3f86f5; pointer-events: none; }
+#dockMore { position: relative; }
+.nt-badge.is-dock { position: absolute; top: 2px; right: calc(50% - 20px); min-width: 17px; height: 17px; padding: 0 4px; font-size: 10px; }
+.tl-head-i.is-bell { background: #fff1e0; color: #e8780c; }
+.tl-head-i svg { fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.nt-summary { display: grid; gap: 2px; margin-bottom: 12px; padding: 12px 14px; border-radius: 16px; background: linear-gradient(180deg, #fff6ea, #fffbf6); border: 1px solid #ffe2bd; }
+.nt-summary strong { color: #b4570a; font-size: 15px; }
+.nt-summary span { color: #8a6a48; font-size: 13.5px; }
+.pr-rem-list { display: grid; gap: 8px; }
+.pr-rem-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; width: 100%; padding: 10px 12px; border: 1px solid #f0e6d8; border-radius: 16px; background: #fff; text-align: left; font: inherit; cursor: pointer; transition: transform .2s var(--ease-spring, ease), border-color .2s; }
+.pr-rem-row:hover { transform: translateX(3px); border-color: #ffc98a; }
+.pr-rem-days { display: grid; justify-items: center; min-width: 52px; padding: 6px 8px; border-radius: 12px; background: #fff3e3; color: #c2610a; }
+.pr-rem-days strong { font-size: 18px; line-height: 1; }
+.pr-rem-days small { font-size: 11px; font-weight: 700; }
+.pr-rem-txt { display: grid; gap: 2px; min-width: 0; }
+.pr-rem-txt strong { overflow: hidden; color: var(--ink); font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
+.pr-rem-txt small { color: var(--muted); font-size: 13px; }
+.pr-rem-go { width: 20px; height: 20px; fill: none; stroke: #c9b39a; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Empty states */
+.df-empty-box { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; }
+.archive-empty-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 16px; }
+
+html.rp-dark .income-chart { background: #e5e5e8 !important; border: 1px solid #d2d2d7 !important; }
+html.rp-dark .in-tip, html.rp-dark .nt-badge { filter: invert(1) hue-rotate(180deg); }

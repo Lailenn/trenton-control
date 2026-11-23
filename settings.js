@@ -12,7 +12,7 @@ window.SettingsPage = (function () {
     herobg: ["rp.pref.herobg", true, "rp-plain-hero", false], shadow: ["rp.pref.shadow", true, "rp-flat", false],
     toasts: ["rp.pref.toasts", true, "rp-no-toast", false], sound: ["rp.pref.sound", false, "", true],
     bigtext: ["rp.pref.bigtext", false, "rp-big-text", true], contrast: ["rp.pref.contrast", false, "rp-contrast", true],
-    focus: ["rp.pref.focus", false, "rp-focus", true]
+    focus: ["rp.pref.focus", false, "rp-focus", true], remind: ["rp.pref.remind", true, "", true]
   };
   const PREF_START = "rp.pref.start", PREF_THEME = "rp.pref.theme";
   const theme = () => { try { return localStorage.getItem(PREF_THEME) || "light"; } catch (_) { return "light"; } };
@@ -20,6 +20,9 @@ window.SettingsPage = (function () {
   const applyTheme = () => document.documentElement.classList.toggle("rp-dark", theme() === "dark" || (theme() === "auto" && Boolean(darkQuery?.matches)));
   applyTheme();
   darkQuery?.addEventListener?.("change", applyTheme);
+  // In the PDF editor the full-page dark filter is paused (dark.css has a light version for it).
+  const watchEditor = () => { const v = document.getElementById("editorView"); if (!v) return; const sync = () => document.documentElement.classList.toggle("rp-dark-pause", !v.classList.contains("hidden")); sync(); new MutationObserver(sync).observe(v, { attributes: true, attributeFilter: ["class"] }); };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", watchEditor); else watchEditor();
   const pref = (k, def) => { try { const v = localStorage.getItem(k); return v == null ? def : v === "1"; } catch (_) { return def; } };
   const setPref = (k, v) => { try { localStorage.setItem(k, v ? "1" : "0"); } catch (_) {} };
   const on = id => pref(PREFS[id][0], PREFS[id][1]);
@@ -98,7 +101,7 @@ window.SettingsPage = (function () {
     const p = profile(), img = avatarUrl(), workspace = window.CompanyApp?.info?.()?.title || "Trenton";
     root.innerHTML = `
       <header class="st-top"><span class="st-top-i">${ic("gear")}</span><div><h1>Configuración</h1><p>Administra tu cuenta, seguridad y preferencias del sistema.</p></div></header>
-      <div class="st-grid">
+      <div class="st-grid${sideHtml(p) ? "" : " is-single"}">
         <div class="st-main">
           <section class="st-hero">
             <button type="button" class="st-avatar" data-st="photo" title="Cambiar foto">${img ? `<img src="${esc(img)}" alt="">` : `<span>${esc(initials(p.displayName))}</span>`}<i class="st-online"></i><b class="st-cam">${ic("camera")}</b></button>
@@ -111,15 +114,17 @@ window.SettingsPage = (function () {
           </nav>
           <section class="st-panel">${panelHtml(p, workspace)}</section>
         </div>
-        <aside class="st-side">
-          <section class="st-card st-rolecard"><h3>${ic("badge", "is-blue")}Tu rol en el sistema</h3><strong>${esc(p.jobTitle || "Sin cargo")}</strong>
-            <p>Tienes acceso a la gestión de invoices, control de horas, reportes y administración de documentos.</p>
-            <span class="st-role-art" aria-hidden="true"><i></i><i></i><i></i><b>${ic("check")}</b></span></section>
-          <section class="st-card"><h3>${ic("lock", "is-blue")}Permisos y accesos</h3><ul class="st-perms">${PERMS.map(x => `<li>${ic("check")}${x}</li>`).join("")}</ul></section>
-          <section class="st-card"><div class="st-card-head"><h3>${ic("pulse", "is-blue")}Actividad reciente</h3><button type="button" class="st-link" data-st="history">Ver historial ${ic("arrow")}</button></div><div class="st-activity"><p class="st-muted">Cargando…</p></div></section>
-        </aside>
+        ${sideHtml(p) ? `<aside class="st-side">${sideHtml(p)}</aside>` : ""}
       </div>`;
-    fillActivity();
+    if (tab === "security") fillActivity();
+  }
+  // Side card that belongs to each tab (nothing repeats on every tab).
+  function sideHtml(p) {
+    if (tab === "info") return `<section class="st-card st-rolecard"><h3>${ic("badge", "is-blue")}Tu rol en el sistema</h3><strong>${esc(p.jobTitle || "Sin cargo")}</strong>
+            <p>Tienes acceso a la gestión de invoices, control de horas, reportes y administración de documentos.</p>
+            <span class="st-role-art" aria-hidden="true"><i></i><i></i><i></i><b>${ic("check")}</b></span></section>`;
+    if (tab === "security") return `<section class="st-card"><div class="st-card-head"><h3>${ic("pulse", "is-blue")}Actividad reciente</h3><button type="button" class="st-link" data-st="history">Ver historial ${ic("arrow")}</button></div><div class="st-activity"><p class="st-muted">Cargando…</p></div></section>`;
+    return "";
   }
   function row(icon, label, value) { return `<div class="st-row"><span class="st-row-i">${ic(icon)}</span><span class="st-row-l">${label}</span><strong>${value}</strong></div>`; }
   function panelHtml(p, workspace) {
@@ -148,7 +153,7 @@ window.SettingsPage = (function () {
         `<div class="st-toggle st-select"><span><strong>Idioma</strong><small>Textos de la interfaz en español o inglés.</small></span><div class="st-seg" role="radiogroup" aria-label="Idioma" data-i18n-skip><button type="button" role="radio" data-lang="es" aria-checked="${lang === "es"}" class="${lang === "es" ? "is-on" : ""}">Español</button><button type="button" role="radio" data-lang="en" aria-checked="${lang === "en"}" class="${lang === "en" ? "is-on" : ""}">English</button></div></div>`
         + row("calendar", "Formato de fecha", esc(sample)) + row("clock", "Zona horaria", esc(tz || "—")) + row("badge", "Moneda", "USD ($)")],
       ["notify", "bell", "Notificaciones", "Avisos y alertas del sistema",
-        tg("toasts", "Avisos en pantalla", "Mensajes breves como “Guardado” en la parte de abajo.") + tg("sound", "Sonido en los avisos", "Un toque suave cuando aparece un aviso.")],
+        tg("toasts", "Avisos en pantalla", "Mensajes breves como “Guardado” en la parte de abajo.") + tg("sound", "Sonido en los avisos", "Un toque suave cuando aparece un aviso.") + tg("remind", "Recordatorios de cobro", "Avisa en Inicio cuando algo lleva más de 30 días esperando cheque.")],
       ["a11y", "a11y", "Accesibilidad", "Texto, contraste y efectos visuales",
         tg("bigtext", "Texto más grande", "Aumenta el tamaño de toda la interfaz.") + tg("contrast", "Alto contraste", "Textos y bordes más oscuros.") + tg("focus", "Resaltar el foco", "Marca clara al moverte con el teclado.")]
     ];
@@ -215,6 +220,7 @@ window.SettingsPage = (function () {
     const k = e.target.dataset.pref;
     if (!k || !PREFS[k]) return;
     setPref(PREFS[k][0], e.target.checked);
+    if (k === "remind") window.Insights?.refresh?.();
     applyPrefs();
     toast("Preferencia guardada.");
   }

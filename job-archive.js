@@ -70,7 +70,7 @@ window.JobArchive = function (app) {
         <p class="archive-file">${esc(record.pdfName || fileName(record))}</p>
         <div class="archive-card-actions">${hasPdf ? `<button type="button" class="button button-primary" data-job-record="${esc(record.id)}" data-task="view">Ver PDF</button><button type="button" class="button button-ghost" data-job-record="${esc(record.id)}" data-task="download">Descargar</button>` : ""}<button type="button" class="button button-ghost" data-job-record="${esc(record.id)}" data-task="edit">Editar datos</button><button type="button" class="button button-danger" data-job-record="${esc(record.id)}" data-task="delete">Eliminar</button></div>
       </article>`;
-    }).join("") : '<div class="archive-empty"><span>◷</span><h2>No hay reportes de este formato en esta selección</h2><p>Crea uno en Otro formato de horas. Este archivo no se mezcla con invoices ni con Horas / PDFs.</p></div>';
+    }).join("") : '<div class="archive-empty"><span>◷</span><h2>No hay reportes de este formato en esta selección</h2><p>Crea uno en Otro formato de horas. Este archivo no se mezcla con invoices ni con Horas / PDFs.</p><div class="archive-empty-actions"><button type="button" class="button button-primary" data-go-nav="job">＋ Nuevo reporte</button><button type="button" class="button button-ghost" data-click="#importJobArchiveButton">Subir PDFs</button></div></div>';
   }
 
   function open() {

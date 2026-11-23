@@ -35,7 +35,7 @@ window.InvoiceArchive = function (app) {
       <strong class="archive-amount">${money(r.amount)}</strong>
       <p class="archive-file">${esc(r.pdfName || "Puedes agregar el PDF desde Editar datos.")}</p>
       <div class="archive-card-actions">${r.pdfBlob || r.pdfPath ? `<button type="button" class="button button-primary" data-record="${esc(r.id)}" data-task="view">Ver PDF</button><button type="button" class="button button-ghost" data-record="${esc(r.id)}" data-task="download">Descargar</button>` : ""}<button type="button" class="button button-ghost" data-record="${esc(r.id)}" data-task="edit">Editar datos</button><button type="button" class="button button-danger" data-record="${esc(r.id)}" data-task="delete">Eliminar</button></div>
-    </article>`).join("") : '<div class="archive-empty"><span>▤</span><h2>No hay invoices en esta selección</h2><p>Prueba otro año o categoría, crea una invoice o sube tus PDFs anteriores.</p></div>';
+    </article>`).join("") : '<div class="archive-empty"><span>▤</span><h2>No hay invoices en esta selección</h2><p>Prueba otro año o categoría, crea una invoice o sube tus PDFs anteriores.</p><div class="archive-empty-actions"><button type="button" class="button button-primary" data-go-nav="invoice">＋ Crear invoice</button><button type="button" class="button button-ghost" data-click="#importInvoicesButton">Subir PDFs anteriores</button></div></div>';
   }
 
   function open(stage = "all") {

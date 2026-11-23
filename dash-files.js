@@ -90,9 +90,10 @@ window.DashFiles = (function () {
   }
   // While the first data is still loading, show placeholder rows instead of "no records".
   const loading = () => window.TrentonControl?.isReady && !window.TrentonControl.isReady();
-  const empty = (cols, text) => loading()
+  // action: [label, nav target] shown when there is nothing at all yet.
+  const empty = (cols, text, action) => loading()
     ? Array.from({ length: 3 }, () => `<tr class="df-skeleton" aria-hidden="true">${Array.from({ length: cols }, () => "<td><i></i></td>").join("")}</tr>`).join("")
-    : `<tr class="df-empty"><td colspan="${cols}">${text}</td></tr>`;
+    : `<tr class="df-empty"><td colspan="${cols}"><span class="df-empty-box"><span>${text}</span>${action ? `<button type="button" class="df-empty-btn" data-go-nav="${action[1]}">${action[0]}</button>` : ""}</span></td></tr>`;
   const more = (count, shown, target, label) => count > shown ? `<button type="button" class="df-more" data-open="${target}">${label} (${count}) →</button>` : "";
   const menu = (kind, id) => `<button type="button" class="df-icon df-menu-btn" data-menu="${kind}" data-id="${esc(id)}" aria-label="Más opciones">${ICON.dots}</button>`;
   const pdfCell = (item) => item.hasPdf ? `<button type="button" class="df-icon df-pdf" data-act="view" data-kind="${item.kind}" data-id="${esc(item.id)}" aria-label="Ver PDF">${ICON.pdf}</button>` : `<span class="df-nopdf" title="Falta el PDF">—</span>`;
@@ -108,7 +109,7 @@ window.DashFiles = (function () {
         <button type="button" class="df-upload" data-upload="invoice">${ICON.upload} Subir invoice</button></header>
       ${filterBar("inv", all, "Buscar invoice…")}
       <div class="df-table-wrap"><table class="df-table"><thead><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Fecha</th><th>Total</th><th>Archivo</th><th><span class="sr-only">Opciones</span></th></tr></thead>
-      <tbody>${rows || empty(7, all.length ? "No hay invoices con estos filtros." : "Todavía no hay invoices guardadas.")}</tbody></table></div>
+      <tbody>${rows || empty(7, all.length ? "No hay invoices con estos filtros." : "Todavía no hay invoices guardadas.", all.length ? null : ["＋ Crear invoice", "invoice"])}</tbody></table></div>
       ${more(list.length, ROWS, "archive", "Ver todas")}
     </article>`;
   }
@@ -123,7 +124,7 @@ window.DashFiles = (function () {
         <button type="button" class="df-upload" data-upload="hours">${ICON.upload} Subir reporte</button></header>
       ${filterBar("hrs", all, "Buscar reporte…")}
       <div class="df-table-wrap"><table class="df-table"><thead><tr><th>Rango de fechas</th><th>Cliente</th><th>Horas</th><th>Total</th><th>Archivo</th><th><span class="sr-only">Opciones</span></th></tr></thead>
-      <tbody>${rows || empty(6, all.length ? "No hay reportes con estos filtros." : "Todavía no hay reportes de horas.")}</tbody></table></div>
+      <tbody>${rows || empty(6, all.length ? "No hay reportes con estos filtros." : "Todavía no hay reportes de horas.", all.length ? null : ["＋ Registrar horas", "hours"])}</tbody></table></div>
       ${more(list.length, ROWS, "hours-archive", "Ver todos")}
     </article>`;
   }
@@ -157,7 +158,7 @@ window.DashFiles = (function () {
       ${filterBar("chk", all, "Buscar cheque…")}</div>
       <div class="df-desk-slot"></div>
       <div class="df-table-wrap"><table class="df-table df-checks"><thead><tr><th>Fecha</th><th>Cliente</th><th>Concepto</th><th>Monto</th><th>Estado</th><th>Comprobante</th><th><span class="sr-only">Acciones</span></th></tr></thead>
-      <tbody>${rows || empty(7, all.length ? "No hay cheques con estos filtros." : "Todavía no hay registros en Esperando cheque o Pagado.")}</tbody></table></div>
+      <tbody>${rows || empty(7, all.length ? "No hay cheques con estos filtros." : "Todavía no hay registros en Esperando cheque o Pagado.", all.length ? null : ["Ver tablero", "board"])}</tbody></table></div>
       ${list.length > ROWS ? `<button type="button" class="df-more" data-more="chk">${f.all ? "Ver menos ↑" : `Ver más (${list.length - ROWS} más) →`}</button>` : ""}
     </article>`;
   }

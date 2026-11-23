@@ -43,13 +43,14 @@
     <link rel="icon" href="assets/app-icon.png?v=2" type="image/png" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2" />
     <link rel="stylesheet" href="styles.css?v=webp-1" />
-    <link rel="stylesheet" href="theme.css?v=30">
+    <link rel="stylesheet" href="theme.css?v=31">
     <link rel="stylesheet" href="pdf-editor.css?v=3">
     <link rel="stylesheet" href="devices-panel.css?v=4">
     <link rel="stylesheet" href="hero-carousel.css?v=5">
-    <link rel="stylesheet" href="settings.css?v=4">
+    <link rel="stylesheet" href="settings.css?v=5">
     <link rel="stylesheet" href="tools.css?v=1">
-    <link rel="stylesheet" href="dark.css?v=1">
+    <link rel="stylesheet" href="insights.css?v=6">
+    <link rel="stylesheet" href="dark.css?v=2">
   </head>
   <body>
     <div class="boot-screen" id="bootScreen" aria-live="polite" aria-busy="true">
@@ -268,6 +269,11 @@
         </div>
         <div class="sidebar-footer">
           <span class="nav-label sidebar-footer-label">General</span>
+          <button class="sidebar-logout" type="button" id="notifyNavButton" data-open-notify>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg>
+            Notificaciones
+            <b class="nt-badge" data-notify-count hidden>0</b>
+          </button>
           <button class="sidebar-logout" type="button" id="settingsNavButton">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path class="i-fill" d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
             Configuración
@@ -1001,7 +1007,7 @@
           <button type="button" class="dock-item" data-dock="archive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7.5A2.5 2.5 0 0 0 5 5.5v13A2.5 2.5 0 0 0 7.5 21h9a2.5 2.5 0 0 0 2.5-2.5V8z"/><path d="M14 3v5h5"/><path d="M13.8 11.4c-.4-.6-1.1-.9-1.9-.9-1 0-1.9.6-1.9 1.4 0 1.9 3.9 1 3.9 3 0 .8-.9 1.5-2 1.5-.9 0-1.6-.4-2-1M12 9.6v1M12 16.4v1"/></svg><span>Invoices</span></button>
           <button type="button" class="dock-item" data-dock="hours"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle class="i-fill" cx="12" cy="12" r="8.5"/><path class="i-hand" d="M12 7.5V12l3 2"/></svg><span>Horas</span></button>
           <button type="button" class="dock-item" data-dock="reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="i-fill" d="M12 3.5 21 8l-9 4.5L3 8z"/><path d="m3 12 9 4.5 9-4.5M3 16l9 4.5 9-4.5"/></svg><span>Reportes</span></button>
-          <button type="button" class="dock-item" id="dockMore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="2"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="2"/><circle cx="16.75" cy="16.75" r="3.25"/></svg><span>Más</span></button>
+          <button type="button" class="dock-item" id="dockMore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="2"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="2"/><circle cx="16.75" cy="16.75" r="3.25"/></svg><span>Más</span><b class="nt-badge is-dock" data-notify-count hidden>0</b></button>
         </div>
         <button type="button" class="dock-avatar" id="dockProfileButton" aria-label="Tu perfil" aria-expanded="false">
           <img id="dockAvatarImg" alt="" hidden>
@@ -1231,30 +1237,31 @@
     <script src="invoice-pdf.js?v=style-6" defer></script>
     <script src="cloud-db.js?v=trash-1" defer></script>
     <script src="whatsapp-invoice.js?v=parse-2" defer></script>
-    <script src="invoice-archive.js?v=files-1" defer></script>
+    <script src="invoice-archive.js?v=empty-1" defer></script>
     <script src="hours-pdf.js?v=grand-2" defer></script>
     <script src="hours-whatsapp.js?v=parse-2" defer></script>
     <script src="hours-app.js?v=editor-1" defer></script>
-    <script src="hours-archive.js?v=files-1" defer></script>
+    <script src="hours-archive.js?v=empty-1" defer></script>
     <script src="job-pdf.js?v=parse-fix-1" defer></script>
     <script src="job-app.js?v=motion-1" defer></script>
-    <script src="job-archive.js?v=files-1" defer></script>
+    <script src="job-archive.js?v=empty-1" defer></script>
     <script src="translator.js?v=grow-1" defer></script>
     <script src="auth-app.js?v=fix-1" defer></script>
     <script src="pdf-preview.js?v=editor-1" defer></script>
     <script src="check-viewer.js?v=1" defer></script>
     <script src="balance-ui.js?v=1" defer></script>
     <script src="dash-stats.js?v=2" defer></script>
-    <script src="app.js?v=trash-1" defer></script>
+    <script src="app.js?v=ins-1" defer></script>
     <script src="hero-carousel.js?v=2" defer></script>
-    <script src="i18n.js?v=3" defer></script>
+    <script src="i18n.js?v=5" defer></script>
     <script src="tools.js?v=1" defer></script>
-    <script src="settings.js?v=4" defer></script>
+    <script src="insights.js?v=6" defer></script>
+    <script src="settings.js?v=7" defer></script>
     <script src="security-log.js?v=1" defer></script>
     <script src="devices-panel.js?v=set-1" defer></script>
     <script src="pdf-store.js?v=2" defer></script>
-    <script src="pdf-editor.js?v=4" defer></script>
-    <script src="dash-files.js?v=sec-1" defer></script>
+    <script src="pdf-editor.js?v=5" defer></script>
+    <script src="dash-files.js?v=empty-1" defer></script>
     <script src="card-menu.js?v=editor-1" defer></script>
     <script src="nav-motion.js?v=1" defer></script>
     <script src="dash-motion.js?v=4" defer></script>
