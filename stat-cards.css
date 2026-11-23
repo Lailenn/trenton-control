@@ -41,25 +41,14 @@
 @container (max-width: 230px) {
   .ds-art { top: 12px; right: 4px; width: 76px; height: 70px; }
 }
-.ds-art svg { display: block; width: 100%; height: 100%; overflow: visible; animation: saIn .8s var(--ease-spring, cubic-bezier(.3, 1.4, .5, 1)) both; }
-.stat-work .ds-art svg { animation-delay: .08s; } .stat-wait .ds-art svg { animation-delay: .16s; } .stat-paid .ds-art svg { animation-delay: .24s; }
-.ds-art .sa-float { transform-box: view-box; animation: saFloat 4.2s ease-in-out infinite; }
-.stat-work .ds-art .sa-float { animation-delay: -1s; } .stat-wait .ds-art .sa-float { animation-delay: -2s; } .stat-paid .ds-art .sa-float { animation-delay: -3s; }
-.ds-art .sa-shadow { transform-box: fill-box; transform-origin: center; animation: saShadow 4.2s ease-in-out infinite; }
-.ds-art .sa-spark { fill: var(--c2); transform-box: fill-box; transform-origin: center; animation: saTwinkle 2.6s ease-in-out infinite; animation-delay: var(--d, 0s); }
-.ds-art .sa-sign { stroke-dasharray: 1; stroke-dashoffset: 1; animation: saDraw 1.4s .6s ease forwards; }
-.ds-art .sa-coin { animation: saDrop .6s calc(.25s + var(--i) * .1s) cubic-bezier(.3, 1.5, .5, 1) both; }
-.ds-art .sa-badge { transform-box: fill-box; transform-origin: center; animation: saPop .5s 1s cubic-bezier(.3, 1.8, .5, 1) both; }
-#boardView .dash-stats .ds-card:hover .sa-float { animation-duration: 1.8s; }
-#boardView .dash-stats .ds-card:hover .ds-art svg { transform: rotate(-3deg) scale(1.05); transition: transform .4s var(--ease-spring, ease); }
-.ds-art svg { transition: transform .4s ease; }
-@keyframes saIn { from { opacity: 0; transform: translateY(14px) scale(.85); } to { opacity: 1; transform: none; } }
+/* The illustrations are the pictures from the reference (transparent WebP) */
+.ds-art .sa-pic { position: relative; z-index: 1; display: block; width: 100%; height: 100%; object-fit: contain; object-position: center; animation: saIn .8s var(--ease-spring, cubic-bezier(.3, 1.4, .5, 1)) both, saFloat 4.2s 1s ease-in-out infinite; transition: transform .4s var(--ease-spring, ease); }
+.stat-work .ds-art .sa-pic { animation-delay: .08s, .4s; } .stat-wait .ds-art .sa-pic { animation-delay: .16s, 1.6s; } .stat-paid .ds-art .sa-pic { animation-delay: .24s, 2.4s; }
+.ds-art .sa-shadow { position: absolute; left: 22%; right: 22%; bottom: 2%; height: 9px; border-radius: 50%; background: var(--c); filter: blur(5px); opacity: .18; animation: saShadow 4.2s 1s ease-in-out infinite; }
+#boardView .dash-stats .ds-card:hover .sa-pic { animation-duration: .8s, 1.8s; scale: 1.06; rotate: -3deg; }
+@keyframes saIn { from { opacity: 0; translate: 0 14px; scale: .85; } to { opacity: 1; translate: 0 0; scale: 1; } }
 @keyframes saFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-@keyframes saShadow { 0%, 100% { transform: scaleX(1); opacity: .18; } 50% { transform: scaleX(.86); opacity: .1; } }
-@keyframes saTwinkle { 0%, 100% { opacity: .35; transform: scale(.7) rotate(0deg); } 50% { opacity: 1; transform: scale(1.15) rotate(20deg); } }
-@keyframes saDraw { to { stroke-dashoffset: 0; } }
-@keyframes saDrop { from { opacity: 0; transform: translateY(-18px); } to { opacity: 1; transform: none; } }
-@keyframes saPop { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
+@keyframes saShadow { 0%, 100% { transform: scaleX(1); opacity: .2; } 50% { transform: scaleX(.82); opacity: .1; } }
 
 /* Phone: two narrow cards per row, the illustration sits small in the top-right corner */
 @media (max-width: 640px) {
@@ -71,14 +60,9 @@
   #boardView .dash-stats .ds-value strong { font-size: 24px !important; }
   #boardView .dash-stats .ds-meta small { font-size: 11.5px !important; }
 }
-@media (prefers-reduced-motion: reduce) { .ds-art *, .ds-art svg { animation: none !important; } .ds-art .sa-sign { stroke-dashoffset: 0; } }
-html.rp-calm .ds-art *, html.rp-calm .ds-art svg { animation: none !important; }
-html.rp-calm .ds-art .sa-sign { stroke-dashoffset: 0; }
+@media (prefers-reduced-motion: reduce) { .ds-art * { animation: none !important; } }
+html.rp-calm .ds-art * { animation: none !important; }
 html.rp-dark:not(.rp-dark-pause) .ds-art { filter: invert(1) hue-rotate(180deg); }
-.ds-art .sa-gear { transform-box: fill-box; transform-origin: center; animation: saSpin 6s linear infinite; }
-.ds-art .sa-hand { transform-box: view-box; transform-origin: 118px 98px; animation: saSpin 4s linear infinite; }
-#boardView .dash-stats .ds-card:hover .sa-gear { animation-duration: 1.6s; }
-@keyframes saSpin { to { transform: rotate(360deg); } }
 @media (max-width: 640px) { #boardView .dash-stats .ds-icon, #boardView .dash-stats .ds-icon i { width: 44px; height: 44px; border-radius: 14px !important; } #boardView .dash-stats .ds-icon svg { width: 22px; height: 22px; } }
 /* Soft circle behind the illustration, cut by the card edge */
 .ds-art::before { content: ""; position: absolute; left: 2%; top: -14%; width: 136%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--c) 12%, #fff) 0, color-mix(in srgb, var(--c) 6%, #fff) 64%, color-mix(in srgb, var(--c) 3%, transparent) 70%, transparent 71%); z-index: -1; }
