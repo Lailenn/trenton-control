@@ -19,7 +19,9 @@
         const x = item.left - box.left + container.scrollLeft, y = item.top - box.top + container.scrollTop;
         indicator.style.width = `${item.width}px`;
         indicator.style.height = `${item.height}px`;
-        indicator.style.transform = `translate(${x}px, ${y}px)`;
+        // CSS may give the pill a fixed size (closed rail): keep it centered on the item.
+        const dx = (item.width - indicator.offsetWidth) / 2, dy = (item.height - indicator.offsetHeight) / 2;
+        indicator.style.transform = `translate(${x + dx}px, ${y + dy}px)`;
         // First placement jumps; later ones slide.
         if (!indicator.classList.contains("is-ready")) {
           indicator.style.transition = "none";
