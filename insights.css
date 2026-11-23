@@ -87,7 +87,9 @@ html.rp-calm :is(.in-bar, .in-line, .in-area, .in-dotp, .in-ring-fg) { animation
 .nt-badge[hidden] { display: none; }
 #notifyNavButton { position: relative; }
 /* Collapsed rail: a small counter on the bell corner, like iOS */
-body .sidebar:not(.open) #notifyNavButton .nt-badge { position: absolute; top: 50%; left: 50%; min-width: 16px; height: 16px; margin: -15px 0 0 3px; padding: 0 4px; border: 0; font-size: 9.5px !important; line-height: 16px; letter-spacing: -.02em; box-shadow: 0 0 0 2px #3f86f5; pointer-events: none; }
+body .sidebar:not(.open) #notifyNavButton .nt-badge { position: absolute; top: 50%; left: 50%; display: grid; place-items: center; min-width: 15px; height: 15px; margin: -17px 0 0 5px; padding: 0 3.5px; border: 0; border-radius: 999px; background: #ff3b30; color: #fff; font: 800 9px/15px "Plus Jakarta Sans", sans-serif !important; letter-spacing: -.03em; box-shadow: 0 1px 4px rgba(150, 0, 0, .35); pointer-events: none; }
+/* Expanded sidebar: count on the right of the row */
+body .sidebar.open #notifyNavButton .nt-badge { margin-left: auto; box-shadow: none; }
 #dockMore { position: relative; }
 .nt-badge.is-dock { position: absolute; top: 2px; right: calc(50% - 20px); min-width: 17px; height: 17px; padding: 0 4px; font-size: 10px; }
 .tl-head-i.is-bell { background: #fff1e0; color: #e8780c; }
