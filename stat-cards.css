@@ -8,29 +8,35 @@
   min-height: 178px;
   padding: 20px 22px !important;
   container-type: inline-size;
-  border: 1px solid color-mix(in srgb, var(--c) 16%, #fff) !important;
+  border: 1px solid color-mix(in srgb, var(--c) 14%, #fff) !important;
   border-radius: 26px !important;
-  background:
-    radial-gradient(160px 140px at calc(100% - 70px) 55%, color-mix(in srgb, var(--c) 12%, transparent), transparent 70%),
-    linear-gradient(135deg, #fff 25%, var(--tint) 100%) !important;
-  box-shadow: 0 1px 2px rgba(20, 40, 90, .04), 0 12px 30px rgba(110, 130, 190, .14) !important;
+  overflow: hidden;
+  background: linear-gradient(150deg, #fff 30%, var(--tint) 100%) !important;
+  /* Colored line along the bottom edge with a matching glow below */
+  box-shadow: 0 12px 22px -12px color-mix(in srgb, var(--c) 60%, transparent), 0 10px 30px rgba(110, 130, 190, .12) !important;
 }
-#boardView .dash-stats .ds-card:hover { transform: translateY(-4px); box-shadow: 0 2px 4px rgba(20, 40, 90, .05), 0 20px 40px rgba(110, 130, 190, .24) !important; }
+#boardView .dash-stats .ds-card:hover { transform: translateY(-4px); box-shadow: 0 18px 28px -12px color-mix(in srgb, var(--c) 70%, transparent), 0 18px 40px rgba(110, 130, 190, .2) !important; }
 #boardView .dash-stats .ds-chart, #boardView .dash-stats .ds-cta { display: none !important; }
-#boardView .dash-stats .ds-icon { width: 56px; height: 56px; border-radius: 18px; background: var(--tile); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .7); }
-#boardView .dash-stats .ds-icon i { width: 40px; height: 40px; border-radius: 13px !important; box-shadow: 0 8px 16px color-mix(in srgb, var(--c) 38%, transparent), inset 0 1px 0 rgba(255, 255, 255, .35); }
-#boardView .dash-stats .ds-icon svg { width: 21px; height: 21px; }
+#boardView .dash-stats .stat-all { --g: linear-gradient(150deg, #5b8dff, #2f55e8); }
+#boardView .dash-stats .stat-work { --g: linear-gradient(150deg, #ffcb3d, #f59a0c); }
+#boardView .dash-stats .stat-wait { --g: linear-gradient(150deg, #a985ff, #7344ef); }
+#boardView .dash-stats .stat-paid { --g: linear-gradient(150deg, #46d886, #16a95a); }
+#boardView .dash-stats .ds-icon { width: 54px; height: 54px; border-radius: 16px; background: none; box-shadow: none; }
+#boardView .dash-stats .ds-icon i { width: 54px; height: 54px; border-radius: 16px !important; background: var(--g); box-shadow: 0 8px 18px color-mix(in srgb, var(--c) 40%, transparent), inset 0 1px 0 rgba(255, 255, 255, .4), inset 0 -2px 0 rgba(0, 0, 0, .08); }
+#boardView .dash-stats .ds-icon svg { width: 27px; height: 27px; stroke-width: 2.3; }
+#boardView .dash-stats .ds-trend { padding: 3px 9px; border-radius: 9px; background: #e3f7ea; color: #17a057; font-size: 13px; font-weight: 800; }
+#boardView .dash-stats .ds-value { align-items: center; gap: 12px; }
 #boardView .dash-stats .ds-meta .stat-label { font-size: 15px !important; font-weight: 700 !important; color: #1f2742 !important; }
 #boardView .dash-stats .ds-value strong { font-size: clamp(26px, 2.6vw, 34px) !important; }
 #boardView .dash-stats .ds-meta small { font-size: 13px !important; color: #7d869c !important; }
 
-.ds-art { position: absolute; top: 50%; right: 8px; width: 140px; height: 128px; transform: translateY(-50%); pointer-events: none; }
+.ds-art { position: absolute; top: 50%; right: 6px; width: 158px; height: 137px; transform: translateY(-50%); pointer-events: none; }
 /* Wide card: text on the left, illustration centered on the right */
-#boardView .dash-stats .ds-meta { padding-right: 132px; }
+#boardView .dash-stats .ds-meta { padding-right: 150px; }
 /* Narrow card: illustration in the top-right corner, text uses the full width */
-@container (max-width: 400px) {
+@container (max-width: 330px) {
   #boardView .dash-stats .ds-meta { padding-right: 0; }
-  .ds-art { top: 16px; right: 6px; width: 104px; height: 94px; transform: none; }
+  .ds-art { top: 12px; right: 2px; width: 124px; height: 108px; transform: none; }
 }
 @container (max-width: 230px) {
   .ds-art { top: 12px; right: 4px; width: 76px; height: 70px; }
@@ -69,3 +75,16 @@
 html.rp-calm .ds-art *, html.rp-calm .ds-art svg { animation: none !important; }
 html.rp-calm .ds-art .sa-sign { stroke-dashoffset: 0; }
 html.rp-dark:not(.rp-dark-pause) .ds-art { filter: invert(1) hue-rotate(180deg); }
+.ds-art .sa-gear { transform-box: fill-box; transform-origin: center; animation: saSpin 6s linear infinite; }
+.ds-art .sa-hand { transform-box: view-box; transform-origin: 118px 98px; animation: saSpin 4s linear infinite; }
+#boardView .dash-stats .ds-card:hover .sa-gear { animation-duration: 1.6s; }
+@keyframes saSpin { to { transform: rotate(360deg); } }
+@media (max-width: 640px) { #boardView .dash-stats .ds-icon, #boardView .dash-stats .ds-icon i { width: 44px; height: 44px; border-radius: 14px !important; } #boardView .dash-stats .ds-icon svg { width: 22px; height: 22px; } }
+/* Soft circle behind the illustration, cut by the card edge */
+.ds-art::before { content: ""; position: absolute; left: 2%; top: -14%; width: 136%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--c) 12%, #fff) 0, color-mix(in srgb, var(--c) 6%, #fff) 64%, color-mix(in srgb, var(--c) 3%, transparent) 70%, transparent 71%); z-index: -1; }
+.ds-art { z-index: 0; }
+#boardView .dash-stats .ds-meta { position: relative; z-index: 1; }
+/* Colored line along the bottom edge, above the circle */
+#boardView .dash-stats .ds-card::after { content: ""; display: block !important; position: absolute; inset: 0 !important; width: auto !important; height: auto !important; z-index: 2; border: 0 !important; border-radius: inherit; opacity: 1; background: none; box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--c) 55%, #fff); pointer-events: none; }
+html.rp-dark:not(.rp-dark-pause) .ds-art::before { filter: invert(1) hue-rotate(180deg); }
+html.rp-dark:not(.rp-dark-pause) #boardView .dash-stats .ds-icon i { filter: invert(1) hue-rotate(180deg); }
