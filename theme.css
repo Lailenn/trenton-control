@@ -758,3 +758,45 @@ body .mobile-dock .dock-item svg { width: 23px; height: 23px; stroke-width: 2; }
 body .mobile-dock .dock-item .i-fill { transition: fill .25s ease; }
 body .mobile-dock .dock-item.is-active .i-fill { fill: currentColor; }
 body .mobile-dock .dock-item.is-active .i-hand { stroke: var(--blue); }
+
+/* ===== Phone / tablet polish ===== */
+/* Purple accents left over: Apple blue */
+.wa-badge { background: var(--blue-soft) !important; color: var(--blue) !important; }
+.translator-panel { border-color: #d5e3fb !important; border-left-color: var(--blue) !important; background: linear-gradient(180deg, #eef4ff, #fff) !important; }
+.translator-dir.is-active { background: var(--blue-soft) !important; border-color: #c9d8fb !important; color: var(--blue-dark, #0062cc) !important; }
+.b-check input, #invoiceView input[type="checkbox"] { accent-color: var(--blue); }
+/* Translator title never splits in two lines */
+.translator-heading h2 { white-space: nowrap; }
+@media (max-width: 480px) {
+  .translator-heading { gap: 8px !important; }
+  .translator-heading h2 { font-size: 17px !important; }
+  .translator-heading [data-translator-badge] { display: none !important; }
+}
+/* Step 6: name and logo inside the same card */
+.b-save-card .b-logo { padding: 0; }
+.b-save-card .b-logo input[type="file"] { width: 100%; padding: 8px 10px; border: 1px dashed #c9d6ea; border-radius: 12px; background: #f8fbff; font: inherit; font-size: 13px; color: var(--muted); cursor: pointer; }
+.b-save-card .b-logo input[type="file"]::file-selector-button { margin-right: 10px; padding: 7px 12px; border: 0; border-radius: 9px; background: var(--blue-soft); color: var(--blue); font: 700 13px "Plus Jakarta Sans", sans-serif; cursor: pointer; }
+.b-save-card .b-logo small { display: block; margin-top: 6px; }
+/* Phone: concept row without the empty delete column, checkbox note under the label */
+@media (max-width: 640px) {
+  #invoiceView .line-main { grid-template-columns: 1fr 1fr; }
+  #invoiceView .line-main > span:empty { display: none; }
+  #invoiceView .line-main .line-amount { grid-column: 1 / -1; }
+  #invoiceView .line-main > .field:nth-child(3) { border-right: 0; }
+  .b-check { flex-wrap: wrap; align-items: flex-start; font-size: 13.5px !important; line-height: 1.35; }
+  .b-check input { margin-top: 2px; }
+  .b-check small { flex-basis: 100%; padding-left: 24px; font-size: 12px; }
+}
+/* Phone: board search boxes use the full width */
+@media (max-width: 760px) {
+  #boardView .search-control { flex: 1 1 100% !important; width: 100% !important; max-width: none !important; }
+}
+/* Touch screens: bigger tap areas without changing the look */
+@media (pointer: coarse) {
+  .hc-dots { gap: 4px !important; }
+  .hc-dots button { position: relative; }
+  .hc-dots button::before { content: ""; position: absolute; inset: -12px -6px; }
+  .mini-action { min-width: 36px; min-height: 36px; }
+  #sidebarToggle { min-width: 34px; min-height: 34px; }
+  .st-link { padding: 8px 0; }
+}

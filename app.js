@@ -102,10 +102,14 @@
 
   function growTextarea(el) {
     if (!el) return;
+    if (!el.offsetParent) return; // hidden: measured when its view opens
     el.style.height = "auto";
     const min = Number(el.dataset.minH) || 168;
     const max = Number(el.dataset.maxH) || 560;
-    const next = Math.min(max, Math.max(min, el.scrollHeight + 2));
+    // Empty boxes grow to fit the example text (placeholder) so it is never cut off.
+    let content = el.scrollHeight;
+    if (!el.value && el.placeholder) { el.value = el.placeholder; content = el.scrollHeight; el.value = ""; }
+    const next = Math.min(max, Math.max(min, content + 2));
     el.style.height = `${next}px`;
     el.style.overflowY = el.scrollHeight > max ? "auto" : "hidden";
   }
@@ -113,6 +117,8 @@
     document.querySelectorAll("textarea.js-grow").forEach(growTextarea);
   }
   window.growTextareas = growAllTextareas;
+  let growTimer = 0;
+  window.addEventListener("resize", () => { clearTimeout(growTimer); growTimer = setTimeout(growAllTextareas, 150); });
 
   function updateSaved(text) {
     $("#savedIndicator").innerHTML = `<i></i> ${esc(text)}`;
@@ -920,6 +926,7 @@
     if (view === "job") window.JobApp?.open();
     if (view === "editor") window.PdfEditor?.open();
     if (view === "settings") window.SettingsPage?.open();
+    requestAnimationFrame(growAllTextareas);
   }
 
   function fillInvoiceFromText() {
