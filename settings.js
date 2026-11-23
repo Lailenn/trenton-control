@@ -14,7 +14,12 @@ window.SettingsPage = (function () {
     bigtext: ["rp.pref.bigtext", false, "rp-big-text", true], contrast: ["rp.pref.contrast", false, "rp-contrast", true],
     focus: ["rp.pref.focus", false, "rp-focus", true]
   };
-  const PREF_START = "rp.pref.start";
+  const PREF_START = "rp.pref.start", PREF_THEME = "rp.pref.theme";
+  const theme = () => { try { return localStorage.getItem(PREF_THEME) || "light"; } catch (_) { return "light"; } };
+  const darkQuery = window.matchMedia?.("(prefers-color-scheme: dark)");
+  const applyTheme = () => document.documentElement.classList.toggle("rp-dark", theme() === "dark" || (theme() === "auto" && Boolean(darkQuery?.matches)));
+  applyTheme();
+  darkQuery?.addEventListener?.("change", applyTheme);
   const pref = (k, def) => { try { const v = localStorage.getItem(k); return v == null ? def : v === "1"; } catch (_) { return def; } };
   const setPref = (k, v) => { try { localStorage.setItem(k, v ? "1" : "0"); } catch (_) {} };
   const on = id => pref(PREFS[id][0], PREFS[id][1]);
@@ -134,7 +139,8 @@ window.SettingsPage = (function () {
     const sample = new Date().toLocaleDateString(lang === "en" ? "en-US" : "es", { day: "numeric", month: "long", year: "numeric" });
     const groups = [
       ["look", "palette", "Apariencia", "Tema, colores y personalización visual",
-        tg("herobg", "Fondo azul en Inicio", "La curva azul detrás del carrusel.") + tg("shadow", "Sombras suaves", "Profundidad en tarjetas y paneles.")],
+        `<div class="st-toggle st-select"><span><strong>Tema</strong><small>Claro, oscuro o según tu aparato.</small></span><div class="st-seg" role="radiogroup" aria-label="Tema">${[["light", "Claro"], ["dark", "Oscuro"], ["auto", "Automático"]].map(([v, l]) => `<button type="button" role="radio" data-theme-set="${v}" aria-checked="${theme() === v}" class="${theme() === v ? "is-on" : ""}">${l}</button>`).join("")}</div></div>`
+        + tg("herobg", "Fondo azul en Inicio", "La curva azul detrás del carrusel.") + tg("shadow", "Sombras suaves", "Profundidad en tarjetas y paneles.")],
       ["behave", "sliders", "Comportamiento", "Animaciones, carrusel y navegación",
         tg("calm", "Reducir animaciones", "Menos movimiento en toda la app.") + tg("auto", "Carrusel automático en Inicio", "Las tarjetas del encabezado avanzan solas.")
         + `<label class="st-toggle st-select"><span><strong>Pantalla al entrar</strong><small>Lo primero que ves al iniciar sesión.</small></span><select data-start>${[["board", "Inicio"], ["hours", "Horas trabajadas"], ["invoice", "Crear invoice"], ["archive", "Invoices / PDFs"], ["editor", "Editor PDF"]].map(([v, l]) => `<option value="${v}" ${sv === v ? "selected" : ""}>${l}</option>`).join("")}</select></label>`],
@@ -169,6 +175,14 @@ window.SettingsPage = (function () {
     if (g) {
       openGroup = openGroup === g.dataset.groupToggle ? "" : g.dataset.groupToggle;
       g.closest(".st-groups").querySelectorAll(".st-group").forEach(x => { const open = x.dataset.group === openGroup; x.classList.toggle("is-open", open); x.querySelector(".st-group-head").setAttribute("aria-expanded", String(open)); });
+      return;
+    }
+    const th = e.target.closest("[data-theme-set]");
+    if (th) {
+      try { localStorage.setItem(PREF_THEME, th.dataset.themeSet); } catch (_) {}
+      applyTheme();
+      th.parentElement.querySelectorAll("button").forEach(b => { const on = b === th; b.classList.toggle("is-on", on); b.setAttribute("aria-checked", String(on)); });
+      toast("Preferencia guardada.");
       return;
     }
     const lg = e.target.closest("[data-lang]");

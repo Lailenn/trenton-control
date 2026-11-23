@@ -115,6 +115,7 @@ window.I18n = (function () {
     "Sonido en los avisos": "Notice sound", "Un toque suave cuando aparece un aviso.": "A soft tone when a notice appears.", "Texto más grande": "Larger text", "Aumenta el tamaño de toda la interfaz.": "Makes the whole interface bigger.",
     "Alto contraste": "High contrast", "Textos y bordes más oscuros.": "Darker text and borders.", "Resaltar el foco": "Highlight focus", "Marca clara al moverte con el teclado.": "A clear outline when using the keyboard.",
     "Aún no hay actividad registrada. Se anota desde tu próximo inicio de sesión.": "No activity recorded yet. It starts with your next sign-in.",
+    "Tema": "Theme", "Claro, oscuro o según tu aparato.": "Light, dark or match your device.", "Claro": "Light", "Oscuro": "Dark", "Automático": "Automatic",
     "Duplicar": "Duplicate", "Predeterminada": "Default"
   };
   // Texts with numbers or names.

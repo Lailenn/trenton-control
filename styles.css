@@ -6117,7 +6117,7 @@ body.pdf-viewer-open { overflow: hidden; }
 @media (min-width: 961px) { .login2-copy { right: 34%; } .login2-orange { width: 44%; right: -12%; bottom: -20%; } }
 
 /* Login scene uses the real photo (it already includes the light arcs and the orange circle) */
-.login2-visual { background: #f3c9a4 url("assets/login-house.jpg?v=1") 70% center / cover no-repeat; }
+.login2-visual { background: #f3c9a4 url("assets/login-house.webp?v=1") 70% center / cover no-repeat; }
 .login2-house, .login2-arc, .login2-orange { display: none !important; }
 .login2-visual { animation: lhPhoto 1.2s ease both; }
 @keyframes lhPhoto { from { background-size: 112% auto; opacity: .6; } to { opacity: 1; } }
@@ -6277,7 +6277,7 @@ body.pdf-viewer-open { overflow: hidden; }
     content: "";
     position: absolute;
     inset: 0;
-    background: url("assets/login-house.jpg?v=1") 62% 38% / cover no-repeat;
+    background: url("assets/login-house.webp?v=1") 62% 38% / cover no-repeat;
     transform-origin: 60% 40%;
     animation: lpKen 18s ease-in-out infinite alternate;
   }
@@ -6381,7 +6381,7 @@ body.pdf-viewer-open { overflow: hidden; }
   position: fixed;
   inset: 0;
   z-index: 0;
-  background: url("assets/hero-construction.jpg?v=1") center 40% / cover no-repeat;
+  background: url("assets/hero-construction.webp?v=1") center 40% / cover no-repeat;
   opacity: .16;
   filter: saturate(.9);
   pointer-events: none;
@@ -6465,7 +6465,7 @@ a { color: var(--blue); }
 .app-backdrop > i { position: absolute; display: block; pointer-events: none; }
 .app-backdrop .bd-photo {
   inset: -6%;
-  background: url("assets/hero-construction.jpg?v=1") center 40% / cover no-repeat;
+  background: url("assets/hero-construction.webp?v=1") center 40% / cover no-repeat;
   animation: bdDrift 40s ease-in-out infinite alternate;
   will-change: transform;
 }
@@ -6707,7 +6707,7 @@ html, body { overflow-x: clip; } /* clip, not hidden: hidden would turn body int
     overflow: hidden !important;
   }
   .login-screen[data-mode="login"] .login2-visual::before {
-    background: url("assets/login-header.jpg?v=1") center / cover no-repeat !important;
+    background: url("assets/login-header.webp?v=1") center / cover no-repeat !important;
     -webkit-clip-path: none !important;
     clip-path: none !important;
     animation: lp5Breathe 14s ease-in-out infinite alternate;
@@ -6840,7 +6840,7 @@ html body .login-screen.login3.auth-gate {
   position: fixed;
   inset: 0;
   z-index: 0;
-  background: url("assets/hero-construction.jpg?v=1") 30% 50% / cover no-repeat;
+  background: url("assets/hero-construction.webp?v=1") 30% 50% / cover no-repeat;
   animation: l3Ken 30s ease-in-out infinite alternate;
 }
 .login3 .l3-bg::after {
