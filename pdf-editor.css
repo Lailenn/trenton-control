@@ -266,3 +266,11 @@
   .pe-lib-actions .button { flex: 1; }
   .pe-doc-actions .pe-btn { flex: 1; }
 }
+
+/* Editar texto: the document's lines are outlined; tap one to edit it */
+.pe-run { position: absolute; z-index: 1; border-radius: 3px; background: rgba(var(--blue-rgb), .06); outline: 1px dashed rgba(var(--blue-rgb), .5); cursor: text; transition: background .15s; }
+.pe-run:hover { background: rgba(var(--blue-rgb), .16); outline-style: solid; }
+.pe-el.is-doc .pe-text { overflow: visible; }
+.pe-canvas[data-tool=edittext] .pe-layer { cursor: default; }
+.pe-canvas[data-tool=edittext] .pe-el.is-doc { cursor: text; }
+.pe-el.is-erase { cursor: move; }

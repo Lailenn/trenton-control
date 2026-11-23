@@ -62,7 +62,8 @@ window.PdfEditor = (function () {
     star: "M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z",
     edit: "M4 20l4-1L19 8a2.1 2.1 0 0 0-3-3L5 16z",
     eraser: "M7 21h12M5 15l9-9 5 5-9 9H8z",
-    hash: "M5 9h14M5 15h14M10 4l-2 16M16 4l-2 16"
+    hash: "M5 9h14M5 15h14M10 4l-2 16M16 4l-2 16",
+    textEdit: "M4 7V5h11v2M9.5 5v14M7 19h5M14.5 17.5l5-5 2 2-5 5H14.5z"
   };
   const ic = (name, cls = "") => name === "more"
     ? `<svg class="pe-i ${cls}" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>`
@@ -532,11 +533,11 @@ window.PdfEditor = (function () {
     return imgCache.get(key);
   };
   const TOOLS = [
-    ["select", "cursor", "Seleccionar"], ["text", "text", "Texto"], ["signature", "sign", "Firma"], ["image", "image", "Imagen"], ["date", "calendar", "Fecha"],
+    ["select", "cursor", "Seleccionar"], ["edittext", "textEdit", "Editar texto"], ["erase", "eraser", "Borrar"], ["text", "text", "Texto"], ["signature", "sign", "Firma"], ["image", "image", "Imagen"], ["date", "calendar", "Fecha"],
     ["check", "check", "Casilla"], ["stamp", "stamp", "Sello"], ["highlight", "highlight", "Resaltar"], ["underline", "underline", "Subrayar"], ["strike", "strike", "Tachar"],
     ["pen", "pen", "Lápiz"], ["line", "line", "Línea"], ["arrow", "arrow", "Flecha"], ["rect", "rect", "Rectángulo"], ["ellipse", "ellipse", "Elipse"], ["comment", "comment", "Comentario"]
   ];
-  const DRAG_TOOLS = new Set(["highlight", "underline", "strike", "line", "arrow", "rect", "ellipse"]);
+  const DRAG_TOOLS = new Set(["erase", "highlight", "underline", "strike", "line", "arrow", "rect", "ellipse"]);
   const ROTATABLE = new Set(["text", "date", "image", "signature", "stamp", "rect", "ellipse", "comment"]);
   const RATIO = new Set(["image", "signature"]);
   const TEXTUAL = new Set(["text", "date", "comment", "stamp"]);
@@ -724,6 +725,7 @@ window.PdfEditor = (function () {
     const layer = $(`.pe-page[data-pid="${pid}"] .pe-layer`, root);
     if (!layer) return;
     layer.innerHTML = ed.els.filter(e => e.page === pid).map(elHtml).join("");
+    if (ed.tool === "edittext") showRuns(pid, layer);
     ed.els.filter(e => e.page === pid && (e.type === "image" || e.type === "signature")).forEach(async e => {
       const res = await imageFor(e.src);
       const img = $(`[data-id="${e.id}"] img`, layer);
@@ -732,17 +734,19 @@ window.PdfEditor = (function () {
   }
   function elHtml(e) {
     const s = scale, sel = e.id === ed.sel;
-    const style = `left:${e.x * s}px;top:${e.y * s}px;width:${e.w * s}px;height:${e.h * s}px;opacity:${e.opacity ?? 1};transform:rotate(${e.rot || 0}deg)`;
+    const bg = e.type === "erase" ? e.color || "#ffffff" : e.bg;
+    const style = `left:${e.x * s}px;top:${e.y * s}px;width:${e.w * s}px;height:${e.h * s}px;opacity:${e.opacity ?? 1};transform:rotate(${e.rot || 0}deg)${bg ? `;background:${bg}` : ""}`;
     let inner = "";
     const font = `font-family:${FONTS[e.font || "helv"]};font-size:${(e.size || 12) * s}px;font-weight:${e.bold ? 700 : 400};font-style:${e.italic ? "italic" : "normal"};text-align:${e.align || "left"};color:${e.color || "#111"}`;
-    if (e.type === "text" || e.type === "date") inner = `<div class="pe-text" style="${font}" ${sel && ed.editing === e.id ? 'contenteditable="true"' : ""}>${esc(e.text || "")}</div>`;
+    if (e.type === "erase") inner = "";
+    else if (e.type === "text" || e.type === "date") inner = `<div class="pe-text" style="${font}${e.nowrap ? ";white-space:pre;overflow-wrap:normal" : ""}" ${sel && ed.editing === e.id ? 'contenteditable="true"' : ""}>${esc(e.text || "")}</div>`;
     else if (e.type === "comment") inner = `<div class="pe-note" style="font-size:${(e.size || 10) * s}px"><b>${ic("comment")}</b><div class="pe-text" ${sel && ed.editing === e.id ? 'contenteditable="true"' : ""}>${esc(e.text || "")}</div></div>`;
     else if (e.type === "stamp") inner = `<div class="pe-stamp" style="--c:${e.color};font-size:${Math.min(e.h * .52, e.w / Math.max(4, (e.text || "").length) * 1.5) * s}px;border-width:${2.5 * s}px">${esc(e.text)}</div>`;
     else if (e.type === "image" || e.type === "signature") inner = `<img alt="" draggable="false">`;
     else if (e.type === "check") inner = `<svg viewBox="0 0 10 10" preserveAspectRatio="none"><rect x=".5" y=".5" width="9" height="9" rx="1" fill="#fff" stroke="${e.color || "#111"}" stroke-width=".8"/>${e.checked ? `<path d="M2.3 5.3l1.8 1.8 3.6-4.2" fill="none" stroke="${e.color || "#111"}" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>` : ""}</svg>`;
     else inner = shapeSvg(e);
     const handles = sel ? `<i class="pe-h" data-h="nw"></i><i class="pe-h" data-h="ne"></i><i class="pe-h" data-h="sw"></i><i class="pe-h" data-h="se"></i>${ROTATABLE.has(e.type) ? '<i class="pe-h pe-rot" data-h="rot"></i>' : ""}` : "";
-    return `<div class="pe-el is-${e.type}${sel ? " is-sel" : ""}" data-id="${e.id}" style="${style}">${inner}${handles}</div>`;
+    return `<div class="pe-el is-${e.type}${e.run ? " is-doc" : ""}${sel ? " is-sel" : ""}" data-id="${e.id}" style="${style}">${inner}${handles}</div>`;
   }
   function shapeSvg(e) {
     const w = Math.max(e.w, .1), h = Math.max(e.h, .1), sw = e.stroke || 2, c = e.color || "#111";
@@ -827,11 +831,13 @@ window.PdfEditor = (function () {
     const num = (k, label, step = 1, min) => `<label class="pe-field is-sm"><span>${label}</span><input type="number" data-prop="${k}" value="${Math.round((e[k] ?? 0) * 10) / 10}" step="${step}" ${min != null ? `min="${min}"` : ""}></label>`;
     const textual = e.type === "text" || e.type === "date" || e.type === "comment";
     panel.innerHTML = `<div class="pe-props-in"><button type="button" class="pe-x pe-props-close" data-ed="toggleProps" aria-label="Cerrar propiedades">×</button>
-      <h4>${TOOLS.find(t => t[0] === e.type)?.[2] || "Elemento"}</h4>
+      <h4>${e.run ? "Texto del documento" : TOOLS.find(t => t[0] === e.type)?.[2] || "Elemento"}</h4>
+      ${e.run ? `<p class="pe-muted">Escribe encima para cambiarlo. Usa <b>Borrar este texto</b> para quitarlo del documento.</p>` : ""}
       <div class="pe-grid2">${num("x", "X")}${num("y", "Y")}${num("w", "Ancho", 1, 4)}${num("h", "Alto", 1, 2)}</div>
       ${ROTATABLE.has(e.type) ? `<label class="pe-field is-sm"><span>Rotación (°)</span><input type="range" min="-180" max="180" step="1" data-prop="rot" value="${e.rot || 0}"></label>` : ""}
       <label class="pe-field is-sm"><span>Opacidad</span><input type="range" min="0.1" max="1" step="0.05" data-prop="opacity" value="${e.opacity ?? 1}"></label>
-      ${e.type !== "image" && e.type !== "signature" ? `<label class="pe-field is-sm"><span>Color</span><input type="color" data-prop="color" value="${e.color || "#111111"}"></label>` : ""}
+      ${e.bg || e.run ? `<label class="pe-field is-sm"><span>Color del fondo</span><input type="color" data-prop="bg" value="${e.bg || "#ffffff"}"></label>` : ""}
+      ${e.type !== "image" && e.type !== "signature" ? `<label class="pe-field is-sm"><span>${e.type === "erase" ? "Color del relleno" : e.run ? "Color del texto" : "Color"}</span><input type="color" data-prop="color" value="${e.color || "#111111"}"></label>` : ""}
       ${["rect", "ellipse", "line", "arrow", "pen", "underline", "strike"].includes(e.type) ? `<label class="pe-field is-sm"><span>Grosor</span><input type="range" min="0.5" max="12" step="0.5" data-prop="stroke" value="${e.stroke || 2}"></label>` : ""}
       ${e.type === "rect" || e.type === "ellipse" ? `<label class="pe-check"><input type="checkbox" data-prop="fill" ${e.fill ? "checked" : ""}> Relleno suave</label>` : ""}
       ${textual || e.type === "stamp" ? `<label class="pe-field is-sm"><span>Texto</span><textarea data-prop="text" rows="3">${esc(e.text || "")}</textarea></label>` : ""}
@@ -850,7 +856,8 @@ window.PdfEditor = (function () {
         <button type="button" class="pe-btn" data-prop-act="duplicate">${ic("copy")} Duplicar</button>
         <button type="button" class="pe-btn" data-prop-act="front">Al frente</button>
         <button type="button" class="pe-btn" data-prop-act="template">Guardar como plantilla</button>
-        <button type="button" class="pe-btn is-danger" data-prop-act="delete">${ic("trash")} Eliminar</button>
+        ${e.run ? `<button type="button" class="pe-btn is-danger" data-prop-act="cleartext">${ic("eraser")} Borrar este texto</button>` : ""}
+        <button type="button" class="pe-btn${e.run ? "" : " is-danger"}" data-prop-act="delete">${e.run ? `${ic("undo")} Restaurar original` : `${ic("trash")} Eliminar`}</button>
       </div>
       ${e.type === "signature" ? `<p class="pe-note-legal">Imagen de firma: no equivale a una firma electrónica certificada.</p>` : ""}
     </div>`;
@@ -920,7 +927,11 @@ window.PdfEditor = (function () {
     $$(".pe-tool", root).forEach(b => b.classList.toggle("is-on", b.dataset.tool === tool));
     $(".pe-canvas", root).dataset.tool = tool;
     const tray = $(".pe-sig-tray", root);
-    tray.hidden = tool !== "signature" && tool !== "image";
+    const wasEdit = ed.lastTool === "edittext";
+    ed.lastTool = tool;
+    tray.hidden = tool !== "signature" && tool !== "image" && tool !== "edittext";
+    if (tool === "edittext") refreshEditTray();
+    if (wasEdit !== (tool === "edittext")) ed.pages.forEach(p => renderLayer(p.pid));
     if (tool === "signature") refreshSigTray();
     if (tool === "image") refreshImageTray();
   }
@@ -979,6 +990,104 @@ window.PdfEditor = (function () {
     renderLayer(e.page); commit(); renderProps();
   }
 
+  /* ---------- edit the document's own text ----------
+     The PDF text is read with pdf.js and grouped in lines. Tapping a line puts an editable
+     copy on top that covers the original with the background color found on the page. */
+  const runCache = new Map();
+  async function runsFor(p) {
+    if (!p || p.src !== "orig" || !ed.pdf) return [];
+    const key = cacheKey(p, 0, 0);
+    if (!runCache.has(key)) runCache.set(key, (async () => {
+      const page = await ed.pdf.getPage(p.index + 1);
+      const vp = page.getViewport({ scale: 1, rotation: totalRot(p) });
+      const tc = await page.getTextContent();
+      const lines = [];
+      for (const it of tc.items) {
+        if (!it.str || !it.str.trim() || !it.transform) continue; // spaces between columns would glue them together
+        const t = it.transform, size = Math.hypot(t[2], t[3]) || it.height || 10;
+        const x0 = t[4], y0 = t[5], x1 = x0 + (it.width || 0);
+        let ln = lines.find(l => Math.abs(l.y0 - y0) < size * .25 && Math.abs(l.size - size) < size * .3 && x0 - l.x1 < size * 1.2 && x0 - l.x1 > -size * .5);
+        if (ln) {
+          const gap = x0 - ln.x1;
+          ln.text += (gap > size * .2 && !/\s$/.test(ln.text) && !/^\s/.test(it.str) ? " " : "") + it.str;
+          ln.x1 = Math.max(ln.x1, x1);
+        } else lines.push(ln = { x0, x1, y0, size, text: it.str, font: it.fontName });
+      }
+      const fam = f => { const st = tc.styles?.[f] || {}; let name = ""; try { name = page.commonObjs.has(f) ? page.commonObjs.get(f)?.name || "" : ""; } catch (_) {}
+        return { font: /serif/.test(st.fontFamily || "") && !/sans/.test(st.fontFamily || "") ? "times" : /mono/.test(st.fontFamily || "") ? "courier" : /times|serif|georgia|garamond/i.test(name) && !/sans/i.test(name) ? "times" : "helv",
+          bold: /bold|black|heavy|semibold|demi/i.test(name), italic: /italic|oblique/i.test(name) }; };
+      return lines.filter(l => l.text.trim()).map((l, i) => {
+        const a = vp.convertToViewportPoint(l.x0, l.y0 + l.size * .97), b = vp.convertToViewportPoint(l.x1, l.y0 - l.size * .28);
+        const x = Math.min(a[0], b[0]), y = Math.min(a[1], b[1]);
+        return { key: String(i), text: l.text.trim(), size: l.size, x, y, w: Math.abs(b[0] - a[0]), h: Math.abs(b[1] - a[1]), ...fam(l.font) };
+      });
+    })().catch(() => []));
+    return runCache.get(key);
+  }
+  async function showRuns(pid, layer) {
+    const runs = await runsFor(pageOf(pid));
+    if (ed.tool !== "edittext" || !layer.isConnected) return;
+    const used = new Set(ed.els.filter(e => e.page === pid && e.run).map(e => e.run));
+    const s = scale;
+    layer.insertAdjacentHTML("beforeend", runs.filter(r => !used.has(r.key)).map(r => `<span class="pe-run" data-run="${r.key}" title="Toca para editar" style="left:${(r.x - 1) * s}px;top:${r.y * s}px;width:${(r.w + 2) * s}px;height:${r.h * s}px"></span>`).join(""));
+  }
+  const hex = (r, g, b) => "#" + [r, g, b].map(v => Math.round(v).toString(16).padStart(2, "0")).join("");
+  // Background = most common color in the box; text = the color farthest from it.
+  function sampleColors(pid, r) {
+    const out = { bg: "#ffffff", fg: "#111111" };
+    try {
+      const p = pageOf(pid), canvas = $(`.pe-page[data-pid="${pid}"] canvas`, root);
+      if (!canvas || !p) return out;
+      const k = canvas.width / pageSize(p).w;
+      const sx = Math.max(0, Math.floor(r.x * k)), sy = Math.max(0, Math.floor(r.y * k));
+      const sw = Math.min(canvas.width - sx, Math.ceil(r.w * k)), sh = Math.min(canvas.height - sy, Math.ceil(r.h * k));
+      if (sw < 1 || sh < 1) return out;
+      const d = canvas.getContext("2d").getImageData(sx, sy, sw, sh).data, count = new Map();
+      for (let i = 0; i < d.length; i += 4) { const q = (d[i] >> 3) << 10 | (d[i + 1] >> 3) << 5 | d[i + 2] >> 3; count.set(q, (count.get(q) || 0) + 1); }
+      let best = 0, mode = 0;
+      for (const [q, n] of count) if (n > best) { best = n; mode = q; }
+      let br = 0, bg = 0, bb = 0, n = 0;
+      for (let i = 0; i < d.length; i += 4) if (((d[i] >> 3) << 10 | (d[i + 1] >> 3) << 5 | d[i + 2] >> 3) === mode) { br += d[i]; bg += d[i + 1]; bb += d[i + 2]; n++; }
+      br /= n; bg /= n; bb /= n;
+      out.bg = hex(br, bg, bb);
+      let far = 0;
+      for (let i = 0; i < d.length; i += 4) { const dist = Math.abs(d[i] - br) + Math.abs(d[i + 1] - bg) + Math.abs(d[i + 2] - bb); if (dist > far) far = dist; }
+      if (far > 60) {
+        let fr = 0, fg = 0, fb = 0, m = 0;
+        for (let i = 0; i < d.length; i += 4) { const dist = Math.abs(d[i] - br) + Math.abs(d[i + 1] - bg) + Math.abs(d[i + 2] - bb); if (dist > far * .8) { fr += d[i]; fg += d[i + 1]; fb += d[i + 2]; m++; } }
+        out.fg = hex(fr / m, fg / m, fb / m);
+      }
+    } catch (_) { /* keep defaults */ }
+    return out;
+  }
+  function runElement(pid, run) {
+    const c = sampleColors(pid, run);
+    return { type: "text", page: pid, run: run.key, x: run.x - 1, y: run.y, w: run.w + 2, h: run.h, text: run.text, size: Math.round(run.size * 10) / 10, font: run.font, bold: run.bold, italic: run.italic, color: c.fg, bg: c.bg, nowrap: true };
+  }
+  async function convertRun(pid, key, edit) {
+    const run = (await runsFor(pageOf(pid))).find(r => r.key === key);
+    if (!run || ed.els.some(e => e.page === pid && e.run === key)) return;
+    addElement(runElement(pid, run));
+    if (edit) beginEditing(ed.sel);
+  }
+  async function editWholePage() {
+    const p = ed.pages[ed.current];
+    const runs = await runsFor(p);
+    if (!runs.length) { toast("Esta página no tiene texto que se pueda leer (puede ser una foto). Usa Borrar para tapar una zona."); return; }
+    const used = new Set(ed.els.filter(e => e.page === p.pid && e.run).map(e => e.run));
+    const fresh = runs.filter(r => !used.has(r.key)).map(r => ({ id: uid(), opacity: 1, rot: 0, ...runElement(p.pid, r) }));
+    ed.els.push(...fresh);
+    renderLayer(p.pid); commit(); renderProps();
+    toast(fresh.length ? `${fresh.length} textos listos para editar. Toca uno para cambiarlo o bórralo con Suprimir.` : "Todo el texto de esta página ya es editable.");
+  }
+  function refreshEditTray() {
+    const tray = $(".pe-sig-tray", root);
+    if (!tray || ed.tool !== "edittext") return;
+    tray.innerHTML = `<span class="pe-muted pe-tray-hint">Toca cualquier texto del documento para cambiarlo o borrarlo.</span>
+      <button type="button" class="pe-btn is-primary" data-ed="editAllPage">${ic("textEdit")} Hacer editable toda la página</button>
+      <button type="button" class="pe-btn" data-ed="toolErase">${ic("eraser")} Borrar una zona</button>`;
+  }
+
   function pointIn(pageNode, ev) {
     const r = pageNode.getBoundingClientRect();
     return [(ev.clientX - r.left) / scale, (ev.clientY - r.top) / scale];
@@ -995,11 +1104,18 @@ window.PdfEditor = (function () {
       if (!e) return;
       if (ed.sel !== e.id) select(e.id);
       const handle = ev.target.closest(".pe-h")?.dataset.h;
+      if (ed.tool === "edittext" && e.run && !handle && ed.editing !== e.id) { ev.preventDefault(); return beginEditing(e.id); }
       if (ed.editing === e.id && !handle) return; // typing inside the text
       return startDrag(ev, e, handle, pageNode);
     }
     ev.preventDefault();
     const t = ed.tool;
+    if (t === "edittext") {
+      const run = ev.target.closest(".pe-run");
+      if (run) return convertRun(pid, run.dataset.run, true);
+      select(null);
+      return;
+    }
     if (t === "text") return addElement({ type: "text", page: pid, x: px, y: py - 8, w: 180, h: 22, text: "Escribe aquí", size: 12, color: "#111111", font: "helv" }) && beginEditing(ed.sel);
     if (t === "date") return addElement({ type: "date", page: pid, x: px, y: py - 8, w: 110, h: 22, text: todayText(), size: 12, color: "#111111", font: "helv" });
     if (t === "comment") return addElement({ type: "comment", page: pid, x: px, y: py, w: 170, h: 70, text: "Comentario", size: 10, color: "#7a5b00" }) && beginEditing(ed.sel);
@@ -1109,9 +1225,11 @@ window.PdfEditor = (function () {
       ghost.remove();
       let w = Math.abs(x1 - x0), h = Math.abs(y1 - y0);
       const line = type === "line" || type === "arrow";
-      if (w < 4 && h < 4) { w = line ? 80 : type === "highlight" || type === "underline" || type === "strike" ? 120 : 90; h = line ? 1 : type === "highlight" ? 16 : type === "underline" || type === "strike" ? 14 : 60; x1 = x0 + w; y1 = y0 + (line ? 0 : h); }
+      if (w < 4 && h < 4 && type === "erase") { w = 90; h = 24; x1 = x0 + w; y1 = y0 + h; }
+      else if (w < 4 && h < 4) { w = line ? 80 : type === "highlight" || type === "underline" || type === "strike" ? 120 : 90; h = line ? 1 : type === "highlight" ? 16 : type === "underline" || type === "strike" ? 14 : 60; x1 = x0 + w; y1 = y0 + (line ? 0 : h); }
       const x = Math.min(x0, x1), y = Math.min(y0, y1);
       const el = { type, page: pid, x, y, w: Math.max(w, 1), h: Math.max(h, 1), color: COLORS[type] || "#d62828", stroke: type === "highlight" ? 0 : 2 };
+      if (type === "erase") { el.color = sampleColors(pid, { x: x - 3, y: y - 3, w: el.w + 6, h: el.h + 6 }).bg; el.stroke = 0; }
       if (line) el.pts = [[x0 <= x1 ? 0 : 1, y0 <= y1 ? 0 : 1], [x0 <= x1 ? 1 : 0, y0 <= y1 ? 1 : 0]].map(([a, b]) => [a, h < 2 ? .5 : b]);
       if (line && h < 2) { el.h = 8; el.y = y - 4; }
       addElement(el);
@@ -1222,8 +1340,10 @@ window.PdfEditor = (function () {
     const color = e.color || "#111111";
     x.strokeStyle = color; x.fillStyle = color; x.lineCap = "round"; x.lineJoin = "round";
     x.lineWidth = (e.stroke || 2) * k;
-    if (e.type === "text" || e.type === "date" || e.type === "comment") {
+    if (e.type === "erase") { x.fillStyle = color; x.fillRect(0, 0, w, h); }
+    else if (e.type === "text" || e.type === "date" || e.type === "comment") {
       let pad = 0;
+      if (e.bg) { x.fillStyle = e.bg; x.fillRect(0, 0, w, h); x.fillStyle = color; }
       if (e.type === "comment") {
         x.fillStyle = "#fff7c2"; x.strokeStyle = "#e9c84a"; x.lineWidth = 1 * k;
         x.beginPath(); x.roundRect(0, 0, w, h, 4 * k); x.fill(); x.stroke();
@@ -1232,7 +1352,7 @@ window.PdfEditor = (function () {
       const size = (e.size || 12) * k;
       x.font = `${e.italic ? "italic " : ""}${e.bold ? "bold " : ""}${size}px ${FONTS[e.font || "helv"]}`;
       x.textBaseline = "top";
-      const lines = wrapLines(x, e.text, w - pad * 2);
+      const lines = e.nowrap ? String(e.text || "").split("\n") : wrapLines(x, e.text, w - pad * 2);
       lines.forEach((line, i) => {
         const lw = x.measureText(line).width;
         const tx = e.align === "center" ? (w - lw) / 2 : e.align === "right" ? w - pad - lw : pad;
@@ -1473,6 +1593,8 @@ window.PdfEditor = (function () {
     if (a === "save") return saveVersion();
     if (a === "download") { const blob = await withBusy("Generando el PDF final…", () => buildPdf()); if (blob) download(blob, finalName()); return; }
     if (a === "more") return moreMenu(e.target.closest("[data-ed]"));
+    if (a === "editAllPage") return editWholePage();
+    if (a === "toolErase") return setTool("erase");
     if (a === "quickSign") {
       if (!ed.sigId) return toast("Primero guarda una firma.");
       const p = ed.pages[ed.current], { w, h } = pageSize(p);
@@ -1511,6 +1633,7 @@ window.PdfEditor = (function () {
       await node?.animate([{ opacity: 1, transform: node.style.transform }, { opacity: 0, transform: `${node.style.transform} scale(.85)` }], { duration: 180 }).finished;
       ed.els = ed.els.filter(x => x.id !== e.id); ed.sel = null;
     }
+    if (k === "cleartext") { e.text = ""; ed.editing = null; }
     if (k === "duplicate") { const c = { ...e, id: uid(), x: e.x + 14, y: e.y + 14, pts: e.pts && e.pts.map(q => [...q]) }; ed.els.push(c); ed.sel = c.id; }
     if (k === "front") { ed.els = [...ed.els.filter(x => x.id !== e.id), e]; }
     if (k === "template") {
@@ -1532,7 +1655,7 @@ window.PdfEditor = (function () {
     const mod = e.ctrlKey || e.metaKey;
     if (mod && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); }
     else if (mod && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); }
-    else if ((e.key === "Delete" || e.key === "Backspace") && ed.sel) { e.preventDefault(); onPropAction({ dataset: { propAct: "delete" } }); }
+    else if ((e.key === "Delete" || e.key === "Backspace") && ed.sel) { e.preventDefault(); const el = selected(); onPropAction({ dataset: { propAct: el?.run && el.text ? "cleartext" : "delete" } }); }
     else if (e.key === "Escape") { select(null); setTool("select"); }
     else if (ed.sel && e.key.startsWith("Arrow")) {
       const el = selected(), step = e.shiftKey ? 10 : 1;
